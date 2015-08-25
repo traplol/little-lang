@@ -3,7 +3,7 @@ SRC_DIR:= src
 OBJ_DIR:= obj
 BIN_DIR:= bin
 INCLUDES:= -Iinclude
-CFLAGS:= -O0 -Werror -Wall -pedantic -pedantic-errors -Wextra -g -std=c89 $(INCLUDES)
+CFLAGS:= -O0 -Werror -Wall -pedantic -pedantic-errors -Wextra -g -std=c99 $(INCLUDES)
 LDFLAGS:=
 SOURCES:= $(wildcard $(SRC_DIR)/*.c)
 OBJECTS:= $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCES:.c=.o)))
