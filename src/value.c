@@ -105,28 +105,35 @@ int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo 
     return 0;
 }
 
-int TypeInfoLookupMember(struct TypeInfo *typeInfo, char *name, struct Member *out_member) {
+/* TODO: Implement better member lookup than O(n) */
+struct Member *TypeInfoGetMember(struct TypeInfo *typeInfo, char *name) {
     unsigned int i;
+    for (i = 0; i < typeInfo->CurrentMemberIdx; ++i) {
+        if (0 == strcmp(typeInfo->Members[i]->Name, name)) {
+            return typeInfo->Members[i];
+        }
+    }
+    return NULL;
+}
+
+int TypeInfoLookupMember(struct TypeInfo *typeInfo, char *name, struct Member *out_member) {
+    struct Member *temp;
     if (TypeInfoIsInvalid(typeInfo) || !name) {
         return 0;
     } 
-    for (i = 0; i < typeInfo->CurrentMemberIdx; ++i) {
-        if (0 == strcmp(typeInfo->Members[i]->Name, name)) {
-            *out_member = *typeInfo->Members[i];
-            return 1;
-        }
+    temp = TypeInfoGetMember(typeInfo, name);
+    if (!temp) {
+        return 0;
     }
-    return 0;
+    *out_member = *temp;
+    return 1;
 }
 int TypeInfoHasMember(struct TypeInfo *typeInfo, char *name) {
-    unsigned int i;
     if (TypeInfoIsInvalid(typeInfo) || !name) {
         return 0;
     }
-    for (i = 0; i < typeInfo->CurrentMemberIdx; ++i) {
-        if (0 == strcmp(typeInfo->Members[i]->Name, name)) {
-            return 1;
-        }
+    if (!TypeInfoGetMember(typeInfo, name)) {
+        return 0;
     }
-    return 0;
+    return 1;
 }
