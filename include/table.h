@@ -35,9 +35,9 @@ int TableFree(struct Table *table);
 /* Inserts a value into the table. */
 int TableInsert(struct Table *table, void *thing, char *string, char *filename, int lineNumber, int columnNumber);
 /* Removes a value from the table. */
-int TableRemove(struct Table *table, void *value);
+int TableRemove(struct Table *table, void *thing);
 /* Returns a non-zero integer if the table contains the value. */
-int TableContains(struct Table *table, void *value);
+int TableContains(struct Table *table, void *thing);
 
 
 #endif

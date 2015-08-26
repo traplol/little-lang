@@ -19,6 +19,7 @@ int TableMake(struct Table *table, const enum TableType tableType, const unsigne
         table->TableLength = tableMaxLen;
     }
 
+    table->TableType = tableType;
     table->Entries = calloc(sizeof(*table->Entries), tableMaxLen);
     if (!table->Entries) {
         return -1;
