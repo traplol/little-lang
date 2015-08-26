@@ -3,29 +3,23 @@
 #include "../src/table.c"
 
 #include "defines.h"
+#include "c_test.h"
 
-#include <stdio.h>
-#include <assert.h>
-
-#define PASS (printf("%s : PASS\n", __func__))
-
-void test_TableMake_TableFree(void) {
+TEST(TableMake_TableFree) {
     struct Table typeTable;
     struct Table valueTable;
-    assert(0 == TableMake(&typeTable, TableTypeTypeTable, 0) && "Failed to make type table.");
-    assert(DEFAULT_TABLE_SIZE == typeTable.TableLength && "Failed to apply default table size.");
-    assert(TableTypeTypeTable == typeTable.TableType && "Failed to apply table type.");
-    assert(0 == TableFree(&typeTable) && "Failed to free table resources.");
-     
-    assert(0 == TableMake(&valueTable, TableTypeValueTable, 0) && "Failed to make value table.");
-    assert(DEFAULT_TABLE_SIZE == valueTable.TableLength && "Failed to apply default table size.");
-    assert(TableTypeValueTable == valueTable.TableType && "Failed to apply table type.");
-    assert(0 == TableFree(&valueTable) && "Failed to free table resources.");
-    PASS;
+    assert_eq(0, TableMake(&typeTable, TableTypeTypeTable, 0), "Failed to make type table.");
+    assert_eq(DEFAULT_TABLE_SIZE, typeTable.TableLength, "Failed to apply default table size.");
+    assert_eq(TableTypeTypeTable, typeTable.TableType, "Failed to apply table type.");
+    assert_eq(0, TableFree(&typeTable), "Failed to free table resources.");
+
+    assert_eq(0, TableMake(&valueTable, TableTypeValueTable, 0), "Failed to make value table.");
+    assert_eq(DEFAULT_TABLE_SIZE, valueTable.TableLength, "Failed to apply default table size.");
+    assert_eq(TableTypeValueTable, valueTable.TableType, "Failed to apply table type.");
+    assert_eq(0, TableFree(&valueTable), "Failed to free table resources.");
 }
 
-
 int main(void) {
-    test_TableMake_TableFree();
+    TEST_RUN(TableMake_TableFree);
     return 0;
 }
