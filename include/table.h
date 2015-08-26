@@ -15,7 +15,7 @@ struct TableEntry {
 };
 
 struct Table {
-    struct TableEntry **Values;
+    struct TableEntry **Entries;
     unsigned int TableLength;
 };
 
