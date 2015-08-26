@@ -1,0 +1,6 @@
+#ifndef _LITTLE_LANG_DEFINES_H
+#define _LITTLE_LANG_DEFINES_H
+
+#define DEFAULT_TABLE_SIZE 769
+
+#endif

@@ -2,8 +2,7 @@
 #define _LITTLE_LANG_TABLE_H
 
 #include "value.h"
-
-#define DEFAULT_TABLE_SIZE 769
+#include "defines.h"
 
 struct TableEntry {
     struct Value *Value;
