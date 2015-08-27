@@ -1,4 +1,4 @@
-#include "little-lang-machine.h"
+#include "little_lang_machine.h"
 
 #include <stdlib.h>
 

@@ -1,17 +1,11 @@
-#include "value.h"
+#include "type_info.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 #define MEMBERS_BASE_LENGTH 4
 
-int ValueIsValid(struct Value *value) {
-    return value && value->TypeInfo;
-}
-
-int ValueIsInvalid(struct Value *value) {
-    return !ValueIsValid(value);
-}
+/******************* Helpers *******************/
 
 int TypeInfoIsValid(struct TypeInfo *typeInfo) {
     return typeInfo && typeInfo->DerivedFrom &&
@@ -43,20 +37,7 @@ int TypeInfoMemberFree(struct Member *member) {
 }
 
 
-int ValueMake(struct Value *value, struct TypeInfo *typeInfo, void *data, unsigned int dataSize) {
-    if (!value) {
-        return -1;
-    }
-    value->TypeInfo = typeInfo;
-    memcpy(value->v.__ptrsize, data, dataSize);
-    return 0;
-}
-int ValueFree(struct Value *value) {
-    if (ValueIsInvalid(value)) {
-        return -1;
-    }
-    return TypeInfoFree(value->TypeInfo);
-}
+/******************* Public Functions *******************/
 
 int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeInfo *derivedFrom, char *typeName, unsigned int size) {
     if (!typeInfo || !derivedFrom || !typeName) {
@@ -116,7 +97,7 @@ struct Member *TypeInfoGetMember(struct TypeInfo *typeInfo, char *name) {
     return NULL;
 }
 
-int TypeInfoLookupMember(struct TypeInfo *typeInfo, char *name, struct Member *out_member) {
+int TypeInfoLookupMember(struct TypeInfo *typeInfo, char *name, struct Member **out_member) {
     struct Member *temp;
     if (TypeInfoIsInvalid(typeInfo) || !name) {
         return 0;
@@ -125,7 +106,7 @@ int TypeInfoLookupMember(struct TypeInfo *typeInfo, char *name, struct Member *o
     if (!temp) {
         return 0;
     }
-    *out_member = *temp;
+    *out_member = temp;
     return 1;
 }
 int TypeInfoHasMember(struct TypeInfo *typeInfo, char *name) {

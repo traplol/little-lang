@@ -1,16 +1,15 @@
 #ifndef _LITTLE_LANG_LITTLE_LANG_MACHINE_H
 #define _LITTLE_LANG_LITTLE_LANG_MACHINE_H
 
-#include "lexer.h"
-#include "parser.h"
-#include "table.h"
+#include "symbol_table.h"
+#include "type_table.h"
 
 /* TODO: Local stack, scoping, etc. */
 struct LittleLangMachine {
     struct Lexer *Lexer;
     struct Parser *Parser;
-    struct Table *SymbolTable;
-    struct Table *TypeTable;
+    struct SymbolTable *SymbolTable;
+    struct TypeTable *TypeTable;
     struct {
         int argc;
         char **argv;
