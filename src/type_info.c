@@ -8,8 +8,7 @@
 /******************* Helpers *******************/
 
 int TypeInfoIsValid(struct TypeInfo *typeInfo) {
-    return typeInfo && typeInfo->DerivedFrom &&
-        typeInfo->TypeName && typeInfo->Members;
+    return typeInfo && typeInfo->TypeName && typeInfo->Members;
 }
 
 int TypeInfoIsInvalid(struct TypeInfo *typeInfo) {
@@ -40,7 +39,7 @@ int TypeInfoMemberFree(struct Member *member) {
 /******************* Public Functions *******************/
 
 int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeInfo *derivedFrom, char *typeName, unsigned int size) {
-    if (!typeInfo || !derivedFrom || !typeName) {
+    if (!typeInfo || !typeName || typeInfo == derivedFrom) {
         return -1;
     }
     typeInfo->Type = type;
@@ -65,6 +64,9 @@ int TypeInfoFree(struct TypeInfo *typeInfo) {
         TypeInfoMemberFree(typeInfo->Members[i]);
         typeInfo->Members[i] = NULL;
     }
+    TypeInfoFree(typeInfo->DerivedFrom);
+    free(typeInfo->Members);
+    free(typeInfo->TypeName);
     return 0;
 }
 

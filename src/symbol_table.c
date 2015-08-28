@@ -64,6 +64,7 @@ int SymbolTableFree(struct SymbolTable *table) {
         }
     }
     table->Parent = NULL;
+    free(table->Symbols);
     return 0;
 }
 
@@ -91,7 +92,7 @@ int SymbolTablePopScope(struct SymbolTable **table) {
     oldScope = *table;
     *table = (*table)->Parent;
     SymbolTableFree(oldScope);
-    
+    free(oldScope);
     return 0;
 }
 
