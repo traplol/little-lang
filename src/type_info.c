@@ -32,7 +32,7 @@ int TypeInfoMemberFree(struct Member *member) {
         return -1;
     }
     free(member->Name);
-    return TypeInfoFree(member->TypeInfo);
+    return 0;
 }
 
 
@@ -62,9 +62,8 @@ int TypeInfoFree(struct TypeInfo *typeInfo) {
 
     for(i = 0; i < typeInfo->MembersLen; ++i) {
         TypeInfoMemberFree(typeInfo->Members[i]);
-        typeInfo->Members[i] = NULL;
+        free(typeInfo->Members[i]);
     }
-    TypeInfoFree(typeInfo->DerivedFrom);
     free(typeInfo->Members);
     free(typeInfo->TypeName);
     return 0;
@@ -80,7 +79,7 @@ int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo 
             return -1;
         }
     }
-    member = calloc(sizeof(*typeInfo->Members), 1);
+    member = malloc(sizeof *member);
     member->Name = name;
     member->TypeInfo = memberTypeInfo;
     member->MemOffset = memOffset;
@@ -108,15 +107,8 @@ int TypeInfoLookupMember(struct TypeInfo *typeInfo, char *name, struct Member **
     if (!temp) {
         return 0;
     }
-    *out_member = temp;
-    return 1;
-}
-int TypeInfoHasMember(struct TypeInfo *typeInfo, char *name) {
-    if (TypeInfoIsInvalid(typeInfo) || !name) {
-        return 0;
-    }
-    if (!TypeInfoGetMember(typeInfo, name)) {
-        return 0;
+    if (out_member) {
+        *out_member = temp;
     }
     return 1;
 }

@@ -34,7 +34,5 @@ int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo 
 /* Lookup a member, returns a non-zero integer if the member was found and sets
  * out_member to the found member. */
 int TypeInfoLookupMember(struct TypeInfo *typeInfo, char *name, struct Member **out_member);
-/* Returns a non-zero integer if the type contains the member matching the name. */
-int TypeInfoHasMember(struct TypeInfo *typeInfo, char *name);
 
 #endif

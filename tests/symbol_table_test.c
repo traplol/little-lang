@@ -4,12 +4,8 @@
 
 #include "string.h"
 #include "c_test.h"
+#include "test_helpers.h"
 
-char *strdup(const char *s) {
-    int len = strlen(s);
-    char *r = malloc(len + 1);
-    return memcpy(r, s, len + 1);
-}
 
 TEST(SymbolTableMakeGlobalScope) {
     struct SymbolTable *st = malloc(sizeof *st);
