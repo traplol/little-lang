@@ -119,7 +119,7 @@ int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key,
     return 0;
 }
 
-int SymbolTableFind(struct SymbolTable *table, char *key, struct Symbol **out_symbol) {
+int SymbolTableFindLocal(struct SymbolTable *table, char *key, struct Symbol **out_symbol) {
     struct Symbol *symbol;
     unsigned int tableIdx;
     if (SymbolTableIsInvalid(table)) {
@@ -139,6 +139,26 @@ int SymbolTableFind(struct SymbolTable *table, char *key, struct Symbol **out_sy
         symbol = symbol->Next;
     }
 
+    if (out_symbol) {
+        *out_symbol = symbol;
+    }
+    return 1;
+}
+
+int SymbolTableFindNearest(struct SymbolTable *table, char *key, struct Symbol **out_symbol) {
+    struct Symbol *symbol = NULL;
+    if (SymbolTableIsInvalid(table) || !key) {
+        return 0;
+    }
+    while (table) {
+        if (SymbolTableFindLocal(table, key, &symbol)) {
+            break;
+        }
+        table = table->Parent;
+    }
+    if (!symbol) {
+        return 0;
+    }
     if (out_symbol) {
         *out_symbol = symbol;
     }

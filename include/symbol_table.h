@@ -23,6 +23,7 @@ int SymbolTablePushScope(struct SymbolTable **table);
 int SymbolTablePopScope(struct SymbolTable **table);
 
 int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key, char *filename, int lineNumber, int columnNumber);
-int SymbolTableFind(struct SymbolTable *table, char *key, struct Symbol **out_symbol);
+int SymbolTableFindLocal(struct SymbolTable *table, char *key, struct Symbol **out_symbol);
+int SymbolTableFindNearest(struct SymbolTable *table, char *key, struct Symbol **out_symbol);
 
 #endif
