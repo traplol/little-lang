@@ -24,7 +24,6 @@ struct Token {
     char *Filename;
     int LineNumber;
     int ColumnNumber;
-    struct Token *Next;
 };
 
 /* Initializes the token. */

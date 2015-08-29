@@ -1,3 +1,4 @@
+#include "../src/string_hash.c"
 #include "../src/type_info.c"
 #include "../src/value.c"
 #include "../src/symbol_table.c"
@@ -45,12 +46,12 @@ TEST(SymbolTableInsert) {
     char *typeName = strdup("Integer");
     char *name = strdup("data");
     char *filename = strdup("testfile");
-
     
     TypeInfoMake(ti, TypeInteger, NULL, typeName);
     ValueMake(v, ti, &data, sizeof(data));
     SymbolTableMakeGlobalScope(st);
     assert_eq(0, SymbolTableInsert(st, v, name, filename, 1, 5), "Failed to insert symbol into symbol table.");
+    assert_ne(0, SymbolTableInsert(st, v, name, filename, 1, 5), "Failed to skip insert of duplicate name.");
     SymbolTableFree(st);
 
     TypeInfoFree(ti);
@@ -69,11 +70,11 @@ TEST(SymbolTableFindLocal) {
     char *typeName = strdup("Integer");
     char *name = strdup("data");
     char *filename = strdup("testfile");
-
     
     TypeInfoMake(ti, TypeInteger, NULL, typeName);
     ValueMake(v, ti, &data, sizeof(data));
     SymbolTableMakeGlobalScope(st);
+    assert_eq(0, SymbolTableFindLocal(st, name, &out), "Found Symbol that shouldn't be found.");
     SymbolTableInsert(st, v, name, filename, 1, 5);
 
     assert_ne(0, SymbolTableFindLocal(st, name, &out), "Failed to find key local scope.");

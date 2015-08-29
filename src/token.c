@@ -12,7 +12,6 @@ int TokenMake(struct Token *token, enum TokenType type, char *tokenStr, char *fi
     token->Filename = filename;
     token->LineNumber = lineNumber;
     token->ColumnNumber = columnNumber;
-    token->Next = NULL;
     return 0;
 }
 int TokenFree(struct Token *token) {
@@ -20,6 +19,5 @@ int TokenFree(struct Token *token) {
         return -1;
     }
     free(token->TokenStr);
-    free(token->Filename);
     return 0;
 }

@@ -1,10 +1,10 @@
 #include "type_table.h"
-#include "defines.h"
-#include "../helpers/string_hash.h"
+#include "string_hash.h"
 
 #include <stdlib.h>
 #include <string.h>
 
+#define DEFAULT_TABLE_SIZE 769
 /********************* Helpers **********************/
 
 int TypeTableIsValid(struct TypeTable *table) {

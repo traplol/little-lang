@@ -1,5 +1,5 @@
-#ifndef _LITTLE_LANG_HELPERS_STRING_HASH_H
-#define _LITTLE_LANG_HELPERS_STRING_HASH_H
+
+#include "string_hash.h"
 
 unsigned int string_hash(char *str) {
     unsigned char *s = (unsigned char*)str;
@@ -10,5 +10,3 @@ unsigned int string_hash(char *str) {
     }
     return hash;
 }
-
-#endif
