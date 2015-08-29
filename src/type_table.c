@@ -1,5 +1,6 @@
 #include "type_table.h"
 #include "defines.h"
+#include "../helpers/string_hash.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -24,7 +25,6 @@ struct TypeTableEntry *TypeTableEntryAlloc(char *key, struct TypeInfo *typeInfo)
 
 void TypeTableEntryFree(struct TypeTableEntry *entry) {
     struct TypeTableEntry *next;
-    free(entry->Key);
     TypeInfoFree(entry->TypeInfo);
     next = entry->Next;
     while (next) {
@@ -35,7 +35,7 @@ void TypeTableEntryFree(struct TypeTableEntry *entry) {
 }
 
 unsigned int TypeTableGetIdx(struct TypeTable *table, char *key) {
-    return (unsigned int)(key) % table->TableLength;
+    return string_hash(key) % table->TableLength;
 }
 
 /********************* Public functions **********************/
@@ -75,6 +75,9 @@ int TypeTableInsert(struct TypeTable *table, struct TypeInfo *typeInfo) {
     struct TypeTableEntry *entry, *tmp;
     unsigned int tableIdx;
     if (TypeTableIsInvalid(table) || !typeInfo) {
+        return -1;
+    }
+    if (TypeTableFind(table, typeInfo->TypeName, NULL)) {
         return -1;
     }
 

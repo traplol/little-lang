@@ -38,13 +38,22 @@ int TypeInfoMemberFree(struct Member *member) {
 
 /******************* Public Functions *******************/
 
-int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeInfo *derivedFrom, char *typeName, unsigned int size) {
+int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeInfo *derivedFrom, char *typeName) {
+    unsigned int size;
     if (!typeInfo || !typeName || typeInfo == derivedFrom) {
         return -1;
     }
     typeInfo->Type = type;
     typeInfo->DerivedFrom = derivedFrom;
     typeInfo->TypeName = typeName;
+    switch (type) {
+        case TypeFunction: 
+        case TypeBaseObject: 
+        case TypeBoolean: /* Booleans are pointers that point to the "true" or "false" object */
+        case TypeUserObject: size = sizeof(void*); break;
+        case TypeInteger: size = sizeof(int); break;
+        case TypeReal: size = sizeof(double); break;
+    }
     typeInfo->Size = size;
     typeInfo->Members = calloc(sizeof(*typeInfo->Members), MEMBERS_BASE_LENGTH);
     if (!typeInfo->Members) {
@@ -69,7 +78,7 @@ int TypeInfoFree(struct TypeInfo *typeInfo) {
     return 0;
 }
 
-int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo *memberTypeInfo, unsigned int memOffset) {
+int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo *memberTypeInfo) {
     struct Member *member;
     if (TypeInfoIsInvalid(typeInfo) || TypeInfoIsInvalid(memberTypeInfo) || !name) {
         return -1;
@@ -82,7 +91,8 @@ int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo 
     member = malloc(sizeof *member);
     member->Name = name;
     member->TypeInfo = memberTypeInfo;
-    member->MemOffset = memOffset;
+    member->MemOffset = typeInfo->Size;
+    typeInfo->Size += memberTypeInfo->Size;
     typeInfo->Members[typeInfo->CurrentMemberIdx++] = member;
     return 0;
 }

@@ -1,5 +1,5 @@
 #include "symbol_table.h"
-//#include "value.h"
+#include "../helpers/string_hash.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +36,7 @@ int SymbolTableIsInvalid(struct SymbolTable *table) {
 }
 
 unsigned int SymbolTableGetIdx(struct SymbolTable *table, char *key) {
-    return (unsigned int)key % table->TableLength;
+    return string_hash(key) % table->TableLength;
 }
 
 /****************** Public Functions *******************/

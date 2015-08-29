@@ -47,7 +47,7 @@ TEST(SymbolTableInsert) {
     char *filename = strdup("testfile");
 
     
-    TypeInfoMake(ti, TypeInteger, NULL, typeName, sizeof(int));
+    TypeInfoMake(ti, TypeInteger, NULL, typeName);
     ValueMake(v, ti, &data, sizeof(data));
     SymbolTableMakeGlobalScope(st);
     assert_eq(0, SymbolTableInsert(st, v, name, filename, 1, 5), "Failed to insert symbol into symbol table.");
@@ -71,7 +71,7 @@ TEST(SymbolTableFindLocal) {
     char *filename = strdup("testfile");
 
     
-    TypeInfoMake(ti, TypeInteger, NULL, typeName, sizeof(int));
+    TypeInfoMake(ti, TypeInteger, NULL, typeName);
     ValueMake(v, ti, &data, sizeof(data));
     SymbolTableMakeGlobalScope(st);
     SymbolTableInsert(st, v, name, filename, 1, 5);
@@ -98,7 +98,7 @@ TEST(SymbolTableFindNearest) {
     char *filename = strdup("testfile");
 
     
-    TypeInfoMake(ti, TypeInteger, NULL, typeName, sizeof(int));
+    TypeInfoMake(ti, TypeInteger, NULL, typeName);
     ValueMake(v, ti, &data, sizeof(data));
     SymbolTableMakeGlobalScope(st);
     SymbolTableInsert(st, v, name, filename, 1, 5);

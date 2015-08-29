@@ -6,7 +6,7 @@
 TEST(TypeInfoMakeFree) {
     struct TypeInfo *ti = malloc(sizeof *ti);
     char *typeName = strdup("BaseObject");
-    assert_eq(0, TypeInfoMake(ti, TypeBaseObject, NULL, typeName, sizeof(void*)), "TypeInfoMake failed");
+    assert_eq(0, TypeInfoMake(ti, TypeBaseObject, NULL, typeName), "TypeInfoMake failed");
     assert_eq(0, TypeInfoFree(ti), "TypeInfoFree failed");
     free(ti);
 }
@@ -19,10 +19,15 @@ TEST(TypeInfoInsertMember) {
     char *intObjName = strdup("Integer");
     char *userObjName = strdup("MyObject");
     char *myMember = strdup("MyMember");
-    TypeInfoMake(baseObject, TypeBaseObject, NULL, baseObjName, sizeof(void*));
-    TypeInfoMake(intObject, TypeInteger, baseObject, intObjName, sizeof(void*));
-    TypeInfoMake(userObject, TypeUserObject, baseObject, userObjName, sizeof(void*));
-    assert_eq(0, TypeInfoInsertMember(userObject, myMember, intObject, 0), "TypeInfoInsertMember failed");
+    unsigned int size;
+    TypeInfoMake(baseObject, TypeBaseObject, NULL, baseObjName);
+    TypeInfoMake(intObject, TypeInteger, baseObject, intObjName);
+    TypeInfoMake(userObject, TypeUserObject, baseObject, userObjName);
+    size = userObject->Size;
+    assert_eq(0, TypeInfoInsertMember(userObject, myMember, intObject), "TypeInfoInsertMember failed");
+    assert_gt(userObject->Size, 0, "TypeInfoInsertMember did not update size.");
+    assert_gt(userObject->Size, size, "TypeInfoInsertMember did not update size.");
+    assert_eq(size, userObject->Size - intObject->Size, "TypeInfoInsertMember did not update size.");
 
     TypeInfoFree(userObject);
     TypeInfoFree(intObject);
@@ -33,7 +38,6 @@ TEST(TypeInfoInsertMember) {
 }
 
 TEST(TypeInfoLookupMember) {
-    struct Member *out;
     struct TypeInfo *baseObject = malloc(sizeof *baseObject);
     struct TypeInfo *intObject = malloc(sizeof *intObject);
     struct TypeInfo *userObject = malloc(sizeof *userObject);
@@ -41,10 +45,11 @@ TEST(TypeInfoLookupMember) {
     char *intObjName = strdup("Integer");
     char *userObjName = strdup("MyObject");
     char *myMember = strdup("MyMember");
-    TypeInfoMake(baseObject, TypeBaseObject, NULL, baseObjName, sizeof(void*));
-    TypeInfoMake(intObject, TypeInteger, baseObject, intObjName, sizeof(void*));
-    TypeInfoMake(userObject, TypeUserObject, baseObject, userObjName, sizeof(void*));
-    TypeInfoInsertMember(userObject, myMember, intObject, 0);
+    struct Member *out;
+    TypeInfoMake(baseObject, TypeBaseObject, NULL, baseObjName);
+    TypeInfoMake(intObject, TypeInteger, baseObject, intObjName);
+    TypeInfoMake(userObject, TypeUserObject, baseObject, userObjName);
+    TypeInfoInsertMember(userObject, myMember, intObject);
     
     assert_ne(0, TypeInfoLookupMember(userObject, "MyMember", &out), "TypeInfoLookupMember failed");
     assert_ne(NULL, out, "TypeInfoLookupMember failed to assign out.");
