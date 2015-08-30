@@ -14,25 +14,42 @@ TEST(LexerMakeFree) {
     free(lexer);
 }
 
-#define LEX_TEST(lex, str, tok, typ)                                 \
-    assert_eq(0, LexerNextToken(lex, &tok), "LexerNextTokenFailed"); \
+#define _LEX_TEST(lex, str, tok, typ)                                   \
+    assert_eq(0, LexerNextToken(lex, &tok), "LexerNextTokenFailed");    \
     assert_str_eq(str, tok->TokenStr, "Did not successfully parse '" str "' token."); \
-    assert_eq(typ, tok->Type, "Did not correctly set token '" str "' type."); \
-    TokenFree(tok); \
+    assert_eq(typ, tok->Type, "Did not correctly set token '" str "' type.");
+
+#define _LEX_TOK_FREE(tok)                      \
+    TokenFree(tok);                             \
     free(tok)
+    
+
+#define LEX_TEST_LC(lex, str, lin, col, tok, typ)                       \
+    _LEX_TEST(lex,str,tok,typ);                                         \
+    assert_eq(lin, token->LineNumber, "Line number incorrectly parsed for '" str "'."); \
+    assert_eq(col, token->ColumnNumber, "Column number incorrectly parsed for '" str "'."); \
+    _LEX_TOK_FREE(tok);
+    
+
+#define LEX_TEST(lex, str, tok, typ) \
+    _LEX_TEST(lex, str, tok, typ) \
+    _LEX_TOK_FREE(tok);
 
 TEST(LexerNextToken) {
     struct Lexer *lexer = malloc(sizeof *lexer);
     struct Token *token;
     char *filename = strdup("test.ll");
-    char *code = strdup("def fortytwo { 42 }");
+    char *code = strdup(
+        "def fortytwo {\n"
+        "    42\n"
+        "}");
     LexerMake(lexer, filename, code);
 
-    LEX_TEST(lexer, "def", token, TokenDef);
-    LEX_TEST(lexer, "fortytwo", token, TokenIdentifer);
-    LEX_TEST(lexer, "{", token, TokenLeftCurlyBrace);
-    LEX_TEST(lexer, "42", token, TokenIntegerConstant);
-    LEX_TEST(lexer, "}", token, TokenRightCurlyBrace);
+    LEX_TEST_LC(lexer, "def", 1, 1, token, TokenDef);
+    LEX_TEST_LC(lexer, "fortytwo", 1, 5, token, TokenIdentifer);
+    LEX_TEST_LC(lexer, "{", 1, 14, token, TokenLeftCurlyBrace);
+    LEX_TEST_LC(lexer, "42", 2, 5, token, TokenIntegerConstant);
+    LEX_TEST_LC(lexer, "}", 3, 1, token, TokenRightCurlyBrace);
 
     LexerFree(lexer);
     free(lexer);

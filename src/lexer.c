@@ -11,7 +11,7 @@
         (l)->CurrentColumnNumber++;             \
         if(*(l)->Pos == '\n') {                 \
             (l)->CurrentLineNumber++;           \
-            (l)->CurrentColumnNumber = 1;       \
+            (l)->CurrentColumnNumber = 0;       \
         }                                       \
     } while (0)
 
