@@ -43,13 +43,13 @@ struct Token *LexerGetNextToken(struct Lexer *lexer) {
     unsigned int len;
     char *begin, *end, *tokenStr, *tmp;
     begin = lexer->Pos;
-    while (IsWhitespace(*begin++))
-        ;
+    while (*begin && IsWhitespace(*begin))
+        ++begin;
     end = begin;
-    while (!IsWhitespace(*end++))
-        ;
+    while (*end && !IsWhitespace(*end))
+        ++end;
     len = end-begin;
-    tokenStr = malloc(len);
+    tokenStr = malloc(len+1);
     tokenStr[len] = 0;
     tmp = tokenStr;
     while (begin < end) {
