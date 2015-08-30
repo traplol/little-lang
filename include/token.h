@@ -2,14 +2,19 @@
 #define _LITTLE_LANG_TOKEN_H
 
 enum TokenType {
+    TokenUnknown,
     TokenIdentifer,
-    TokenNumberConstant,
+    TokenStringLiteral,
+    TokenIntegerConstant,
+    TokenRealConstant,
 
     TokenDef,
-    TokenEnd,
 
     TokenMut,
     TokenConst,
+
+    TokenLeftCurlyBrace,
+    TokenRightCurlyBrace,
 
     TokenEquals,
     TokenPlus,
@@ -24,6 +29,11 @@ struct Token {
     char *Filename;
     int LineNumber;
     int ColumnNumber;
+    union {
+        char *String;
+        double Real;
+        int Integer;
+    } v;
 };
 
 /* Initializes the token. */
