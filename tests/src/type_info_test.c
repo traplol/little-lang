@@ -1,5 +1,6 @@
 #include "../src/type_info.c"
 
+#include "strings.h"
 #include "c_test.h"
 #include "test_helpers.h"
 

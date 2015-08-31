@@ -1,7 +1,7 @@
 CC:= clang
 SOURCES:= $(wildcard src/*test.c)
 TESTS:= $(addprefix bin/,$(notdir $(SOURCES:.c=)))
-INCLUDES:= -I../include
+INCLUDES:= -I../include -I../ -I../helpers
 CFLAGS:= -O0 -Werror -Wall -pedantic -pedantic-errors -Wextra -g -std=c99 $(INCLUDES)
 
 all: bin $(TESTS)

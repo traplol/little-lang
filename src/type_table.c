@@ -1,5 +1,5 @@
 #include "type_table.h"
-#include "string_hash.h"
+#include "helpers/strings.h"
 
 #include <stdlib.h>
 #include <string.h>

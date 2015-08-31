@@ -1,4 +1,4 @@
-#include "../src/string_hash.c"
+#include "../helpers/strings.c"
 #include "../src/type_info.c"
 #include "../src/type_table.c"
 
