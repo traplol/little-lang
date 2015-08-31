@@ -4,7 +4,6 @@
 #include "symbol_table.h"
 #include "type_table.h"
 
-/* TODO: Local stack, scoping, etc. */
 struct LittleLangMachine {
     struct Lexer *Lexer;
     struct Parser *Parser;
