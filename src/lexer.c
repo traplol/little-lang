@@ -186,21 +186,43 @@ int LexerParseThing(struct Lexer *lexer, enum TokenType *out_type, char **out_st
     return LexerParseOther(lexer, out_type, out_str);
 }
 
-struct Token *LexerGetNextToken(struct Lexer *lexer) {
+struct Token *LexerGetNextToken(struct Lexer *lexer, int consumeToken) {
     struct Token *token = malloc(sizeof *token);
     int line, column;
-    char *out_str;
+    char *out_str, *oldPos;
+    unsigned int oldCurrentLineNumber, oldCurrentColumnNumber;
     enum TokenType out_type;
     while (*lexer->Pos && IsWhitespace(*lexer->Pos)) 
         LEX_ADV(lexer);
-    line = lexer->CurrentLineNumber;
-    column = lexer->CurrentColumnNumber;
+    oldPos = lexer->Pos;
+    oldCurrentLineNumber = line = lexer->CurrentLineNumber;
+    oldCurrentColumnNumber = column = lexer->CurrentColumnNumber;
     if (0 != LexerParseThing(lexer, &out_type, &out_str)) {
         free(token);
         return NULL;
     }
+    if (!consumeToken) {
+        lexer->Pos = oldPos;
+        lexer->CurrentLineNumber = oldCurrentLineNumber;
+        lexer->CurrentColumnNumber = oldCurrentColumnNumber;
+    }
     TokenMake(token, out_type, out_str, lexer->Filename, line, column);
     return token;
+}
+
+int LexerSharedGetNext(struct Lexer *lexer, struct Token **out_token, int consume) {
+    struct Token *token;
+    if (LexerIsInvalid(lexer)) {
+        return -1;
+    }
+    token = LexerGetNextToken(lexer, consume);
+    if (!out_token) {
+        TokenFree(token);
+        free(token);
+        return -1;
+    }
+    *out_token = token;
+    return 0;
 }
 
 /*********************** Public Functions ************************/
@@ -228,16 +250,9 @@ int LexerFree(struct Lexer *lexer) {
 }
 
 int LexerNextToken(struct Lexer *lexer, struct Token **out_token) {
-    struct Token *token;
-    if (LexerIsInvalid(lexer)) {
-        return -1;
-    }
-    token = LexerGetNextToken(lexer);
-    if (!out_token) {
-        TokenFree(token);
-        free(token);
-        return -1;
-    }
-    *out_token = token;
-    return 0;
+    return LexerSharedGetNext(lexer, out_token, 1);
+}
+
+int LexerPeekToken(struct Lexer *lexer, struct Token **out_token) {
+    return LexerSharedGetNext(lexer, out_token, 0);
 }

@@ -16,7 +16,7 @@ TEST(LexerMakeFree) {
 }
 
 #define _LEX_TEST(lex, str, tok, typ)                                   \
-    assert_eq(0, LexerNextToken(lex, &tok), "LexerNextTokenFailed");    \
+    assert_eq(0, LexerNextToken(lex, &tok), "LexerNextToken Failed");    \
     assert_str_eq(str, tok->TokenStr, "Did not successfully parse '" str "' token."); \
     assert_eq(typ, tok->Type, "Did not correctly set token '" str "' type.");
 
@@ -54,6 +54,30 @@ TEST(LexerNextToken) {
 
     LexerFree(lexer);
     free(lexer);
+}
+TEST(LexerPeekToken) {
+    struct Lexer *lexer = malloc(sizeof *lexer);
+    struct Token *token;
+    char *filename = strdup("test.ll");
+    char *code = strdup(
+        "def fortytwo {\n"
+        "    42\n"
+        "}");
+    LexerMake(lexer, filename, code);
+
+    assert_eq(0, LexerPeekToken(lexer, &token), "LexerPeekToken Failed");
+    assert_str_eq("def", token->TokenStr, "Did not successfully parse 'def' token.");
+    TokenFree(token);
+    free(token);
+
+    assert_eq(0, LexerPeekToken(lexer, &token), "LexerPeekToken Failed");
+    assert_str_eq("def", token->TokenStr, "Peek consumed 'def' token.");
+    TokenFree(token);
+    free(token);
+
+    LexerFree(lexer);
+    free(lexer);
+    
 }
 
 
@@ -104,6 +128,7 @@ TEST(LexerTestAllTokenTypes) {
 int main() {
     TEST_RUN(LexerMakeFree);
     TEST_RUN(LexerNextToken);
+    TEST_RUN(LexerPeekToken);
     TEST_RUN(LexerTestAllTokenTypes);
     return 0;
 }
