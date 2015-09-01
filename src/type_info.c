@@ -49,6 +49,7 @@ int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeI
     switch (type) {
         case TypeFunction: 
         case TypeBaseObject: 
+        case TypeNil: /* Pointer to the nil object. */
         case TypeBoolean: /* Booleans are pointers that point to the "true" or "false" object */
         case TypeUserObject: size = sizeof(void*); break;
         case TypeInteger: size = sizeof(int); break;
