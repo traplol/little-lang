@@ -13,8 +13,13 @@ enum TokenType {
     TokenMut,
     TokenConst,
 
+    TokenIf,
+    TokenElse,
+
     TokenLeftCurlyBrace,
     TokenRightCurlyBrace,
+    TokenLeftParen,
+    TokenRightParen,
 
     TokenEquals,
     TokenPlus,

@@ -100,6 +100,8 @@ int LexerParseIdentOrKeyword(struct Lexer *lexer, enum TokenType *out_type, char
     if (STR_EQ(str, "def")) { type = TokenDef; }
     else if (STR_EQ(str, "mut")) { type = TokenMut; }
     else if (STR_EQ(str, "const")) { type = TokenConst; }
+    else if (STR_EQ(str, "if")) { type = TokenIf; }
+    else if (STR_EQ(str, "else")) { type = TokenElse; }
     else { type = TokenIdentifer; }
     lexer->Pos = begin;
     *out_type = type;
@@ -159,6 +161,8 @@ int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_st
     *tmp = 0;
     if (STR_EQ("{", str)) { type = TokenLeftCurlyBrace; }
     else if (STR_EQ("}", str)) { type = TokenRightCurlyBrace; }
+    else if (STR_EQ("(", str)) { type = TokenLeftParen; }
+    else if (STR_EQ(")", str)) { type = TokenRightParen; }
     else if (STR_EQ("=", str)) { type = TokenEquals; }
     else if (STR_EQ("+", str)) { type = TokenPlus; }
     else if (STR_EQ("-", str)) { type = TokenMinus; }

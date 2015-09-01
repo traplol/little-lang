@@ -97,6 +97,10 @@ const char *SourceCode =
     " * "
     " / "
     " \"hello \\\"world\\\"\" "
+    " ( "
+    " ) "
+    " if "
+    " else "
     ;
 TEST(LexerTestAllTokenTypes) {
     struct Lexer *lexer = malloc(sizeof *lexer);
@@ -120,6 +124,10 @@ TEST(LexerTestAllTokenTypes) {
     LEX_TEST(lexer, "*", token, TokenAsterisk);
     LEX_TEST(lexer, "/", token, TokenSlash);
     LEX_TEST(lexer, "\"hello \\\"world\\\"\"", token, TokenStringLiteral);
+    LEX_TEST(lexer, "(", token, TokenLeftParen);
+    LEX_TEST(lexer, ")", token, TokenRightParen);
+    LEX_TEST(lexer, "if", token, TokenIf);
+    LEX_TEST(lexer, "else", token, TokenElse);
 
     LexerFree(lexer);
     free(lexer);
