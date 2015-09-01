@@ -7,12 +7,16 @@
 
 struct LittleLangMachine {
     struct Lexer *Lexer;
-    struct SymbolTable *SymbolTable;
+    struct SymbolTable *GlobalScope;
+    struct SymbolTable *CurrentScope;
     struct TypeTable *TypeTable;
     struct {
         int argc;
         char **argv;
+        char *code;
+        char *filename;
     } CmdOpts;
+    int Error;
 };
 int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv);
 int LittleLangMachineRun(struct LittleLangMachine *llm);
