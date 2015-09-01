@@ -9,7 +9,7 @@
     do {                                        \
         (l)->Pos++;                             \
         (l)->CurrentColumnNumber++;             \
-        if(*(l)->Pos == '\n') {                 \
+        if('\n' == *(l)->Pos) {                 \
             (l)->CurrentLineNumber++;           \
             (l)->CurrentColumnNumber = 0;       \
         }                                       \
@@ -32,7 +32,7 @@ int LexerIsInvalid(struct Lexer *lexer) {
 }
 
 int IsWhitespace(int c) {
-    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
+    return ' ' == c || '\t' == c || '\r' == c || '\n' ==  c;
 }
 int IsDigit(int c) {
     return '0' <= c && c <= '9';
@@ -50,7 +50,7 @@ int IsAlphaNum(int c) {
     return IsAlpha(c) || IsDigit(c);
 }
 int IsIdentStartChar(int c) {
-    return c == '_' || IsAlpha(c);
+    return '_' == c || IsAlpha(c);
 }
 int IsIdentChar(int c) {
     return IsIdentStartChar(c) || IsDigit(c);
@@ -62,7 +62,7 @@ int LexerParseString(struct Lexer *lexer, enum TokenType *out_type, char **out_s
     end = begin = lexer->Pos;
     LEX_ADVE(lexer, end); /* Eat the beginning " */
     while (*end && *end != '"') {
-        if (*end == '\\' && *(end+1) == '"') {
+        if ('\\' == *end && '"' == *(end+1)) {
             LEX_ADVE(lexer, end);
         }
         LEX_ADVE(lexer, end);
@@ -115,8 +115,8 @@ int LexerParseNumber(struct Lexer *lexer, enum TokenType *out_type, char **out_s
     int fp = 0;
     end = begin = lexer->Pos;
 
-    while (IsDigit(*end) || *end == '.') {
-        if (*end == '.') {
+    while (IsDigit(*end) || '.' == *end) {
+        if ('.' == *end) {
             LEX_ADVE(lexer, end);
             fp = 1;
             while (IsDigit(*end)) {
@@ -178,7 +178,7 @@ int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_st
 
 int LexerParseThing(struct Lexer *lexer, enum TokenType *out_type, char **out_str) {
     char *p = lexer->Pos;
-    if (*p == '"') {
+    if ('"' == *p) {
         return LexerParseString(lexer, out_type, out_str);
     }
     else if (IsIdentStartChar(*p)) {

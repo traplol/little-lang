@@ -40,14 +40,14 @@ char *parse_escaped_string(char *str) {
             free(old);
             i = 0;
         }
-        if (*str == '"') {
+        if ('"' == *str) {
             tmp[i] = 0;
             old = string;
             string = str_cat(string, tmp);
             free(old);
             break;
         }
-        else if (*str == '\\') {
+        else if ('\\' == *str) {
             ++str;
             tmp[i++] = escape_char(*str);
         }
