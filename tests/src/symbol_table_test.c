@@ -50,10 +50,10 @@ TEST(SymbolTableInsert) {
     TypeInfoMake(ti, TypeInteger, NULL, typeName);
     ValueMake(v, ti, &data, sizeof(data));
     SymbolTableMakeGlobalScope(st);
-    assert_eq(0, SymbolTableInsert(st, v, name, filename, 1, 5), "Failed to insert symbol into symbol table.");
-    assert_ne(0, SymbolTableInsert(st, v, name, filename, 1, 5), "Failed to skip insert of duplicate name.");
-    SymbolTableFree(st);
+    assert_eq(R_OK, SymbolTableInsert(st, v, name, filename, 1, 5), "Failed to insert symbol into symbol table.");
+    assert_eq(R_KeyAlreadyInTable, SymbolTableInsert(st, v, name, filename, 1, 5), "Failed to skip insert of duplicate name.");
 
+    SymbolTableFree(st);
     TypeInfoFree(ti);
     free(ti);
     free(filename);

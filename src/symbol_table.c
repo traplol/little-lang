@@ -105,10 +105,10 @@ int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key,
         return R_InvalidArgument;
     }
 
-    symbol = SymbolAlloc(key, value, filename, lineNumber, columnNumber);
     tableIdx = SymbolTableGetIdx(table, key);
     tmp = table->Symbols[tableIdx];
     if (!tmp) {
+        symbol = SymbolAlloc(key, value, filename, lineNumber, columnNumber);
         table->Symbols[tableIdx] = symbol;
         return R_OK;
     }
@@ -118,6 +118,7 @@ int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key,
         }
         tmp = tmp->Next;
     }
+    symbol = SymbolAlloc(key, value, filename, lineNumber, columnNumber);
     tmp->Next = symbol;
     return R_OK;
 }
