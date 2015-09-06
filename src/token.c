@@ -1,6 +1,8 @@
 #include "token.h"
 #include "result.h"
 
+#include "helpers/strings.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -84,7 +86,7 @@ int TokenMake(struct Token *token, enum TokenType type, char *tokenStr, char *fi
         return R_InvalidArgument;
     }
     token->Type = type;
-    token->TokenStr = tokenStr;
+    token->TokenStr = strdup(tokenStr);
     token->Filename = filename;
     token->LineNumber = lineNumber;
     token->ColumnNumber = columnNumber;

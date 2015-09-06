@@ -212,6 +212,7 @@ struct Token *LexerGetNextToken(struct Lexer *lexer, int consumeToken) {
         lexer->CurrentColumnNumber = oldCurrentColumnNumber;
     }
     TokenMake(token, out_type, out_str, lexer->Filename, line, column);
+    free(out_str);
     return token;
 }
 
