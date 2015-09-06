@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "result.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -106,7 +107,7 @@ int LexerParseIdentOrKeyword(struct Lexer *lexer, enum TokenType *out_type, char
     lexer->Pos = begin;
     *out_type = type;
     *out_str = str;
-    return 0;
+    return R_OK;
 }
 int LexerParseNumber(struct Lexer *lexer, enum TokenType *out_type, char **out_str) {
     char *begin, *end, *str, *tmp;
@@ -141,7 +142,7 @@ done:
     lexer->Pos = begin;
     *out_type = type;
     *out_str = str;
-    return 0;
+    return R_OK;
 }
 int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_str) {
     char *begin, *end, *str, *tmp;
@@ -173,7 +174,7 @@ int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_st
     lexer->Pos = begin;
     *out_type = type;
     *out_str = str;
-    return 0;
+    return R_OK;
 }
 
 int LexerParseThing(struct Lexer *lexer, enum TokenType *out_type, char **out_str) {
@@ -217,23 +218,23 @@ struct Token *LexerGetNextToken(struct Lexer *lexer, int consumeToken) {
 int LexerSharedGetNext(struct Lexer *lexer, struct Token **out_token, int consume) {
     struct Token *token;
     if (LexerIsInvalid(lexer)) {
-        return -1;
+        return R_InvalidArgument;
     }
     token = LexerGetNextToken(lexer, consume);
     if (!out_token) {
         TokenFree(token);
         free(token);
-        return -1;
+        return -1; /* TODO: Maybe this should be fine? */
     }
     *out_token = token;
-    return 0;
+    return R_OK;
 }
 
 /*********************** Public Functions ************************/
 
 int LexerMake(struct Lexer *lexer, char *filename, char *code) {
     if (!lexer || !filename) {
-        return -1;
+        return R_InvalidArgument;
     }
     lexer->Filename = filename;
     lexer->Code = code;
@@ -241,16 +242,16 @@ int LexerMake(struct Lexer *lexer, char *filename, char *code) {
     lexer->Length = strlen(lexer->Code);
     lexer->CurrentLineNumber = 1;
     lexer->CurrentColumnNumber = 1;
-    return 0;
+    return R_OK;
 }
 
 int LexerFree(struct Lexer *lexer) {
     if (LexerIsInvalid(lexer)) {
-        return -1;
+        return R_InvalidArgument;
     }
     free(lexer->Filename);
     free(lexer->Code);
-    return 0;
+    return R_OK;
 }
 
 int LexerNextToken(struct Lexer *lexer, struct Token **out_token) {

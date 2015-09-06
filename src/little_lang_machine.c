@@ -1,5 +1,6 @@
 #include "little_lang_machine.h"
 #include "helpers/strings.h"
+#include "result.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +25,8 @@ struct LittleLangObject {
             struct Value *Value;
         } Value;
         struct {
+            struct LittleLangObject **Params;
+            unsigned int NumParams;
             struct LittleLangObject *(*Fn)(int argc, struct LittleLangObject **argv);
         } BuiltinFunction;
         struct {
@@ -34,11 +37,15 @@ struct LittleLangObject {
             unsigned int BodyLen;
         } Function;
         struct {
-            unsigned int NumObjects;
             struct LittleLangObject **Objects;
+            unsigned int NumObjects;
         } Module;
     } u;
 };
+
+struct LittleLangObject *TheNilObject;
+struct LittleLangObject *TheTrueObject;
+struct LittleLangObject *TheFalseObject;
 
 int LittleLangMachineIsValid(struct LittleLangMachine *llm) {
     return llm && llm->Lexer && llm->GlobalScope && llm->TypeTable;
@@ -50,18 +57,45 @@ int LittleLangMachineIsInvalid(struct LittleLangMachine *llm) {
 
 int LittleLangParseUnexecptedTokenError(struct Token *token) {
     fprintf(stderr, "Unexpected token '%s'\n", token->TokenStr);
-    return -1;
+    return R_UnexpectedToken;
 }
 
 int LittleLangParseExpect(struct LittleLangMachine *llm, enum TokenType type ) {
     struct Token *token;
     if (0 != LexerPeekToken(llm->Lexer, &token)) {
-        return 0;
+        return R_False;
     }
     if (token->Type != type) {
-        return 0;
+        return R_False;
     }
-    return 1;
+    return R_True;
+}
+
+struct LittleLangObject *LLOMakeValue(struct Value *value) {
+    struct LittleLangObject *object = malloc(sizeof *object);
+    object->Type = LLValue;
+    object->u.Value.Value = value;
+    return object;
+}
+void LittleLangMachineMakeSingletons(void) {
+    TheNilObject = malloc(sizeof *TheNilObject);
+    TheNilObject->Type = LLNilObject;
+
+    TheTrueObject = malloc(sizeof *TheTrueObject);
+    TheTrueObject->Type = LLBooleanObject;
+
+    TheFalseObject = malloc(sizeof *TheFalseObject);
+    TheFalseObject->Type = LLBooleanObject;
+}
+
+int LLM_isNil(struct LittleLangObject *object) {
+    return TheNilObject == object;
+}
+int LLM_isTrue(struct LittleLangObject *object) {
+    return TheTrueObject == object;
+}
+int LLM_isFalse(struct LittleLangObject *object) {
+    return TheFalseObject == object;
 }
 
 int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv) {
@@ -70,7 +104,7 @@ int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv
                         "    print(\"Hello world\")\n"
                         "}");
     if (LittleLangMachineIsInvalid(llm)) {
-        return -1;
+        return R_InvalidArgument;
     }
     llm->CmdOpts.argc = argc;
     llm->CmdOpts.argv = argv;
@@ -85,11 +119,11 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
     int result;
 
     if (!llm) {
-        return -1;
+        return R_InvalidArgument;
     }
     
     result = LittleLangMachineDoOpts(llm, argc, argv);
-    if (0 != result) {
+    if (R_OK != result) {
         return result;
     }
 
@@ -97,7 +131,7 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
     
     llm->Lexer = malloc(sizeof(*llm->Lexer));
     result = LexerMake(llm->Lexer, llm->CmdOpts.filename, llm->CmdOpts.code);
-    if (0 != result) {
+    if (R_OK != result) {
         free(llm->Lexer);
         llm->Lexer = NULL;
         return result;
@@ -106,7 +140,7 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
     llm->GlobalScope = malloc(sizeof(*llm->GlobalScope));
     llm->CurrentScope = llm->GlobalScope;
     result = SymbolTableMakeGlobalScope(llm->GlobalScope);
-    if (0 != result) {
+    if (R_OK != result) {
         free(llm->GlobalScope);
         llm->GlobalScope = NULL;
         llm->CurrentScope = NULL;
@@ -115,17 +149,18 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
 
     llm->TypeTable = malloc(sizeof(*llm->TypeTable));
     result = TypeTableMake(llm->TypeTable, 0);
-    if (0 != result) {
+    if (R_OK != result) {
         free(llm->TypeTable);
         llm->TypeTable = NULL;
         return result;
     }
-    return 0;
+    LittleLangMachineMakeSingletons();
+    return R_OK;
 }
 
 int LittleLangMachineRun(struct LittleLangMachine *llm) {
     if (LittleLangMachineIsInvalid(llm)) {
-        return -1;
+        return R_InvalidArgument;
     }
-    return -1;
+    return R_NotYetImplemented;
 }

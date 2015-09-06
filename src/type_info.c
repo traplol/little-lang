@@ -1,4 +1,5 @@
 #include "type_info.h"
+#include "result.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -17,22 +18,22 @@ int TypeInfoIsInvalid(struct TypeInfo *typeInfo) {
 
 int TypeInfoResizeMembers(struct TypeInfo *typeInfo) {
     if (TypeInfoIsInvalid(typeInfo)) {
-        return -1;
+        return R_InvalidArgument;
     }
     typeInfo->MembersLen *= 1.5;
     typeInfo->Members = realloc(typeInfo->Members, typeInfo->MembersLen * sizeof(*typeInfo->Members));
     if (!typeInfo->Members) {
-        return -1;
+        return R_AllocFailed;
     }
-    return 0;
+    return R_OK;
 }
 
 int TypeInfoMemberFree(struct Member *member) {
     if (!member) {
-        return -1;
+        return R_InvalidArgument;
     }
     free(member->Name);
-    return 0;
+    return R_OK;
 }
 
 
@@ -41,7 +42,7 @@ int TypeInfoMemberFree(struct Member *member) {
 int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeInfo *derivedFrom, char *typeName) {
     unsigned int size;
     if (!typeInfo || !typeName || typeInfo == derivedFrom) {
-        return -1;
+        return R_InvalidArgument;
     }
     typeInfo->Type = type;
     typeInfo->DerivedFrom = derivedFrom;
@@ -58,16 +59,16 @@ int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeI
     typeInfo->Size = size;
     typeInfo->Members = calloc(sizeof(*typeInfo->Members), MEMBERS_BASE_LENGTH);
     if (!typeInfo->Members) {
-        return -1;
+        return R_AllocFailed;
     }
     typeInfo->MembersLen = MEMBERS_BASE_LENGTH;
     typeInfo->CurrentMemberIdx = 0;
-    return 0;
+    return R_OK;
 }
 int TypeInfoFree(struct TypeInfo *typeInfo) {
     unsigned int i;
     if (TypeInfoIsInvalid(typeInfo)) {
-        return -1;
+        return R_InvalidArgument;
     }
 
     for(i = 0; i < typeInfo->MembersLen; ++i) {
@@ -76,17 +77,19 @@ int TypeInfoFree(struct TypeInfo *typeInfo) {
     }
     free(typeInfo->Members);
     free(typeInfo->TypeName);
-    return 0;
+    return R_OK;
 }
 
 int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo *memberTypeInfo) {
     struct Member *member;
+    int result;
     if (TypeInfoIsInvalid(typeInfo) || TypeInfoIsInvalid(memberTypeInfo) || !name) {
-        return -1;
+        return R_InvalidArgument;
     }
     if (typeInfo->CurrentMemberIdx + 1 >= typeInfo->MembersLen) {
-        if (0 != TypeInfoResizeMembers(typeInfo)) {
-            return -1;
+        result = TypeInfoResizeMembers(typeInfo);
+        if (R_OK != result) {
+            return result;
         }
     }
     member = malloc(sizeof *member);
@@ -95,7 +98,7 @@ int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo 
     member->MemOffset = typeInfo->Size;
     typeInfo->Size += memberTypeInfo->Size;
     typeInfo->Members[typeInfo->CurrentMemberIdx++] = member;
-    return 0;
+    return R_OK;
 }
 
 /* TODO: Implement better member lookup than O(n) */
@@ -112,14 +115,14 @@ struct Member *TypeInfoGetMember(struct TypeInfo *typeInfo, char *name) {
 int TypeInfoLookupMember(struct TypeInfo *typeInfo, char *name, struct Member **out_member) {
     struct Member *temp;
     if (TypeInfoIsInvalid(typeInfo) || !name) {
-        return 0;
+        return R_False;
     } 
     temp = TypeInfoGetMember(typeInfo, name);
     if (!temp) {
-        return 0;
+        return R_False;
     }
     if (out_member) {
         *out_member = temp;
     }
-    return 1;
+    return R_True;
 }

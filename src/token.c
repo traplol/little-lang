@@ -1,4 +1,5 @@
 #include "token.h"
+#include "result.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -80,7 +81,7 @@ void TokenSetValue(struct Token *token) {
 
 int TokenMake(struct Token *token, enum TokenType type, char *tokenStr, char *filename, int lineNumber, int columnNumber) {
     if (!token || !tokenStr || !filename) {
-        return -1;
+        return R_InvalidArgument;
     }
     token->Type = type;
     token->TokenStr = tokenStr;
@@ -88,12 +89,12 @@ int TokenMake(struct Token *token, enum TokenType type, char *tokenStr, char *fi
     token->LineNumber = lineNumber;
     token->ColumnNumber = columnNumber;
     TokenSetValue(token);
-    return 0;
+    return R_OK;
 }
 int TokenFree(struct Token *token) {
     if (!token) {
-        return -1;
+        return R_InvalidArgument;
     }
     free(token->TokenStr);
-    return 0;
+    return R_OK;
 }

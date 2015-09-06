@@ -1,5 +1,6 @@
 #include "symbol_table.h"
 #include "helpers/strings.h"
+#include "result.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -44,19 +45,19 @@ unsigned int SymbolTableGetIdx(struct SymbolTable *table, char *key) {
 
 int SymbolTableMakeGlobalScope(struct SymbolTable *table) {
     if (!table) {
-        return -1;
+        return R_InvalidArgument;
     }
     table->TableLength = GLOBAL_SCOPE_SYMBOL_TABLE_LENGTH;
     table->Symbols = SymbolTableAllocSymbols(table->TableLength);
     table->Parent = NULL;
-    return 0;
+    return R_OK;
 }
 
 int SymbolTableFree(struct SymbolTable *table) {
     unsigned int i;
     struct Symbol *symbol;
     if (SymbolTableIsInvalid(table)) {
-        return -1;
+        return R_InvalidArgument;
     }
     for (i = 0; i < table->TableLength; ++i) {
         symbol = table->Symbols[i];
@@ -66,13 +67,13 @@ int SymbolTableFree(struct SymbolTable *table) {
     }
     table->Parent = NULL;
     free(table->Symbols);
-    return 0;
+    return R_OK;
 }
 
 int SymbolTablePushScope(struct SymbolTable **table) {
     struct SymbolTable *newScope;
     if (SymbolTableIsInvalid(*table)) {
-        return -1;
+        return R_InvalidArgument;
     }
 
     newScope = malloc(sizeof *newScope);
@@ -81,27 +82,27 @@ int SymbolTablePushScope(struct SymbolTable **table) {
     newScope->Parent = *table;
     *table = newScope;
     
-    return 0;
+    return R_OK;
 }
 
 int SymbolTablePopScope(struct SymbolTable **table) {
     struct SymbolTable *oldScope;
     if (SymbolTableIsInvalid(*table)) {
-        return -1;
+        return R_InvalidArgument;
     }
 
     oldScope = *table;
     *table = (*table)->Parent;
     SymbolTableFree(oldScope);
     free(oldScope);
-    return 0;
+    return R_OK;
 }
 
 int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key, char *filename, int lineNumber, int columnNumber) {
     struct Symbol *symbol, *tmp;
     unsigned int tableIdx;
     if (SymbolTableIsInvalid(table) || !value || !key || !filename) {
-        return -1;
+        return R_InvalidArgument;
     }
 
     symbol = SymbolAlloc(key, value, filename, lineNumber, columnNumber);
@@ -109,29 +110,29 @@ int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key,
     tmp = table->Symbols[tableIdx];
     if (!tmp) {
         table->Symbols[tableIdx] = symbol;
-        return 0;
+        return R_OK;
     }
     while (tmp) {
         if (0 == strcmp(tmp->Key, key)) {
-            return -1;
+            return R_KeyAlreadyInTable;
         }
         tmp = tmp->Next;
     }
     tmp->Next = symbol;
-    return 0;
+    return R_OK;
 }
 
 int SymbolTableFindLocal(struct SymbolTable *table, char *key, struct Symbol **out_symbol) {
     struct Symbol *symbol;
     unsigned int tableIdx;
     if (SymbolTableIsInvalid(table)) {
-        return 0;
+        return R_InvalidArgument;
     }
 
     tableIdx = SymbolTableGetIdx(table, key);
     symbol = table->Symbols[tableIdx];
     if (!symbol) {
-        return 0;
+        return R_False;
     }
 
     while (symbol) {
@@ -144,13 +145,13 @@ int SymbolTableFindLocal(struct SymbolTable *table, char *key, struct Symbol **o
     if (out_symbol) {
         *out_symbol = symbol;
     }
-    return 1;
+    return R_True;
 }
 
 int SymbolTableFindNearest(struct SymbolTable *table, char *key, struct Symbol **out_symbol) {
     struct Symbol *symbol = NULL;
     if (SymbolTableIsInvalid(table) || !key) {
-        return 0;
+        return R_InvalidArgument;
     }
     while (table) {
         if (SymbolTableFindLocal(table, key, &symbol)) {
@@ -159,10 +160,10 @@ int SymbolTableFindNearest(struct SymbolTable *table, char *key, struct Symbol *
         table = table->Parent;
     }
     if (!symbol) {
-        return 0;
+        return R_False;
     }
     if (out_symbol) {
         *out_symbol = symbol;
     }
-    return 1;
+    return R_True;
 }
