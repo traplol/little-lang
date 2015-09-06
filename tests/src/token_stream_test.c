@@ -39,6 +39,9 @@ TEST(TokenStreamAppend) {
     assert_eq(def, ts->Current->Token, "Current should still be 'def'.");
 
     TokenStreamFree(ts);
+    free(def);
+    free(ident);
+    free(lbrace);
     free(ts);
 }
 
@@ -77,6 +80,9 @@ TEST(TokenStreamAdvanceRewind) {
     assert_eq(R_OperationFailed, TokenStreamRewind(ts), "TokenStreamRewind should have failed.");
 
     TokenStreamFree(ts);
+    free(def);
+    free(ident);
+    free(lbrace);
     free(ts);
 }
 
