@@ -1,6 +1,30 @@
 #ifndef _C_TEST_C_TEST_H
 #define _C_TEST_C_TEST_H
 
+/*
+** The MIT License (MIT)
+**
+** Copyright (c) 2015 Max Mickey
+**
+** Permission is hereby granted, free of charge, to any person obtaining a copy
+** of this software and associated documentation files (the "Software"), to deal
+** in the Software without restriction, including without limitation the rights
+** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+** copies of the Software, and to permit persons to whom the Software is
+** furnished to do so, subject to the following conditions:
+**
+** The above copyright notice and this permission notice shall be included in
+** all copies or substantial portions of the Software.
+**
+** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+** AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+** LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+** OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+** THE SOFTWARE.
+*/
+
 #include <stdio.h>
 #include <string.h>
 
@@ -16,7 +40,7 @@
 
 #define PUTS_PASS " : " ANSI_COLOR_GREEN "PASS" ANSI_COLOR_RESET
 #define PUTS_FAIL " : " ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET
-#define PRINTF_FAIL ANSI_COLOR_RED "assertion failed " ANSI_COLOR_RESET "in %s at " ANSI_COLOR_CYAN " L:%d" ANSI_COLOR_RESET "\n\t%s\n"
+#define PRINTF_FAIL ANSI_COLOR_RED "assertion failed " ANSI_COLOR_RESET "in %s at " ANSI_COLOR_CYAN "L:%d" ANSI_COLOR_RESET "\n\t%s\n"
 
 #else
 
@@ -65,14 +89,17 @@ static int _c_test_current_test_passed = 1;
 
 #define _c_test_assert(predicate, msg) do { _c_test_check_predicate(predicate, msg); } while (0)
 
+#define autofail() _c_test_assert(0, "Autofail triggered.")
+#define fail(msg) _c_test_assert(0, msg)
+
 #define assert_p(p, msg) _c_test_assert(p, msg)
 
 #define assert_eq(e, a, msg) _c_test_assert(e == a, msg)
 #define assert_ne(e, a, msg) _c_test_assert(e != a, msg)
-#define assert_lt(e, a, msg) _c_test_assert(e < a, msg)
-#define assert_lte(e, a, msg) _c_test_assert(e <= a, msg)
-#define assert_gt(e, a, msg) _c_test_assert(e > a, msg)
-#define assert_gte(e, a, msg) _c_test_assert(e >= a, msg)
+#define assert_lt(l, r, msg) _c_test_assert(l < r, msg)
+#define assert_lte(l, r, msg) _c_test_assert(l <= r, msg)
+#define assert_gt(l, r, msg) _c_test_assert(l > r, msg)
+#define assert_gte(l, r, msg) _c_test_assert(l >= r, msg)
 
 #define assert_str_eq(e, a, msg) _c_test_assert(0 == strcmp(e, a), msg)
 #define assert_str_ne(e, a, msg) _c_test_assert(0 != strcmp(e, a), msg)
