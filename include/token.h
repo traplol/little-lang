@@ -4,6 +4,7 @@
 enum TokenType {
     TokenUnknown,
     TokenSemicolon,
+    TokenComma,
     
     TokenIdentifer,
     TokenStringLiteral,

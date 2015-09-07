@@ -173,6 +173,7 @@ int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_st
     else if (STRN_EQ("**", str, 2)) { type = TokenStarStar; adv = 2;}
     else if (STRN_EQ("<<", str, 2)) { type = TokenLtLt; adv = 2;}
     else if (STRN_EQ(">>", str, 2)) { type = TokenGtGt; adv = 2;}
+    else if (STRN_EQ(",", str, 1)) { type = TokenComma; adv = 1;}
     else if (STRN_EQ(";", str, 1)) { type = TokenSemicolon; adv = 1;}
     else if (STRN_EQ("{", str, 1)) { type = TokenLeftCurlyBrace; adv = 1;}
     else if (STRN_EQ("}", str, 1)) { type = TokenRightCurlyBrace; adv = 1;}

@@ -128,6 +128,7 @@ const char *SourceCode =
     " ; "
     " true "
     " false "
+    " , "
     ;
 TEST(LexerTestAllTokenTypes) {
     struct Lexer *lexer = malloc(sizeof *lexer);
@@ -180,6 +181,7 @@ TEST(LexerTestAllTokenTypes) {
     LEX_TEST(lexer, ";", token, TokenSemicolon);
     LEX_TEST(lexer, "true", token, TokenTrue);
     LEX_TEST(lexer, "false", token, TokenFalse);
+    LEX_TEST(lexer, ",", token, TokenComma);
 
     assert_eq(Token_NUM_TOKENS, lex_tests, "Not all tokens have been tested.");
 
@@ -194,17 +196,34 @@ TEST(LexerEdgeCases) {
     char *code = strdup(
         "(\"str in parens\")\n"
         "(;;)\n"
+        "(((()))) (()())\n"
         );
-    lex_tests = 1; /* Start this at 1 so we skip TokenUnknown. */
     LexerMake(lexer, filename, code);
 
     LEX_TEST_LC(lexer, "(", 1, 1, token, TokenLeftParen);
     LEX_TEST_LC(lexer, "\"str in parens\"", 1, 2, token, TokenStringLiteral);
     LEX_TEST_LC(lexer, ")", 1, 17, token, TokenRightParen);
+
     LEX_TEST_LC(lexer, "(", 2, 1, token, TokenLeftParen);
     LEX_TEST_LC(lexer, ";", 2, 2, token, TokenSemicolon);
     LEX_TEST_LC(lexer, ";", 2, 3, token, TokenSemicolon);
     LEX_TEST_LC(lexer, ")", 2, 4, token, TokenRightParen);
+
+    LEX_TEST_LC(lexer, "(", 3, 1, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, "(", 3, 2, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, "(", 3, 3, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, "(", 3, 4, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, ")", 3, 5, token, TokenRightParen);
+    LEX_TEST_LC(lexer, ")", 3, 6, token, TokenRightParen);
+    LEX_TEST_LC(lexer, ")", 3, 7, token, TokenRightParen);
+    LEX_TEST_LC(lexer, ")", 3, 8, token, TokenRightParen);
+
+    LEX_TEST_LC(lexer, "(", 3, 10, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, "(", 3, 11, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, ")", 3, 12, token, TokenRightParen);
+    LEX_TEST_LC(lexer, "(", 3, 13, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, ")", 3, 14, token, TokenRightParen);
+    LEX_TEST_LC(lexer, ")", 3, 15, token, TokenRightParen);
 }
 
 int main() {
