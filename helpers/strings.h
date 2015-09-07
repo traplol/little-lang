@@ -7,4 +7,7 @@ unsigned int string_hash(const char *s);
 /* Duplicates a string */
 char *strdup(const char *s);
 
+/* Duplicates n characters from s */
+char *strndup(const char *s, unsigned int n);
+
 #endif
