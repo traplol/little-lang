@@ -187,10 +187,31 @@ TEST(LexerTestAllTokenTypes) {
     free(lexer);
 }
 
+TEST(LexerEdgeCases) {
+    struct Lexer *lexer = malloc(sizeof *lexer);
+    struct Token *token;
+    char *filename = strdup("test.ll");
+    char *code = strdup(
+        "(\"str in parens\")\n"
+        "(;;)\n"
+        );
+    lex_tests = 1; /* Start this at 1 so we skip TokenUnknown. */
+    LexerMake(lexer, filename, code);
+
+    LEX_TEST_LC(lexer, "(", 1, 1, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, "\"str in parens\"", 1, 2, token, TokenStringLiteral);
+    LEX_TEST_LC(lexer, ")", 1, 17, token, TokenRightParen);
+    LEX_TEST_LC(lexer, "(", 2, 1, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, ";", 2, 2, token, TokenSemicolon);
+    LEX_TEST_LC(lexer, ";", 2, 3, token, TokenSemicolon);
+    LEX_TEST_LC(lexer, ")", 2, 4, token, TokenRightParen);
+}
+
 int main() {
     TEST_RUN(LexerMakeFree);
     TEST_RUN(LexerNextToken);
     TEST_RUN(LexerPeekToken);
     TEST_RUN(LexerTestAllTokenTypes);
+    TEST_RUN(LexerEdgeCases);
     return 0;
 }

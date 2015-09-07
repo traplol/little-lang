@@ -8,15 +8,19 @@
 #include <stdio.h>
 
 #define STR_EQ(a,b) (0 == strcmp(a, b))
-#define LEX_ADV(l)                              \
+#define STRN_EQ(a,b,n) (0 == strncmp(a, b, n))
+
+#define LEX_ADVN(l, n)                          \
     do {                                        \
-        (l)->Pos++;                             \
-        (l)->CurrentColumnNumber++;             \
+        (l)->Pos += (n);                        \
+        (l)->CurrentColumnNumber += (n);        \
         if('\n' == *(l)->Pos) {                 \
             (l)->CurrentLineNumber++;           \
             (l)->CurrentColumnNumber = 0;       \
         }                                       \
     } while (0)
+
+#define LEX_ADV(l) LEX_ADVN(l, 1)
 
 #define LEX_ADVE(l, e)                          \
     do {                                        \
@@ -151,55 +155,48 @@ done:
     return R_OK;
 }
 int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_str) {
-    char *begin, *end, *str, *tmp;
-    unsigned int len;
+    char *str;
+    unsigned int adv = 0;
     enum TokenType type;
-    end = begin = lexer->Pos;
-    while (*end && !IsAlpha(*end) && !IsDigit(*end) && !IsWhitespace(*end)) {
-        LEX_ADVE(lexer, end);
+    str = lexer->Pos;
+    while (*str && IsWhitespace(*str)) {
+        LEX_ADVE(lexer, str);
     }
     
-    len = end - begin;
-    str = malloc(len+1);
-    tmp = str;
-    /* Copy into str */
-    while (begin < end) {
-        *tmp++ = *begin++;
-    }
-    *tmp = 0;
-    if (STR_EQ(";", str)) { type = TokenSemicolon; }
-    else if (STR_EQ("{", str)) { type = TokenLeftCurlyBrace; }
-    else if (STR_EQ("}", str)) { type = TokenRightCurlyBrace; }
-    else if (STR_EQ("(", str)) { type = TokenLeftParen; }
-    else if (STR_EQ(")", str)) { type = TokenRightParen; }
-    else if (STR_EQ("[", str)) { type = TokenLeftSqBracket; }
-    else if (STR_EQ("]", str)) { type = TokenRightSqBracket; }
-    else if (STR_EQ(".", str)) { type = TokenDot; }
-    else if (STR_EQ("..", str)) { type = TokenDotDot; }
-    else if (STR_EQ("=", str)) { type = TokenEquals; }
-    else if (STR_EQ("==", str)) { type = TokenEqEq; }
-    else if (STR_EQ("!", str)) { type = TokenBang; }
-    else if (STR_EQ("!=", str)) { type = TokenBangEq; }
-    else if (STR_EQ("+", str)) { type = TokenPlus; }
-    else if (STR_EQ("-", str)) { type = TokenMinus; }
-    else if (STR_EQ("*", str)) { type = TokenAsterisk; }
-    else if (STR_EQ("/", str)) { type = TokenSlash; }
-    else if (STR_EQ("%", str)) { type = TokenPercent; }
-    else if (STR_EQ("^", str)) { type = TokenCaret; }
-    else if (STR_EQ("&", str)) { type = TokenAmp; }
-    else if (STR_EQ("&&", str)) { type = TokenAmpAmp; }
-    else if (STR_EQ("|", str)) { type = TokenBar; }
-    else if (STR_EQ("||", str)) { type = TokenBarBar; }
-    else if (STR_EQ("<", str)) { type = TokenLt; }
-    else if (STR_EQ("<=", str)) { type = TokenLtEq; }
-    else if (STR_EQ(">", str)) { type = TokenGt; }
-    else if (STR_EQ(">=", str)) { type = TokenGtEq; }
-    else if (STR_EQ("**", str)) { type = TokenStarStar; }
-    else if (STR_EQ("<<", str)) { type = TokenLtLt; }
-    else if (STR_EQ(">>", str)) { type = TokenGtGt; }
+    if (STRN_EQ("..", str, 2)) { type = TokenDotDot; adv = 2;}
+    else if (STRN_EQ("==", str, 2)) { type = TokenEqEq; adv = 2;}
+    else if (STRN_EQ("!=", str, 2)) { type = TokenBangEq; adv = 2;}
+    else if (STRN_EQ("&&", str, 2)) { type = TokenAmpAmp; adv = 2;}
+    else if (STRN_EQ("||", str, 2)) { type = TokenBarBar; adv = 2;}
+    else if (STRN_EQ("<=", str, 2)) { type = TokenLtEq; adv = 2;}
+    else if (STRN_EQ(">=", str, 2)) { type = TokenGtEq; adv = 2;}
+    else if (STRN_EQ("**", str, 2)) { type = TokenStarStar; adv = 2;}
+    else if (STRN_EQ("<<", str, 2)) { type = TokenLtLt; adv = 2;}
+    else if (STRN_EQ(">>", str, 2)) { type = TokenGtGt; adv = 2;}
+    else if (STRN_EQ(";", str, 1)) { type = TokenSemicolon; adv = 1;}
+    else if (STRN_EQ("{", str, 1)) { type = TokenLeftCurlyBrace; adv = 1;}
+    else if (STRN_EQ("}", str, 1)) { type = TokenRightCurlyBrace; adv = 1;}
+    else if (STRN_EQ("(", str, 1)) { type = TokenLeftParen; adv = 1;}
+    else if (STRN_EQ(")", str, 1)) { type = TokenRightParen; adv = 1;}
+    else if (STRN_EQ("[", str, 1)) { type = TokenLeftSqBracket; adv = 1;}
+    else if (STRN_EQ("]", str, 1)) { type = TokenRightSqBracket; adv = 1;}
+    else if (STRN_EQ(".", str, 1)) { type = TokenDot; adv = 1;}
+    else if (STRN_EQ("=", str, 1)) { type = TokenEquals; adv = 1;}
+    else if (STRN_EQ("!", str, 1)) { type = TokenBang; adv = 1;}
+    else if (STRN_EQ("+", str, 1)) { type = TokenPlus; adv = 1;}
+    else if (STRN_EQ("-", str, 1)) { type = TokenMinus; adv = 1;}
+    else if (STRN_EQ("*", str, 1)) { type = TokenAsterisk; adv = 1;}
+    else if (STRN_EQ("/", str, 1)) { type = TokenSlash; adv = 1;}
+    else if (STRN_EQ("%", str, 1)) { type = TokenPercent; adv = 1;}
+    else if (STRN_EQ("^", str, 1)) { type = TokenCaret; adv = 1;}
+    else if (STRN_EQ("&", str, 1)) { type = TokenAmp; adv = 1;}
+    else if (STRN_EQ("|", str, 1)) { type = TokenBar; adv = 1;}
+    else if (STRN_EQ("<", str, 1)) { type = TokenLt; adv = 1;}
+    else if (STRN_EQ(">", str, 1)) { type = TokenGt; adv = 1;}
     else { type = TokenUnknown; }
 
-    lexer->Pos = begin;
+    str = strndup(str, adv);
+    LEX_ADVN(lexer, adv);
     *out_type = type;
     *out_str = str;
     return R_OK;
