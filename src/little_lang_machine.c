@@ -1,4 +1,6 @@
 #include "little_lang_machine.h"
+#include "parser.h"
+#include "globals.h"
 #include "helpers/strings.h"
 #include "result.h"
 
@@ -15,10 +17,9 @@ int LittleLangMachineIsInvalid(struct LittleLangMachine *llm) {
 
 int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv) {
     char *filename = strdup("test.ll");
-    char *code = strdup("def HelloWorld {\n"
-                        "    print(\"Hello world\")\n"
-                        "}\n"
-                        "HelloWorld()");
+    char *code = strdup("if true {\n"
+                        "    print(\"Hello world!\")\n"
+                        "}");
     if (LittleLangMachineIsInvalid(llm)) {
         return R_InvalidArgument;
     }
@@ -74,8 +75,15 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
 }
 
 int LittleLangMachineRun(struct LittleLangMachine *llm) {
+    struct Ast *program;
+    int result;
     if (LittleLangMachineIsInvalid(llm)) {
         return R_InvalidArgument;
     }
-    return R_NotYetImplemented;
+    result = GlobalsInit();
+    if (R_OK != result) {
+        return result;
+    }
+
+    return Parse(&program, llm->Lexer);
 }

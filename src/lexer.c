@@ -1,6 +1,8 @@
 #include "lexer.h"
 #include "result.h"
 
+#include "helpers/strings.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -105,6 +107,8 @@ int LexerParseIdentOrKeyword(struct Lexer *lexer, enum TokenType *out_type, char
     else if (STR_EQ(str, "else")) { type = TokenElse; }
     else if (STR_EQ(str, "for")) { type = TokenFor; }
     else if (STR_EQ(str, "while")) { type = TokenWhile; }
+    else if (STR_EQ(str, "true")) { type = TokenTrue; }
+    else if (STR_EQ(str, "false")) { type = TokenFalse; }
     else { type = TokenIdentifer; }
     lexer->Pos = begin;
     *out_type = type;
@@ -154,6 +158,7 @@ int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_st
     while (*end && !IsAlpha(*end) && !IsDigit(*end) && !IsWhitespace(*end)) {
         LEX_ADVE(lexer, end);
     }
+    
     len = end - begin;
     str = malloc(len+1);
     tmp = str;
@@ -162,7 +167,8 @@ int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_st
         *tmp++ = *begin++;
     }
     *tmp = 0;
-    if (STR_EQ("{", str)) { type = TokenLeftCurlyBrace; }
+    if (STR_EQ(";", str)) { type = TokenSemicolon; }
+    else if (STR_EQ("{", str)) { type = TokenLeftCurlyBrace; }
     else if (STR_EQ("}", str)) { type = TokenRightCurlyBrace; }
     else if (STR_EQ("(", str)) { type = TokenLeftParen; }
     else if (STR_EQ(")", str)) { type = TokenRightParen; }

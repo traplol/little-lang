@@ -3,7 +3,6 @@
 
 enum TypeInfoType {
     TypeBaseObject,           /* The base object every object is derived from. */
-    TypeNil,                  /* nil object */
     TypeBoolean,              /* true or false object */
     TypeInteger,              /* Integer object */
     TypeReal,                 /* Floating point object*/

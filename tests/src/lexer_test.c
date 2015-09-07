@@ -44,7 +44,7 @@ TEST(LexerNextToken) {
     char *filename = strdup("test.ll");
     char *code = strdup(
         "def fortytwo {\n"
-        "    42\n"
+        "    42;\n"
         "}");
     LexerMake(lexer, filename, code);
 
@@ -52,6 +52,7 @@ TEST(LexerNextToken) {
     LEX_TEST_LC(lexer, "fortytwo", 1, 5, token, TokenIdentifer);
     LEX_TEST_LC(lexer, "{", 1, 14, token, TokenLeftCurlyBrace);
     LEX_TEST_LC(lexer, "42", 2, 5, token, TokenIntegerConstant);
+    LEX_TEST_LC(lexer, ";", 2, 7, token, TokenSemicolon);
     LEX_TEST_LC(lexer, "}", 3, 1, token, TokenRightCurlyBrace);
 
     LexerFree(lexer);
@@ -124,6 +125,9 @@ const char *SourceCode =
     " >> "
     " for "
     " while "
+    " ; "
+    " true "
+    " false "
     ;
 TEST(LexerTestAllTokenTypes) {
     struct Lexer *lexer = malloc(sizeof *lexer);
@@ -173,6 +177,9 @@ TEST(LexerTestAllTokenTypes) {
     LEX_TEST(lexer, ">>", token, TokenGtGt);
     LEX_TEST(lexer, "for", token, TokenFor);
     LEX_TEST(lexer, "while", token, TokenWhile);
+    LEX_TEST(lexer, ";", token, TokenSemicolon);
+    LEX_TEST(lexer, "true", token, TokenTrue);
+    LEX_TEST(lexer, "false", token, TokenFalse);
 
     assert_eq(Token_NUM_TOKENS, lex_tests, "Not all tokens have been tested.");
 

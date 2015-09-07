@@ -3,6 +3,8 @@
 
 enum TokenType {
     TokenUnknown,
+    TokenSemicolon,
+    
     TokenIdentifer,
     TokenStringLiteral,
     TokenIntegerConstant,
@@ -17,6 +19,8 @@ enum TokenType {
     TokenWhile,
     TokenIf,
     TokenElse,
+    TokenTrue,
+    TokenFalse,
 
     TokenLeftCurlyBrace,
     TokenRightCurlyBrace,

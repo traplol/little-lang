@@ -4,7 +4,8 @@ HELPERS_DIR:= helpers
 OBJ_DIR:= obj
 BIN_DIR:= bin
 INCLUDES:= -Iinclude -I.
-CFLAGS:= -O0 -Werror -Wall -pedantic -pedantic-errors -Wextra -g -std=c99 $(INCLUDES)
+#CFLAGS:= -O0 -Werror -Wall -pedantic -pedantic-errors -Wextra -g -std=c99 $(INCLUDES)
+CFLAGS:= -O0 -g -std=c99 $(INCLUDES)
 LDFLAGS:=
 SOURCES:= $(wildcard $(SRC_DIR)/*.c)
 SOURCES+= $(wildcard $(HELPERS_DIR)/*.c)
