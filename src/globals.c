@@ -21,8 +21,9 @@ struct TypeInfo g_TheBooleanTypeInfo;
 
 int GlobalsInitTypeInfos(void) {
     int result;
-    result = TypeInfoMake(&g_TheBaseObjectTypeInfo, TypeBaseObject, &g_TheBaseObjectTypeInfo, "Object");
+    result = TypeInfoMake(&g_TheBaseObjectTypeInfo, TypeBaseObject, 0, "Object");
     RETURN_ON_FAIL(result);
+    g_TheBaseObjectTypeInfo.DerivedFrom = &g_TheBaseObjectTypeInfo;
 
     result = TypeInfoMake(&g_TheIntegerTypeInfo, TypeBaseObject, &g_TheBaseObjectTypeInfo, "Integer");
     RETURN_ON_FAIL(result);
