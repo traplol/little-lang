@@ -13,6 +13,8 @@ enum TokenType {
     TokenMut,
     TokenConst,
 
+    TokenFor,
+    TokenWhile,
     TokenIf,
     TokenElse,
 

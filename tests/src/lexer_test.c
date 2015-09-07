@@ -122,6 +122,8 @@ const char *SourceCode =
     " ** "
     " << "
     " >> "
+    " for "
+    " while "
     ;
 TEST(LexerTestAllTokenTypes) {
     struct Lexer *lexer = malloc(sizeof *lexer);
@@ -169,6 +171,8 @@ TEST(LexerTestAllTokenTypes) {
     LEX_TEST(lexer, "**", token, TokenStarStar);
     LEX_TEST(lexer, "<<", token, TokenLtLt);
     LEX_TEST(lexer, ">>", token, TokenGtGt);
+    LEX_TEST(lexer, "for", token, TokenFor);
+    LEX_TEST(lexer, "while", token, TokenWhile);
 
     assert_eq(Token_NUM_TOKENS, lex_tests, "Not all tokens have been tested.");
 
