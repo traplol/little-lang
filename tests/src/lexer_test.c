@@ -32,8 +32,10 @@ TEST(LexerMakeFree) {
     _LEX_TOK_FREE(tok);
     
 
-#define LEX_TEST(lex, str, tok, typ) \
-    _LEX_TEST(lex, str, tok, typ) \
+static int lex_tests = 0;
+#define LEX_TEST(lex, str, tok, typ)            \
+    lex_tests++;                                \
+    _LEX_TEST(lex, str, tok, typ)               \
     _LEX_TOK_FREE(tok);
 
 TEST(LexerNextToken) {
@@ -101,12 +103,32 @@ const char *SourceCode =
     " ) "
     " if "
     " else "
+    " [ "
+    " ] "
+    " . "
+    " .. "
+    " == "
+    " != "
+    " % "
+    " ^ "
+    " & "
+    " && "
+    " | "
+    " || "
+    " < "
+    " <= "
+    " > "
+    " >= "
+    " ** "
+    " << "
+    " >> "
     ;
 TEST(LexerTestAllTokenTypes) {
     struct Lexer *lexer = malloc(sizeof *lexer);
     struct Token *token;
     char *filename = strdup("test.ll");
     char *code = strdup(SourceCode);
+    lex_tests = 1; /* Start this at 1 so we skip TokenUnknown. */
     LexerMake(lexer, filename, code);
     
     LEX_TEST(lexer, "_identifier42", token, TokenIdentifer);
@@ -128,6 +150,27 @@ TEST(LexerTestAllTokenTypes) {
     LEX_TEST(lexer, ")", token, TokenRightParen);
     LEX_TEST(lexer, "if", token, TokenIf);
     LEX_TEST(lexer, "else", token, TokenElse);
+    LEX_TEST(lexer, "[", token, TokenLeftSqBracket);
+    LEX_TEST(lexer, "]", token, TokenRightSqBracket);
+    LEX_TEST(lexer, ".", token, TokenDot);
+    LEX_TEST(lexer, "..", token, TokenDotDot);
+    LEX_TEST(lexer, "==", token, TokenEqEq);
+    LEX_TEST(lexer, "!=", token, TokenBangEq);
+    LEX_TEST(lexer, "%", token, TokenPercent);
+    LEX_TEST(lexer, "^", token, TokenCaret);
+    LEX_TEST(lexer, "&", token, TokenAmp);
+    LEX_TEST(lexer, "&&", token, TokenAmpAmp);
+    LEX_TEST(lexer, "|", token, TokenBar);
+    LEX_TEST(lexer, "||", token, TokenBarBar);
+    LEX_TEST(lexer, "<", token, TokenLt);
+    LEX_TEST(lexer, "<=", token, TokenLtEq);
+    LEX_TEST(lexer, ">", token, TokenGt);
+    LEX_TEST(lexer, ">=", token, TokenGtEq);
+    LEX_TEST(lexer, "**", token, TokenStarStar);
+    LEX_TEST(lexer, "<<", token, TokenLtLt);
+    LEX_TEST(lexer, ">>", token, TokenGtGt);
+
+    assert_eq(Token_NUM_TOKENS, lex_tests, "Not all tokens have been tested.");
 
     LexerFree(lexer);
     free(lexer);

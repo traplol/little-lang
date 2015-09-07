@@ -164,11 +164,31 @@ int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_st
     else if (STR_EQ("}", str)) { type = TokenRightCurlyBrace; }
     else if (STR_EQ("(", str)) { type = TokenLeftParen; }
     else if (STR_EQ(")", str)) { type = TokenRightParen; }
+    else if (STR_EQ("[", str)) { type = TokenLeftSqBracket; }
+    else if (STR_EQ("]", str)) { type = TokenRightSqBracket; }
+    else if (STR_EQ(".", str)) { type = TokenDot; }
+    else if (STR_EQ("..", str)) { type = TokenDotDot; }
     else if (STR_EQ("=", str)) { type = TokenEquals; }
+    else if (STR_EQ("==", str)) { type = TokenEqEq; }
+    else if (STR_EQ("!", str)) { type = TokenBang; }
+    else if (STR_EQ("!=", str)) { type = TokenBangEq; }
     else if (STR_EQ("+", str)) { type = TokenPlus; }
     else if (STR_EQ("-", str)) { type = TokenMinus; }
     else if (STR_EQ("*", str)) { type = TokenAsterisk; }
     else if (STR_EQ("/", str)) { type = TokenSlash; }
+    else if (STR_EQ("%", str)) { type = TokenPercent; }
+    else if (STR_EQ("^", str)) { type = TokenCaret; }
+    else if (STR_EQ("&", str)) { type = TokenAmp; }
+    else if (STR_EQ("&&", str)) { type = TokenAmpAmp; }
+    else if (STR_EQ("|", str)) { type = TokenBar; }
+    else if (STR_EQ("||", str)) { type = TokenBarBar; }
+    else if (STR_EQ("<", str)) { type = TokenLt; }
+    else if (STR_EQ("<=", str)) { type = TokenLtEq; }
+    else if (STR_EQ(">", str)) { type = TokenGt; }
+    else if (STR_EQ(">=", str)) { type = TokenGtEq; }
+    else if (STR_EQ("**", str)) { type = TokenStarStar; }
+    else if (STR_EQ("<<", str)) { type = TokenLtLt; }
+    else if (STR_EQ(">>", str)) { type = TokenGtGt; }
     else { type = TokenUnknown; }
 
     lexer->Pos = begin;
@@ -202,7 +222,7 @@ struct Token *LexerGetNextToken(struct Lexer *lexer, int consumeToken) {
     oldPos = lexer->Pos;
     oldCurrentLineNumber = line = lexer->CurrentLineNumber;
     oldCurrentColumnNumber = column = lexer->CurrentColumnNumber;
-    if (0 != LexerParseThing(lexer, &out_type, &out_str)) {
+    if (R_OK != LexerParseThing(lexer, &out_type, &out_str)) {
         free(token);
         return NULL;
     }

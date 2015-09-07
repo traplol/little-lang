@@ -20,12 +20,35 @@ enum TokenType {
     TokenRightCurlyBrace,
     TokenLeftParen,
     TokenRightParen,
+    TokenLeftSqBracket,
+    TokenRightSqBracket,
+
+    TokenDot,
+    TokenDotDot,
 
     TokenEquals,
+    TokenEqEq,
+    TokenBang,
+    TokenBangEq,
     TokenPlus,
     TokenMinus,
     TokenAsterisk,
     TokenSlash,
+    TokenPercent,
+    TokenCaret,
+    TokenAmp,
+    TokenAmpAmp,
+    TokenBar,
+    TokenBarBar,
+    TokenLt,
+    TokenLtEq,
+    TokenGt,
+    TokenGtEq,
+    TokenStarStar,
+    TokenLtLt,
+    TokenGtGt,
+
+    Token_NUM_TOKENS,
 };
 
 struct Token {
