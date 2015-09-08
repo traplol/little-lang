@@ -4,12 +4,14 @@
 #include "symbol_table.h"
 #include "type_table.h"
 #include "lexer.h"
+#include "ast.h"
 
 struct LittleLangMachine {
     struct Lexer *Lexer;
     struct SymbolTable *GlobalScope;
     struct SymbolTable *CurrentScope;
     struct TypeTable *TypeTable;
+    struct Ast *Program;
     struct {
         int argc;
         char **argv;
@@ -20,6 +22,5 @@ struct LittleLangMachine {
 };
 int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv);
 int LittleLangMachineRun(struct LittleLangMachine *llm);
-int LittleLangMachineDenit(struct LittleLangMachine *llm);
 
 #endif
