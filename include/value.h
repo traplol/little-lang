@@ -6,7 +6,8 @@
 
 struct Function {
     char *Name;
-    struct Ast *Ast;
+    struct Ast *Params;
+    struct Ast *Body;
 };
 
 typedef struct Value *(*BuiltinFn_t)(unsigned int argc, struct Value **argv);
