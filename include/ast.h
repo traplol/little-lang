@@ -2,6 +2,8 @@
 #define _LITTLE_LANG_AST_H
 
 enum AstNodeType {
+    UNASSIGNED,
+
     BAddExpr,
     BSubExpr,
     BMulExpr,
@@ -39,17 +41,16 @@ struct Ast {
     enum AstNodeType Type;
     struct Ast **Children;
     unsigned int NumChildren;
+    unsigned int CapChildren;
     union {
         char *SymbolName;
         struct Value *Value;
     } u;
 };
 
-struct TopLevel {
-    struct Ast **Expressions;
-    unsigned int NumExpression;
-};
+void AstPrettyPrint(struct Ast *ast);
 
+int AstMakeBlank(struct Ast **out_ast);
 int AstFree(struct Ast *ast);
 
 /* Terminals */
@@ -71,6 +72,9 @@ int AstMakeConst(struct Ast **out_ast, char *name, struct Ast *value);
 int AstMakeFor(struct Ast **out_ast, struct Ast *pre, struct Ast *condition, struct Ast *body, struct Ast *post);
 int AstMakeWhile(struct Ast **out_ast, struct Ast *condition, struct Ast *body);
 int AstMakeIfElse(struct Ast **out_ast, struct Ast *condition, struct Ast *body, struct Ast *elseif);
+
+int AstAppendChild(struct Ast *ast, struct Ast *child);
+
 
 
 #endif
