@@ -18,16 +18,22 @@ int LittleLangMachineIsInvalid(struct LittleLangMachine *llm) {
 int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv) {
     char *filename = strdup("test.ll");
     char *code = strdup("if true {\n"
-                        "    print(\"Hello world!\")\n"
+                        "    print(\"true!\")\n"
+                        "}\n"
+                        "else if false {\n"
+                        "    print(\"false!\")\n"
+                        "}\n"
+                        "else {\n"
+                        "    print(\"wut?\")\n"
+                        "}\n"
+                        "def returns42 {\n"
+                        "    42\n"
                         "}");
-    if (LittleLangMachineIsInvalid(llm)) {
-        return R_InvalidArgument;
-    }
     llm->CmdOpts.argc = argc;
     llm->CmdOpts.argv = argv;
     llm->CmdOpts.code = code;
     llm->CmdOpts.filename = filename;
-    return 0;
+    return R_OK;
 }
 
 /************************** Public Functions *****************************/
@@ -44,7 +50,7 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
         return result;
     }
 
-    llm->Error = 0;
+    llm->Error = R_OK;
     
     llm->Lexer = malloc(sizeof(*llm->Lexer));
     result = LexerMake(llm->Lexer, llm->CmdOpts.filename, llm->CmdOpts.code);
@@ -85,5 +91,13 @@ int LittleLangMachineRun(struct LittleLangMachine *llm) {
         return result;
     }
 
-    return Parse(&program, llm->Lexer);
+    result = Parse(&program, llm->Lexer);
+    if (R_OK == result) {
+        llm->Program = program;
+    }
+    else {
+        llm->Program = NULL;
+        AstFree(program);
+    }
+    return result;
 }
