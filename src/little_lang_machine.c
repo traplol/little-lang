@@ -17,18 +17,7 @@ int LittleLangMachineIsInvalid(struct LittleLangMachine *llm) {
 
 int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv) {
     char *filename = strdup("test.ll");
-    char *code = strdup("if true {\n"
-                        "    print(\"true!\")\n"
-                        "}\n"
-                        "else if false {\n"
-                        "    print(\"false!\")\n"
-                        "}\n"
-                        "else {\n"
-                        "    print(\"wut?\")\n"
-                        "}\n"
-                        "def returns42 {\n"
-                        "    42\n"
-                        "}");
+    char *code = strdup("x = 5 + 5 ** 2");
     llm->CmdOpts.argc = argc;
     llm->CmdOpts.argv = argv;
     llm->CmdOpts.code = code;
