@@ -38,6 +38,7 @@ int TokenStreamMake(struct TokenStream *tokenStream) {
     tokenStream->Current = tokenStream->Head;
     return R_OK;
 }
+
 int TokenStreamFree(struct TokenStream *tokenStream) {
     struct Node *head, *next;
     if (TokenStreamIsInvalid(tokenStream)) {
@@ -68,6 +69,9 @@ int TokenStreamAppend(struct TokenStream *tokenStream, struct Token *token) {
         tokenStream->Tail->Next = newNode;
         newNode->Prev = tokenStream->Tail;
         tokenStream->Tail = newNode;
+    }
+    if (TokenEOS == token->Type) {
+        return R_EndOfTokenStream;
     }
     return R_OK;
 }
