@@ -3,6 +3,7 @@
 
 enum TokenType {
     TokenUnknown,
+    TokenEOS,
     TokenSemicolon,
     TokenComma,
     

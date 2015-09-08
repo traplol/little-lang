@@ -13,6 +13,7 @@
 #define R_NotYetImplemented     5
 #define R_OperationFailed       6
 #define R_GlobalsAlreadyInitted 7
+#define R_EndOfTokenStream      8
 
 
 #endif

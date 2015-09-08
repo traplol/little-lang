@@ -194,11 +194,18 @@ int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_st
     else if (STRN_EQ("|", str, 1)) { type = TokenBar; adv = 1;}
     else if (STRN_EQ("<", str, 1)) { type = TokenLt; adv = 1;}
     else if (STRN_EQ(">", str, 1)) { type = TokenGt; adv = 1;}
+    else if (!*str) { goto end_of_stream; }
     else { type = TokenUnknown; }
 
     str = strndup(str, adv);
     LEX_ADVN(lexer, adv);
     *out_type = type;
+    *out_str = str;
+    return R_OK;
+
+end_of_stream:
+    str = strdup("<EOS>");
+    *out_type = TokenEOS;
     *out_str = str;
     return R_OK;
 }
