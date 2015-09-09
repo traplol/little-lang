@@ -15,9 +15,30 @@ int LittleLangMachineIsInvalid(struct LittleLangMachine *llm) {
     return !LittleLangMachineIsValid(llm);
 }
 
+char *ReadFile(char *filename) {
+    unsigned int len;
+    int c;
+    char *tmp, *code = NULL;
+    FILE *file = fopen(filename, "rb");
+    if (file) {
+        fseek(file, 0, SEEK_END);
+        len = ftell(file);
+        rewind(file);
+        code = malloc(len+1);
+        tmp = code;
+        while (EOF != (c = fgetc(file))) {
+            *tmp++ = c;
+        }
+        *tmp = 0;
+        fclose(file);
+    }
+    return code;
+}
+
 int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv) {
-    char *filename = strdup("test.ll");
-    char *code = strdup("def hello { \"hello\" } if true { x = 1 + 2 * 3 / 4; y = 4; } else if false { print(42, 4, 1 + 1); } else { hello() }");
+    /* TODO: Parse args correctly. */
+    char *filename = argv[0];
+    char *code = ReadFile(filename);
     llm->CmdOpts.argc = argc;
     llm->CmdOpts.argv = argv;
     llm->CmdOpts.code = code;
