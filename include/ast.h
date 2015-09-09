@@ -3,6 +3,7 @@
 
 enum AstNodeType {
     UNASSIGNED,
+    Body,
 
     BAddExpr,
     BSubExpr,
