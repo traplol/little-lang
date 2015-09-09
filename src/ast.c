@@ -257,7 +257,7 @@ int AstMakeBlank(struct Ast **out_ast) {
     if (!out_ast) {
         return R_InvalidArgument;
     }
-    ast = AstAlloc(0);
+    ast = calloc(sizeof *ast, 1);
     ast->Type = UNASSIGNED;
     *out_ast = ast;
     return R_OK;
