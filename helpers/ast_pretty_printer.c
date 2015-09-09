@@ -9,6 +9,7 @@
 
 const char *nodeString[] = {
     [UNASSIGNED] = "UNASSIGNED",
+    [Body] = "THIS SHOULDNT BE SEEN",
     [BAddExpr] = "+",
     [BSubExpr] = "-",
     [BMulExpr] = "*",
@@ -30,7 +31,7 @@ const char *nodeString[] = {
     [BLogicGtEqExpr] = ">=",
     [UNegExpr] = "-",
     [ULogicNotExpr] = "!",
-    [AssignExpr] = "=",
+    [AssignExpr] = "assign",
     [BooleanNode] = "THIS SHOULDNT BE SEEN",
     [RealNode] = "THIS SHOULDNT BE SEEN",
     [IntegerNode] = "THIS SHOULDNT BE SEEN",
@@ -68,27 +69,15 @@ const char *fmtIntegerLiteral(struct Ast *node) {
     return strdup(buf);
 }
 const char *fmtStringLiteral(struct Ast *node) {
-    char buf[10];
-    char *str = strndup(node->u.Value->v.UserObject, 5);
-    snprintf(buf, 10, "S\"%s\"", str);
-    free(str);
-    return strdup(buf);
+    return node->u.Value->v.UserObject;
 }
 
 const char *fmtFunction(struct Ast *node) {
-    char buf[10];
-    char *str = strndup(node->u.Value->v.Function->Name, 5);
-    snprintf(buf, 10, "F(%s)", str);
-    free(str);
-    return strdup(buf);
+    return node->u.Value->v.Function->Name;
 }
 
 const char *fmtSymbol(struct Ast *node) {
-    char buf[10];
-    char *str = strndup(node->u.SymbolName, 5);
-    snprintf(buf, 10, "S(%s)", str);
-    free(str);
-    return strdup(buf);
+    return node->u.SymbolName;
 }
 
 const char *fmtNodeLiteral(struct Ast *node) {
@@ -102,8 +91,12 @@ const char *fmtNodeLiteral(struct Ast *node) {
 }
 
 const char *fmtNode(struct Ast *node) {
+    if (!node) {
+        return "<NULL>";
+    }
     switch (node->Type) {
         default: return nodeString[node->Type];
+        case Body: return "\n\t";
         case FunctionNode: return fmtFunction(node);
         case SymbolNode: return fmtSymbol(node);
         case BooleanNode:
@@ -114,16 +107,211 @@ const char *fmtNode(struct Ast *node) {
     }
 }
 
+int isOperation(struct Ast *node) {
+    enum AstNodeType t = node->Type;
+
+    return BooleanNode != t &&
+        RealNode != t &&
+        IntegerNode != t &&
+        StringNode != t &&
+        SymbolNode != t &&
+        FunctionNode != t;
+}
+
+void printNodes(struct Ast *ast);
+void printNode(struct Ast *node);
+
+static int tabs = 0;
+void printTabs(void) {
+    int i;
+    for (i = 0; i < tabs; ++i) {
+        printf("    ");
+    }
+}
+
+void printCommaSeparated(struct Ast *node) {
+    if (!node) {
+        return;
+    }
+    unsigned int i;
+    for (i = 0; i < node->NumChildren; ++i) {
+        printNode(node->Children[i]);
+        if (i + 1 < node->NumChildren) {
+            printf(", ");
+        }
+    }
+}
+void printBody(struct Ast *node) {
+    unsigned int i;
+    ++tabs;
+    printf("{\n");
+    printNodes(node);
+    printf("\n}\n");
+    --tabs;
+}
+void printBinaryExpr(struct Ast *node) {
+    printf("(%s ", fmtNode(node));
+    printNode(node->Children[0]);
+    printf(" ");
+    printNode(node->Children[1]);
+    printf(")");
+}
+void printUnaryExpr(struct Ast *node) {
+    printf("(%s ", fmtNode(node));
+    printNode(node->Children[0]);
+    printf(")");
+}
+void printBoolean(struct Ast *node) {
+    printf("%s", fmtNode(node));
+}
+void printInteger(struct Ast *node) {
+    printf("%s", fmtNode(node));
+}
+void printReal(struct Ast *node) {
+    printf("%s", fmtNode(node));
+}
+void printString(struct Ast *node) {
+    printf("\"%s\"", fmtNode(node));
+}
+void printSymbol(struct Ast *node) {
+    printf("%s", fmtNode(node));
+}
+void printFunction(struct Ast *node) {
+    struct Ast *params, *body;
+    printf("def %s", fmtNode(node));
+    printf("(");
+    params = node->u.Value->v.Function->Params;
+    printCommaSeparated(params);
+    printf(") ");
+    body = node->u.Value->v.Function->Body;
+    printNode(body);
+}
+void printCall(struct Ast *node) {
+    unsigned int i;
+    struct Ast *symbol = node->Children[0];
+    struct Ast *args = node->Children[1];
+    printf("Call -> %s(", fmtNode(symbol));
+    printCommaSeparated(args);
+    printf(")");
+}
+void printAssign(struct Ast *node) {
+    struct Ast *symbol = node->Children[0];
+    struct Ast *value = node->Children[1];
+    printf("Assign %s <- ", fmtNode(symbol));
+    printNode(value);
+}
+void printReturn(struct Ast *node) {
+    printf("return %s", fmtNode(node));
+}
+void printMut(struct Ast *node) {
+}
+void printConst(struct Ast *node) {
+}
+void printFor(struct Ast *node) {
+}
+void printWhile(struct Ast *node) {
+}
+void printIfElse(struct Ast *node) {
+    printf("if ");
+    printNode(node->Children[0]);
+    printf(" ");
+    printBody(node->Children[1]);
+    if (node->Children[2]) {
+        printf("else ");
+        printNode(node->Children[2]);
+    }
+}
 
 int countNodes(struct Ast *ast) {
     int cnt = 0;
     unsigned int i;
-    if (!ast) return 0;
+    if (!ast || !ast->NumChildren) return 0;
     cnt += ast->NumChildren;
     for (i = 0; i < ast->NumChildren; ++i) {
         cnt += countNodes(ast->Children[i]);
     }
     return cnt;
+}
+
+void printNode(struct Ast *node) {
+    if (!node) {
+        return;
+    }
+    switch(node->Type) {
+        case UNASSIGNED:
+            printf("<UNASSIGNED>");
+            break;
+        case Body:
+            printBody(node);
+            break;
+        case BAddExpr:
+        case BSubExpr:
+        case BMulExpr:
+        case BDivExpr:
+        case BModExpr:
+        case BPowExpr:
+        case BLShift:
+        case BRShift:
+        case BArithOrExpr:
+        case BArithAndExpr:
+        case BArithXorExpr:
+        case BLogicOrExpr:
+        case BLogicAndExpr:
+        case BLogicEqExpr:
+        case BLogicNotEqExpr:
+        case BLogicLtExpr:
+        case BLogicLtEqExpr:
+        case BLogicGtExpr:
+        case BLogicGtEqExpr:
+            printBinaryExpr(node);
+            break;
+        case AssignExpr:
+            printAssign(node);
+            break;
+        case UNegExpr:
+        case ULogicNotExpr:
+            printUnaryExpr(node);
+            break;
+        case BooleanNode:
+            printBoolean(node);
+            break;
+        case RealNode:
+            printReal(node);
+            break;
+        case IntegerNode:
+            printInteger(node);
+            break;
+        case StringNode:
+            printString(node);
+            break;
+        case SymbolNode:
+            printSymbol(node);
+            break;
+        case FunctionNode:
+            printFunction(node);
+            break;
+        case CallExpr:
+            printCall(node);
+            break;
+        case ReturnExpr:
+            printReturn(node);
+            break;
+        case MutExpr:
+            printMut(node);
+            break;
+        case ConstExpr:
+            printConst(node);
+            break;
+        case ForExpr:
+            printFor(node);
+            break;
+        case WhileExpr:
+            printWhile(node);
+            break;
+        case IfElseExpr:
+            printIfElse(node);
+            break;
+    }
 }
 
 void printNodes(struct Ast *ast) {
@@ -132,13 +320,13 @@ void printNodes(struct Ast *ast) {
     if (!ast) {
         return;
     }
-    if (UNASSIGNED == ast->Type) {
-        printf("\n");
-    }
-    printf("%s ", fmtNode(ast));
     for (i = 0; i < ast->NumChildren; ++i) {
         child = ast->Children[i];
-        printNodes(child);
+        printTabs();
+        printNode(child);
+        if (i + 1 < ast->NumChildren) {
+            printf("\n");
+        }
     }
 }
 
