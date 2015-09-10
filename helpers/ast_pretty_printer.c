@@ -208,8 +208,19 @@ void printMut(struct Ast *node) {
 void printConst(struct Ast *node) {
 }
 void printFor(struct Ast *node) {
+    printf("for ");
+    printNode(node->Children[0]); /* pre */
+    printf("; ");
+    printNode(node->Children[1]); /* cond */
+    printf("; ");
+    printNode(node->Children[3]); /* post */
+    printBody(node->Children[2]); /* body */
 }
 void printWhile(struct Ast *node) {
+    printf("while ");
+    printNode(node->Children[0]); /* cond */
+    printf(" ");
+    printBody(node->Children[1]); /* body */
 }
 void printIfElse(struct Ast *node) {
     printf("if ");

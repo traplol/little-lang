@@ -223,7 +223,7 @@ int ParseAssign(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseFunction(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseWhile(struct Ast **out_ast, struct TokenStream *tokenStream);
-int PareFor(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseFor(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseLiteral(struct Ast **out_ast, struct TokenStream *tokenStream);
@@ -232,6 +232,47 @@ int ParseParenExpr(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseTerm(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int prec, struct Ast *lhs);
 int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream);
+
+
+/* <for> := for <expr> ; <expr> ; <expr> { <stmt-list> } */
+int ParseFor(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    /* TODO: Validate 'for' parsing. */
+    int result;
+    struct Ast *pre, *cond, *post, *body;
+
+    EXPECT_NO_MSG(TokenFor, tokenStream);
+
+    result = ParseExpr(&pre, tokenStream);
+    EXPECT(TokenSemicolon, tokenStream);
+
+    result = ParseExpr(&cond, tokenStream);
+    EXPECT(TokenSemicolon, tokenStream);
+
+    result = ParseExpr(&post, tokenStream);
+
+    EXPECT(TokenLeftCurlyBrace, tokenStream);
+    result = ParseStmtList(&body, tokenStream);
+    EXPECT(TokenRightCurlyBrace, tokenStream);
+
+    return AstMakeFor(out_ast, pre, cond, body, post);
+}
+
+/* <while> := while <expr> { <stmt-list> } */
+int ParseWhile(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    /* TODO: Validate 'while' parsing. */
+    int result;
+    struct Ast *cond, *body;
+
+    EXPECT_NO_MSG(TokenWhile, tokenStream);
+
+    result = ParseExpr(&cond, tokenStream);
+
+    EXPECT(TokenLeftCurlyBrace, tokenStream);
+    result = ParseStmtList(&body, tokenStream);
+    EXPECT(TokenRightCurlyBrace, tokenStream);
+
+    return AstMakeWhile(out_ast, cond, body);
+}
 
 /*
  * <param-list> := <identifer>
@@ -463,6 +504,7 @@ int ParseTerm(struct Ast **out_ast, struct TokenStream *tokenStream) {
     return R_UnexpectedToken;
 }
 
+/* The right hand side of a binary expression. */
 int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int prec, struct Ast *lhs) {
     int result, tokenPrec;
     enum AstNodeType binOp;
@@ -638,6 +680,8 @@ int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream) {
  * <stmt> := <expr>
  *        := <function>
  *        := <ifelse>
+ *        := <for>
+ *        := <while>
  *        := <epsilon>
  */
 int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
@@ -666,6 +710,18 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
     }
     RESTORE(tokenStream, save);
     result = ParseExpr(&ast, tokenStream);
+    if (R_OK == result) {
+        *out_ast = ast;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    result = ParseFor(&ast, tokenStream);
+    if (R_OK == result) {
+        *out_ast = ast;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    result = ParseWhile(&ast, tokenStream);
     if (R_OK == result) {
         *out_ast = ast;
         return R_OK;
