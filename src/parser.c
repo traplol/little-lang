@@ -102,7 +102,7 @@ int ParseErrorUnexpectedTokenExpected(const char *expected, struct Token *token)
     return R_UnexpectedToken;
 }
 
-int GetOperatorPrecedence(struct Token *token) {
+int GetBinaryOperatorPrecedence(struct Token *token) {
     switch (token->Type) {
         default: return -1;
         case TokenBang:
@@ -142,10 +142,9 @@ int GetOperatorPrecedence(struct Token *token) {
     }
 }
 
-enum AstNodeType GetOperatorType(struct Token *token) {
+enum AstNodeType GetBinaryOperatorType(struct Token *token) {
     switch (token->Type) {
         default: return UNASSIGNED;
-        case TokenBang: return ULogicNotExpr;
         case TokenStarStar: return BPowExpr;
         case TokenAsterisk: return BMulExpr;
         case TokenSlash: return BDivExpr;
@@ -174,7 +173,6 @@ int IsBinaryOperator(struct Token *token) {
         default:
             return 0;
         case TokenEqEq:
-        case TokenBang:
         case TokenBangEq:
         case TokenPlus:
         case TokenMinus:
@@ -193,6 +191,24 @@ int IsBinaryOperator(struct Token *token) {
         case TokenStarStar:
         case TokenLtLt:
         case TokenGtGt:
+            return 1;
+    }
+}
+
+enum AstNodeType GetUnaryOperatorType(struct Token *token) {
+    switch(token->Type) {
+        default: return UNASSIGNED;
+        case TokenMinus: return UNegExpr;
+        case TokenBang: return ULogicNotExpr;
+    }
+}
+
+int IsUnaryOperator(struct Token *token) {
+    switch(token->Type) {
+        default:
+            return 0;
+        case TokenMinus:
+        case TokenBang:
             return 1;
     }
 }
@@ -372,6 +388,7 @@ int ParseIdentifier(struct Ast **out_ast, struct TokenStream *tokenStream) {
     return AstMakeSymbol(out_ast, identifier);
 }
 
+/* <paren-expr> := ( <expr> ) */
 int ParseParenExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     struct Ast *expr;
@@ -379,6 +396,24 @@ int ParseParenExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     result = ParseExpr(&expr, tokenStream);
     EXPECT(TokenRightParen, tokenStream);
     *out_ast = expr;
+    return result;
+}
+
+/* <unary-expr> := <unary-op> <term> */
+int ParseUnaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    int result;
+    enum AstNodeType unOp;
+    struct Ast *expr;
+    if (!IsUnaryOperator(tokenStream->Current->Token)) {
+        return R_UnexpectedToken;
+    }
+    unOp = GetUnaryOperatorType(tokenStream->Current->Token);
+    TokenStreamAdvance(tokenStream);
+    result = ParseTerm(&expr, tokenStream);
+    if (R_OK == result) {
+        return AstMakeUnaryOp(out_ast, unOp, expr);
+    }
+    *out_ast = NULL;
     return result;
 }
 
@@ -418,7 +453,12 @@ int ParseTerm(struct Ast **out_ast, struct TokenStream *tokenStream) {
         return R_OK;
     }
     RESTORE(tokenStream, save);
-    /* TODO: Unary expressions. */
+    result = ParseUnaryExpr(&term, tokenStream);
+    if (R_OK == result) {
+        *out_ast = term;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
     *out_ast = NULL;
     return R_UnexpectedToken;
 }
@@ -428,19 +468,19 @@ int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int pr
     enum AstNodeType binOp;
     struct Ast *rhs;
     while (1) {
-        tokenPrec = GetOperatorPrecedence(tokenStream->Current->Token);
+        tokenPrec = GetBinaryOperatorPrecedence(tokenStream->Current->Token);
         if (tokenPrec < prec) {
             *out_ast = lhs;
             return R_OK;
         }
-        binOp = GetOperatorType(tokenStream->Current->Token);
+        binOp = GetBinaryOperatorType(tokenStream->Current->Token);
         TokenStreamAdvance(tokenStream);
         result = ParseTerm(&rhs, tokenStream);
         if (R_OK != result) {
             return result;
         }
         /* ParseTerm should set us on an operator unless it failed... */
-        if (tokenPrec < GetOperatorPrecedence(tokenStream->Current->Token)) {
+        if (tokenPrec < GetBinaryOperatorPrecedence(tokenStream->Current->Token)) {
             result = ParseBinaryRhs(&rhs, tokenStream, tokenPrec + 1, rhs);
             if (R_OK != result) {
                 return result;
@@ -469,8 +509,8 @@ int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
         *out_ast = lhs;
         return R_OK;
     }
-    binOp = GetOperatorType(tokenStream->Current->Token);
-    opPrec = GetOperatorPrecedence(tokenStream->Current->Token);
+    binOp = GetBinaryOperatorType(tokenStream->Current->Token);
+    opPrec = GetBinaryOperatorPrecedence(tokenStream->Current->Token);
     result = ParseBinaryRhs(&ast, tokenStream, opPrec, lhs);
     if (R_OK == result) {
         *out_ast = ast;
