@@ -10,12 +10,13 @@ struct Ast *ast1, *ast2, *ast3, *ast4, *ast5;
 char *name;
 void setup(void) {
     value = malloc(sizeof *value);
-    ast1 = malloc(sizeof *ast1);
-    ast2 = malloc(sizeof *ast2);
-    ast3 = malloc(sizeof *ast3);
-    ast4 = malloc(sizeof *ast4);
-    ast5 = malloc(sizeof *ast5);
     name = strdup("the_name");
+
+    AstMakeBlank(&ast1);
+    AstMakeBlank(&ast2);
+    AstMakeBlank(&ast3);
+    AstMakeBlank(&ast4);
+    AstMakeBlank(&ast5);
 }
 
 void done(void) {
@@ -124,10 +125,28 @@ TEST(AstMakeReturn) {
 
 TEST(AstMakeMut) {
     struct Ast *ast;
-    assert_eq(R_OK, AstMakeMut(&ast, ast1), "AstMakeMut failed.");
+    struct Ast *tmp1, *tmp2;
+    AstMakeBlank(&tmp1);
+    AstAppendChild(tmp1, ast1);
+    AstMakeBlank(&tmp2);
+    AstAppendChild(tmp2, ast2);
+    assert_eq(R_OK, AstMakeMut(&ast, tmp1, tmp2), "AstMakeMut failed.");
     free(ast->Children); free(ast);
-    assert_eq(R_InvalidArgument, AstMakeMut(NULL, ast1), "AstMakeMut did not fail.");
-    assert_eq(R_InvalidArgument, AstMakeMut(&ast, NULL), "AstMakeMut did not fail with no names.");
+
+    assert_eq(R_InvalidArgument, AstMakeMut(&ast, tmp1, ast2), "AstMakeMut should fail when either arg has no children");
+    assert_eq(R_InvalidArgument, AstMakeMut(&ast, ast1, tmp2), "AstMakeMut should fail when either arg has no children");
+
+    AstAppendChild(tmp2, ast2);
+    assert_eq(R_InvalidArgument, AstMakeMut(&ast, ast1, tmp2), "AstMakeMut should fail when args don't have same number of children.");
+
+    assert_eq(R_InvalidArgument, AstMakeMut(NULL, tmp1, tmp2), "AstMakeMut did not fail.");
+    assert_eq(R_InvalidArgument, AstMakeMut(&ast, NULL, tmp2), "AstMakeMut did not fail with no names.");
+    assert_eq(R_InvalidArgument, AstMakeMut(&ast, tmp1, NULL), "AstMakeMut did not fail with no names.");
+
+    free(tmp1->Children);
+    free(tmp1);
+    free(tmp2->Children);
+    free(tmp2);
 }
 
 TEST(AstMakeConst) {

@@ -78,7 +78,7 @@ int AstMakeUnaryOp(struct Ast **out_ast, enum AstNodeType op, struct Ast *value)
 int AstMakeAssign(struct Ast **out_ast, struct Ast *lValue, struct Ast *rhs);
 int AstMakeCall(struct Ast **out_ast, char *name, struct Ast *args);
 int AstMakeReturn(struct Ast **out_ast, struct Ast *value);
-int AstMakeMut(struct Ast **out_ast, struct Ast *names);
+int AstMakeMut(struct Ast **out_ast, struct Ast *names, struct Ast *values);
 int AstMakeConst(struct Ast **out_ast, char *name, struct Ast *value);
 int AstMakeFor(struct Ast **out_ast, struct Ast *pre, struct Ast *condition, struct Ast *body, struct Ast *post);
 int AstMakeWhile(struct Ast **out_ast, struct Ast *condition, struct Ast *body);

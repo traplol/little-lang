@@ -184,14 +184,21 @@ int AstMakeReturn(struct Ast **out_ast, struct Ast *value) {
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeMut(struct Ast **out_ast, struct Ast *names) {
+int AstMakeMut(struct Ast **out_ast, struct Ast *names, struct Ast *values) {
     struct Ast *ast;
-    if (!out_ast || !names) {
+    if (!out_ast || !names || !values) {
         return R_InvalidArgument;
     }
-    ast = AstAlloc(1);
+    if (0 == names->NumChildren || 0 == values->NumChildren) {
+        return R_InvalidArgument;
+    }
+    if (names->NumChildren != values->NumChildren) {
+        return R_InvalidArgument;
+    }
+    ast = AstAlloc(2);
     ast->Type = MutExpr;
     ast->Children[0] = names;
+    ast->Children[1] = values;
     *out_ast = ast;
     return R_OK;
 }
