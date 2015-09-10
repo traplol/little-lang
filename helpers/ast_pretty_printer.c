@@ -204,8 +204,16 @@ void printReturn(struct Ast *node) {
     printf("return %s", fmtNode(node));
 }
 void printMut(struct Ast *node) {
+    printf("mut ");
+    printCommaSeparated(node->Children[0]);
+    printf(" = ");
+    printCommaSeparated(node->Children[1]);
 }
 void printConst(struct Ast *node) {
+    printf("const ");
+    printNode(node->Children[0]);
+    printf(" = ");
+    printNode(node->Children[1]);
 }
 void printFor(struct Ast *node) {
     printf("for ");
