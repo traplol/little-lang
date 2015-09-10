@@ -204,19 +204,6 @@ int ParseCall(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseExpr(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseLValue(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseAssign(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec1(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec2(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec3(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec4(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec5(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec6(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec7(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec8(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec9(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec10(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec11(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec12(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParsePrec13(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseFunction(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseWhile(struct Ast **out_ast, struct TokenStream *tokenStream);
@@ -225,6 +212,10 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseLiteral(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseIdentifier(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseParenExpr(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseTerm(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int prec, struct Ast *lhs);
+int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream);
 
 /*
  * <param-list> := <identifer>
@@ -475,7 +466,8 @@ int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
         return result;
     }
     if(!IsBinaryOperator(tokenStream->Current->Token)) {
-        return ParseErrorUnexpectedToken(tokenStream->Current->Token);
+        *out_ast = lhs;
+        return R_OK;
     }
     binOp = GetOperatorType(tokenStream->Current->Token);
     opPrec = GetOperatorPrecedence(tokenStream->Current->Token);
@@ -489,7 +481,7 @@ int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
 }
 
 /*
- * <expr> := <prec13>
+ * <expr> := <binary-expr>
  *        := <assign>
  *        := <call>
  */
@@ -504,13 +496,13 @@ int ParseExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
         return R_OK;
     }
     RESTORE(tokenStream, save);
-    result = ParseBinaryExpr(&ast, tokenStream);
+    result = ParseCall(&ast, tokenStream);
     if (R_OK == result) {
         *out_ast = ast;
         return R_OK;
     }
     RESTORE(tokenStream, save);
-    result = ParseCall(&ast, tokenStream);
+    result = ParseBinaryExpr(&ast, tokenStream);
     if (R_OK == result) {
         *out_ast = ast;
         return R_OK;
@@ -573,8 +565,8 @@ int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream) {
     struct Node *save;
     struct Ast *cond, *ifBody, *elseBody;
     cond = ifBody = elseBody = NULL;
-    EXPECT_NO_MSG(TokenIf, tokenStream); /* if */
     SAVE(tokenStream, save);
+    EXPECT_NO_MSG(TokenIf, tokenStream); /* if */
 
     result = ParseExpr(&cond, tokenStream); /* condition */
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
