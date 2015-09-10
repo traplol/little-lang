@@ -232,7 +232,85 @@ int ParseParenExpr(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseTerm(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int prec, struct Ast *lhs);
 int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseConst(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseMut(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseCommaSeparatedIdentifiers(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseCommaSeparatedExprs(struct Ast **out_ast, struct TokenStream *tokenStream);
 
+/* <const-expr> := const <identifier> = <expr> */
+int ParseConst(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    /* TODO: Validate 'const-expr' */
+    int result;
+    char *identifier;
+    struct Ast *expr;
+    EXPECT_NO_MSG(TokenConst, tokenStream);
+    identifier = tokenStream->Current->Token->TokenStr;
+    EXPECT(TokenIdentifer, tokenStream);
+    EXPECT(TokenEquals, tokenStream);
+    result = ParseExpr(&expr, tokenStream);
+    identifier = strdup(identifier);
+    return AstMakeConst(out_ast, identifier, expr);
+}
+
+/* <comma-separated-identifers> := <identifier>
+ *                              := <identifier> , <comma-separated-identifiers>
+ */
+int ParseCommaSeparatedIdentifiers(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    int result;
+    struct Ast *names, *curName;
+    AstMakeBlank(&names);
+    while(R_OK == (result = ParseIdentifier(&curName, tokenStream))) {
+        AstAppendChild(names, curName);
+        if (!opt_expect(TokenComma, tokenStream)) {
+            break;
+        }
+    }
+    if (R_OK == result) {
+        *out_ast = names;
+        return R_OK;
+    }
+    AstFree(names);
+    *out_ast = NULL;
+    return result;
+}
+
+/* <comma-separated-exprs> := <expr>
+ *                         := <expr> , <comma-separated-exprs>
+ */
+int ParseCommaSeparatedExprs(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    int result;
+    struct Ast *exprs, *curExpr;
+    AstMakeBlank(&exprs);
+    while(R_OK == (result = ParseExpr(&curExpr, tokenStream))) {
+        AstAppendChild(exprs, curExpr);
+        if (!opt_expect(TokenComma, tokenStream)) {
+            break;
+        }
+        if (opt_expect(TokenSemicolon, tokenStream)) {
+            break;
+        }
+    }
+    if (R_OK == result) {
+        *out_ast = exprs;
+        return R_OK;
+    }
+    AstFree(exprs);
+    *out_ast = NULL;
+    return result;
+    
+}
+
+/* <mut-expr> := mut <comma-separated-identifiers> = <comma-separated-exprs> */
+int ParseMut(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    /* TODO: Validate 'mut-expr' */
+    int result;
+    struct Ast *names, *exprs;
+    EXPECT_NO_MSG(TokenMut, tokenStream);
+    result = ParseCommaSeparatedIdentifiers(&names, tokenStream);
+    EXPECT(TokenEquals, tokenStream);
+    result = ParseCommaSeparatedExprs(&exprs, tokenStream);
+    return AstMakeMut(out_ast, names, exprs);
+}
 
 /* <for> := for <expr> ; <expr> ; <expr> { <stmt-list> } */
 int ParseFor(struct Ast **out_ast, struct TokenStream *tokenStream) {
@@ -499,7 +577,9 @@ int ParseTerm(struct Ast **out_ast, struct TokenStream *tokenStream) {
         *out_ast = term;
         return R_OK;
     }
-    RESTORE(tokenStream, save);
+    RESTORE(tokenStream, save)
+
+;
     *out_ast = NULL;
     return R_UnexpectedToken;
 }
@@ -539,6 +619,8 @@ int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int pr
  * <binary-expr> := <terminal> <binary-op> <binary-rhs>
  */
 int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    /* TODO: Parse right associativity such as 3 ** 3 ** 3 should be equal
+     * to 3 ** (3 ** 3) or 3 ** 27 not (3 ** 3) ** 3 */
     int result;
     int opPrec;
     enum AstNodeType binOp;
@@ -682,6 +764,8 @@ int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream) {
  *        := <ifelse>
  *        := <for>
  *        := <while>
+ *        := <mut-expr>
+ *        := <const-expr>
  *        := <epsilon>
  */
 int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
@@ -727,6 +811,18 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
         return R_OK;
     }
     RESTORE(tokenStream, save);
+    result = ParseMut(&ast, tokenStream);
+    if (R_OK == result) {
+        *out_ast = ast;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    result = ParseConst(&ast, tokenStream);
+    if (R_OK == result) {
+        *out_ast = ast;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
     return ParseErrorUnexpectedToken(tokenStream->Current->Token);
 }
 
@@ -766,7 +862,7 @@ int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
     }
     if (ast->NumChildren == 0) {
-        /* TODO: Free ast. */
+        AstFree(ast);
         ast = NULL;
     }
     if (R_OK == result) {
