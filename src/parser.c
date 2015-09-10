@@ -102,6 +102,101 @@ int ParseErrorUnexpectedTokenExpected(const char *expected, struct Token *token)
     return R_UnexpectedToken;
 }
 
+int GetOperatorPrecedence(struct Token *token) {
+    switch (token->Type) {
+        default: return -1;
+        case TokenBang:
+            return 80;
+        case TokenStarStar:
+            return 70;
+        case TokenAsterisk:
+        case TokenSlash:
+        case TokenPercent:
+            return 60;
+        case TokenPlus: 
+        case TokenMinus:
+            return 50;
+        case TokenLtLt:
+        case TokenGtGt:
+            return 40;
+        case TokenAmp:
+            return 37;
+        case TokenCaret:
+            return 36;
+        case TokenBar:
+            return 35;
+        case TokenGt:
+        case TokenGtEq:
+        case TokenLt:
+        case TokenLtEq:
+            return 30;
+        case TokenEqEq:
+        case TokenBangEq:
+            return 20;
+        case TokenAmpAmp:
+            return 16;
+        case TokenBarBar:
+            return 15;
+        case TokenEquals:
+            return 10;
+    }
+}
+
+enum AstNodeType GetOperatorType(struct Token *token) {
+    switch (token->Type) {
+        default: return UNASSIGNED;
+        case TokenBang: return ULogicNotExpr;
+        case TokenStarStar: return BPowExpr;
+        case TokenAsterisk: return BMulExpr;
+        case TokenSlash: return BDivExpr;
+        case TokenPercent: return BModExpr;
+        case TokenPlus: return BAddExpr;
+        case TokenMinus: return BSubExpr;
+        case TokenLtLt: return BLShift;
+        case TokenGtGt: return BRShift;
+        case TokenAmp: return BArithAndExpr;
+        case TokenCaret: return BArithXorExpr;
+        case TokenBar: return BArithOrExpr;
+        case TokenGt: return BLogicGtExpr;
+        case TokenGtEq: return BLogicGtEqExpr;
+        case TokenLt: return BLogicLtExpr;
+        case TokenLtEq: return BLogicLtEqExpr;
+        case TokenEqEq: return BLogicEqExpr;
+        case TokenBangEq: return BLogicNotEqExpr;
+        case TokenAmpAmp: return BLogicAndExpr;
+        case TokenBarBar: return BLogicOrExpr;
+        case TokenEquals: return AssignExpr;
+    }
+}
+
+int IsBinaryOperator(struct Token *token) {
+    switch(token->Type) {
+        default:
+            return 0;
+        case TokenEqEq:
+        case TokenBang:
+        case TokenBangEq:
+        case TokenPlus:
+        case TokenMinus:
+        case TokenAsterisk:
+        case TokenSlash:
+        case TokenPercent:
+        case TokenCaret:
+        case TokenAmp:
+        case TokenAmpAmp:
+        case TokenBar:
+        case TokenBarBar:
+        case TokenLt:
+        case TokenLtEq:
+        case TokenGt:
+        case TokenGtEq:
+        case TokenStarStar:
+        case TokenLtLt:
+        case TokenGtGt:
+            return 1;
+    }
+}
+
 
 int ParseParamList(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseArgList(struct Ast **out_ast, struct TokenStream *tokenStream);
@@ -274,12 +369,9 @@ success:
 fail_cleanup:
     RESTORE(tokenStream, save);
     free(value);
-    return ParseErrorUnexpectedToken(token);
+    return R_UnexpectedToken;
 }
 
-/*
- * This is more like ident/call/lvalue?
- */
 int ParseIdentifier(struct Ast **out_ast, struct TokenStream *tokenStream) {
     struct Node *save;
     char *identifier = tokenStream->Current->Token->TokenStr;
@@ -289,390 +381,111 @@ int ParseIdentifier(struct Ast **out_ast, struct TokenStream *tokenStream) {
     return AstMakeSymbol(out_ast, identifier);
 }
 
-/* TOP PRECEDENCE
- * <prec1> := <literal>
- *         := ( <expr> )
- */
-int ParsePrec1(struct Ast **out_ast, struct TokenStream *tokenStream) {
+int ParseParenExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
-    struct Token *token = tokenStream->Current->Token;
-    struct Ast *prec1;
-    switch (token->Type) {
-        default:
-            break;
-        case TokenIntegerConstant:
-        case TokenRealConstant:
-        case TokenStringLiteral:
-        case TokenTrue:
-        case TokenFalse:
-            return ParseLiteral(out_ast, tokenStream); /* <literal> */
+    struct Ast *expr;
+    EXPECT_NO_MSG(TokenLeftParen, tokenStream);
+    result = ParseExpr(&expr, tokenStream);
+    EXPECT(TokenRightParen, tokenStream);
+    *out_ast = expr;
+    return result;
+}
+
+
+/* <term> := <literal>
+ *        := <lvalue>
+ *        := <call>
+ *        := <unary-expr>
+ *        := <paren-expr>
+ */
+int ParseTerm(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    int result;
+    struct Ast *term;
+    struct Node *save;
+    SAVE(tokenStream, save);
+    result = ParseLiteral(&term, tokenStream);
+    if (R_OK == result) {
+        *out_ast = term;
+        return R_OK;
     }
-    if (opt_expect(TokenLeftParen, tokenStream)) { /* ( <expr> ) */
-        result = ParseExpr(&prec1, tokenStream);
-        EXPECT(TokenRightParen, tokenStream);
-        *out_ast = prec1;
-        return result;
+    RESTORE(tokenStream, save);
+    result = ParseLValue(&term, tokenStream);
+    if (R_OK == result) {
+        *out_ast = term;
+        return R_OK;
     }
+    RESTORE(tokenStream, save);
+    result = ParseCall(&term, tokenStream);
+    if (R_OK == result) {
+        *out_ast = term;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    result = ParseParenExpr(&term, tokenStream);
+    if (R_OK == result) {
+        *out_ast = term;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    /* TODO: Unary expressions. */
+    *out_ast = NULL;
     return R_UnexpectedToken;
 }
 
-/*
- * <prec2> := <prec1>
- *         := ! <prec1>
- *         := - <prec1>
- */
-int ParsePrec2(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    int result;
-    enum AstNodeType op = UNASSIGNED;
-    struct Ast *prec1;
-    struct Node *save;
-    SAVE(tokenStream, save);
-    // FIXME: need to check for prefix ops first. 
-    if (opt_expect(TokenBang, tokenStream)) { /* ! */
-        op = ULogicNotExpr;
+int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int prec, struct Ast *lhs) {
+    int result, tokenPrec;
+    enum AstNodeType binOp;
+    struct Ast *rhs;
+    while (1) {
+        tokenPrec = GetOperatorPrecedence(tokenStream->Current->Token);
+        if (tokenPrec < prec) {
+            *out_ast = lhs;
+            return R_OK;
+        }
+        binOp = GetOperatorType(tokenStream->Current->Token);
+        TokenStreamAdvance(tokenStream);
+        result = ParseTerm(&rhs, tokenStream);
+        if (R_OK != result) {
+            return result;
+        }
+        /* ParseTerm should set us on an operator unless it failed... */
+        if (tokenPrec < GetOperatorPrecedence(tokenStream->Current->Token)) {
+            result = ParseBinaryRhs(&rhs, tokenStream, tokenPrec + 1, rhs);
+            if (R_OK != result) {
+                return result;
+            }
+        }
+        result = AstMakeBinaryOp(&lhs, lhs, binOp, rhs);
+        if (R_OK != result) {
+            return result;
+        }
     }
-    else if (opt_expect(TokenMinus, tokenStream)) { /* - */
-        op = UNegExpr;
-    }
-    else {
-        result = ParsePrec1(&prec1, tokenStream);
-        *out_ast = R_OK == result ? prec1 : NULL;
-        return result;
-    }
-    result = ParsePrec1(&prec1, tokenStream);
-    IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeUnaryOp(out_ast, op, prec1);
 }
 
 /*
- * <prec3> := <prec2>
- *         := <prec2> ** <prec3>
+ * <binary-expr> := <terminal> <binary-op> <binary-rhs>
  */
-int ParsePrec3(struct Ast **out_ast, struct TokenStream *tokenStream) {
+int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
-    enum AstNodeType op = UNASSIGNED;
-    struct Ast *prec2, *prec3;
-    struct Node *save;
-    SAVE(tokenStream, save);
-    
-    /* FIXME: Pow is right associative. */
-    result = ParsePrec2(&prec2, tokenStream);
+    int opPrec;
+    enum AstNodeType binOp;
+    struct Ast *lhs, *ast;
+    result = ParseTerm(&lhs, tokenStream);
     if (R_OK != result) {
         return result;
     }
-    if (opt_expect(TokenStarStar, tokenStream)) { /* ** */
-        op = BPowExpr;
+    if(!IsBinaryOperator(tokenStream->Current->Token)) {
+        return ParseErrorUnexpectedToken(tokenStream->Current->Token);
     }
-    else {
-        *out_ast = prec2;
+    binOp = GetOperatorType(tokenStream->Current->Token);
+    opPrec = GetOperatorPrecedence(tokenStream->Current->Token);
+    result = ParseBinaryRhs(&ast, tokenStream, opPrec, lhs);
+    if (R_OK == result) {
+        *out_ast = ast;
         return R_OK;
     }
-    result = ParsePrec3(&prec3, tokenStream);
-    IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeBinaryOp(out_ast, prec2, op, prec3);
-}
-/*
- * <prec4> := <prec3>
- *         := <prec3> * <prec4>
- *         := <prec3> / <prec4>
- *         := <prec3> % <prec4>
- */
-int ParsePrec4(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    int result;
-    enum AstNodeType op = UNASSIGNED;
-    struct Ast *prec3, *prec4;
-    struct Node *save;
-    SAVE(tokenStream, save);
-    
-    result = ParsePrec3(&prec3, tokenStream);
-    if (R_OK != result) {
-        return result;
-    }
-    if (opt_expect(TokenAsterisk, tokenStream)) { /* * */
-        op = BMulExpr;
-    }
-    else if (opt_expect(TokenSlash, tokenStream)) { /* / */
-        op = BDivExpr;
-    }
-    else if (opt_expect(TokenPercent, tokenStream)) { /* % */
-        op = BModExpr;
-    }
-    else {
-        *out_ast = prec3;
-        return R_OK;
-    }
-    result = ParsePrec4(&prec4, tokenStream);
-    IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeBinaryOp(out_ast, prec3, op, prec4);
-}
-
-/*
- * <prec5> := <prec4>
- *         := <prec4> + <prec5>
- *         := <prec4> - <prec5>
- */
-int ParsePrec5(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    int result;
-    enum AstNodeType op = UNASSIGNED;
-    struct Ast *prec4, *prec5;
-    struct Node *save;
-    SAVE(tokenStream, save);
-    
-    result = ParsePrec4(&prec4, tokenStream);
-    if (R_OK != result) {
-        return result;
-    }
-    if (opt_expect(TokenPlus, tokenStream)) { /* + */
-        op = BAddExpr;
-    }
-    else if (opt_expect(TokenMinus, tokenStream)) { /* - */
-        op = BSubExpr;
-    }
-    else {
-        *out_ast = prec4;
-        return R_OK;
-    }
-    result = ParsePrec5(&prec5, tokenStream);
-    IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeBinaryOp(out_ast, prec4, op, prec5);
-}
-
-/*
- * <prec6> := <prec5>
- *         := <prec5> << <prec6>
- *         := <prec5> >> <prec6>
- */
-int ParsePrec6(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    int result;
-    enum AstNodeType op = UNASSIGNED;
-    struct Ast *prec5, *prec6;
-    struct Node *save;
-    SAVE(tokenStream, save);
-    
-    result = ParsePrec5(&prec5, tokenStream);
-    if (R_OK != result) {
-        return result;
-    }
-    if (opt_expect(TokenLtLt, tokenStream)) { /* << */
-        op = BLShift;
-    }
-    else if (opt_expect(TokenGtGt, tokenStream)) { /* >> */
-        op = BRShift;
-    }
-    else {
-        *out_ast = prec5;
-        return R_OK;
-    }
-    result = ParsePrec6(&prec6, tokenStream);
-    IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeBinaryOp(out_ast, prec5, op, prec6);
-}
-
-/*
- * <prec7> := <prec6>
- *         := <prec6> & <prec7>
- */
-int ParsePrec7(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    int result;
-    enum AstNodeType op = UNASSIGNED;
-    struct Ast *prec6, *prec7;
-    struct Node *save;
-    SAVE(tokenStream, save);
-    
-    result = ParsePrec6(&prec6, tokenStream);
-    if (R_OK != result) {
-        return result;
-    }
-    if (opt_expect(TokenAmp, tokenStream)) { /* & */
-        op = BArithAndExpr;
-    }
-    else {
-        *out_ast = prec6;
-        return R_OK;
-    }
-    result = ParsePrec7(&prec7, tokenStream);
-    IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeBinaryOp(out_ast, prec6, op, prec7);
-}
-
-/*
- * <prec8> := <prec7>
- *         := <prec7> ^ <prec6>
- */
-int ParsePrec8(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    int result;
-    enum AstNodeType op = UNASSIGNED;
-    struct Ast *prec7, *prec8;
-    struct Node *save;
-    SAVE(tokenStream, save);
-    
-    result = ParsePrec7(&prec7, tokenStream);
-    if (R_OK != result) {
-        return result;
-    }
-    if (opt_expect(TokenCaret, tokenStream)) { /* ^ */
-        op = BArithXorExpr;
-    }
-    else {
-        *out_ast = prec7;
-        return R_OK;
-    }
-    result = ParsePrec8(&prec8, tokenStream);
-    IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeBinaryOp(out_ast, prec7, op, prec8);
-}
-
-/*
- * <prec9> := <prec8>
- *         := <prec8> | <prec9>
- */
-int ParsePrec9(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    int result;
-    enum AstNodeType op = UNASSIGNED;
-    struct Ast *prec8, *prec9;
-    struct Node *save;
-    SAVE(tokenStream, save);
-    
-    result = ParsePrec8(&prec8, tokenStream);
-    if (R_OK != result) {
-        return result;
-    }
-    if (opt_expect(TokenBar, tokenStream)) { /* | */
-        op = BArithOrExpr;
-    }
-    else {
-        *out_ast = prec8;
-        return R_OK;
-    }
-    result = ParsePrec9(&prec9, tokenStream);
-    IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeBinaryOp(out_ast, prec8, op, prec9);
-}
-
-/*
- * <prec10> := <prec9>
- *          := <prec9> > <prec10>
- *          := <prec9> >= <prec10>
- *          := <prec9> < <prec10>
- *          := <prec9> <= <prec10>
- */
-int ParsePrec10(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    int result;
-    enum AstNodeType op = UNASSIGNED;
-    struct Ast *prec9, *prec10;
-    struct Node *save;
-    SAVE(tokenStream, save);
-    
-    result = ParsePrec9(&prec9, tokenStream);
-    if (R_OK != result) {
-        return result;
-    }
-    if (opt_expect(TokenLt, tokenStream)) { /* < */
-        op = BLogicLtExpr;
-    }
-    else if (opt_expect(TokenLtEq, tokenStream)) { /* <= */
-        op = BLogicLtEqExpr;
-    }
-    else if (opt_expect(TokenGt, tokenStream)) { /* > */
-        op = BLogicGtExpr;
-    }
-    else if (opt_expect(TokenGtEq, tokenStream)) { /* >= */
-        op = BLogicGtEqExpr;
-    }
-    else {
-        *out_ast = prec9;
-        return R_OK;
-    }
-    result = ParsePrec10(&prec10, tokenStream);
-    IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeBinaryOp(out_ast, prec9, op, prec10);
-}
-
-/*
- * <prec11> := <prec10>
- *          := <prec10> == <prec11>
- *          := <prec10> != <prec11>
- */
-int ParsePrec11(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    int result;
-    enum AstNodeType op = UNASSIGNED;
-    struct Ast *prec10, *prec11;
-    struct Node *save;
-    SAVE(tokenStream, save);
-    
-    result = ParsePrec10(&prec10, tokenStream);
-    if (R_OK != result) {
-        return result;
-    }
-    if (opt_expect(TokenEqEq, tokenStream)) { /* == */
-        op = BLogicEqExpr;
-    }
-    else if (opt_expect(TokenBangEq, tokenStream)) { /* != */
-        op = BLogicNotEqExpr;
-    }
-    else {
-        *out_ast = prec10;
-        return R_OK;
-    }
-    result = ParsePrec11(&prec11, tokenStream);
-    IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeBinaryOp(out_ast, prec10, op, prec11);
-}
-
-/*
- * <prec12> := <prec11>
- *          := <prec11> && <prec12>
- */
-int ParsePrec12(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    int result;
-    enum AstNodeType op = UNASSIGNED;
-    struct Ast *prec11, *prec12;
-    struct Node *save;
-    SAVE(tokenStream, save);
-    
-    result = ParsePrec11(&prec11, tokenStream);
-    if (R_OK != result) {
-        return result;
-    }
-
-    if (opt_expect(TokenAmpAmp, tokenStream)) { /* && */
-        op = BLogicAndExpr;
-    }
-    else {
-        *out_ast = prec11;
-        return R_OK;
-    }
-    result = ParsePrec12(&prec12, tokenStream);
-    IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeBinaryOp(out_ast, prec11, op, prec12);
-}
-
-/*
- * <prec13> := <prec12>
- *          := <prec12> || <prec13>
- */
-
-int ParsePrec13(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    int result;
-    enum AstNodeType op = UNASSIGNED;
-    struct Ast *prec12, *prec13;
-    struct Node *save;
-    SAVE(tokenStream, save);
-    
-    result = ParsePrec12(&prec12, tokenStream);
-    if (R_OK != result) {
-        return result;
-    }
-    if (opt_expect(TokenBarBar, tokenStream)) { /* || */
-        op = BLogicOrExpr;
-    }
-    else {
-        *out_ast = prec12;
-        return R_OK;
-    }
-    result = ParsePrec13(&prec13, tokenStream);
-    IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeBinaryOp(out_ast, prec12, op, prec13);
+    *out_ast = NULL;
+    return result;
 }
 
 /*
@@ -691,7 +504,7 @@ int ParseExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
         return R_OK;
     }
     RESTORE(tokenStream, save);
-    result = ParsePrec13(&ast, tokenStream);
+    result = ParseBinaryExpr(&ast, tokenStream);
     if (R_OK == result) {
         *out_ast = ast;
         return R_OK;
