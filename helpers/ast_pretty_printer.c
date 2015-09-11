@@ -69,7 +69,7 @@ const char *fmtIntegerLiteral(struct Ast *node) {
     return strdup(buf);
 }
 const char *fmtStringLiteral(struct Ast *node) {
-    return node->u.Value->v.UserObject;
+    return node->u.Value->v.String->CString;
 }
 
 const char *fmtFunction(struct Ast *node) {
