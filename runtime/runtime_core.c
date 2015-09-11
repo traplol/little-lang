@@ -12,7 +12,7 @@ BuiltinFnProc_t RT_print;
 BuiltinFnProc_t RT_println;
 BuiltinFnProc_t RT_type;
 
-struct SrcLoc srcLoc = {"<runtime-core-builtins>", -1, -1};
+struct SrcLoc srcLoc = {"<runtime_core.c>", -1, -1};
 
 char *ToString(struct Value *value) {
     /* TODO: Find better way to do ToString. */
@@ -87,24 +87,24 @@ int RegisterRuntime_core(struct LittleLangMachine *llm) {
     value = ValueAlloc();
     BuiltinFnMake(&fn, "print", 0, 1, RT_print);
     ValueMakeBuiltinFn(value, fn);
-    SymbolTableInsert(llm->GlobalScope, value, fn->Name, srcLoc);
+    SymbolTableInsert(llm->GlobalScope, value, fn->Name, 0, srcLoc);
 
     RT_println = _rt_println;
     value = ValueAlloc();
     BuiltinFnMake(&fn, "println", 0, 1, RT_println);
     ValueMakeBuiltinFn(value, fn);
-    SymbolTableInsert(llm->GlobalScope, value, fn->Name, srcLoc);
+    SymbolTableInsert(llm->GlobalScope, value, fn->Name, 0, srcLoc);
 
     RT_string = _rt_string;
     value = ValueAlloc();
     BuiltinFnMake(&fn, "string", 1, 0, RT_string);
     ValueMakeBuiltinFn(value, fn);
-    SymbolTableInsert(llm->GlobalScope, value, fn->Name, srcLoc);
+    SymbolTableInsert(llm->GlobalScope, value, fn->Name, 0, srcLoc);
 
     RT_type = _rt_type;
     value = ValueAlloc();
     BuiltinFnMake(&fn, "type", 1, 0, RT_type);
     ValueMakeBuiltinFn(value, fn);
-    SymbolTableInsert(llm->GlobalScope, value, fn->Name, srcLoc);
+    SymbolTableInsert(llm->GlobalScope, value, fn->Name, 0, srcLoc);
     return R_OK;
 }
