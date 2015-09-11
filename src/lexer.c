@@ -12,12 +12,12 @@
 
 #define LEX_ADVN(l, n)                          \
     do {                                        \
-        (l)->Pos += (n);                        \
         (l)->CurrentColumnNumber += (n);        \
         if('\n' == *(l)->Pos) {                 \
             (l)->CurrentLineNumber++;           \
-            (l)->CurrentColumnNumber = 0;       \
+            (l)->CurrentColumnNumber = 1;       \
         }                                       \
+        (l)->Pos += (n);                        \
     } while (0)
 
 #define LEX_ADV(l) LEX_ADVN(l, 1)
