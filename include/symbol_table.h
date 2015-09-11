@@ -5,6 +5,7 @@
 
 struct Symbol {
     char *Key;
+    int IsMutable;
     struct Value *Value;
     struct SrcLoc SrcLoc;
     struct Symbol *Next;
@@ -22,7 +23,7 @@ int SymbolTableFree(struct SymbolTable *table);
 int SymbolTablePushScope(struct SymbolTable **table);
 int SymbolTablePopScope(struct SymbolTable **table);
 
-int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key, struct SrcLoc srcLoc);
+int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key, int IsMutable, struct SrcLoc srcLoc);
 int SymbolTableFindLocal(struct SymbolTable *table, char *key, struct Symbol **out_symbol);
 int SymbolTableFindNearest(struct SymbolTable *table, char *key, struct Symbol **out_symbol);
 

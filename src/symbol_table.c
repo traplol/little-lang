@@ -12,8 +12,9 @@
 struct Symbol **SymbolTableAllocSymbols(unsigned int len) {
     return calloc(sizeof(struct Symbol*), len);
 }
-struct Symbol *SymbolAlloc(char *key, struct Value *value, struct SrcLoc srcLoc) {
+struct Symbol *SymbolAlloc(char *key, struct Value *value, int isMutable, struct SrcLoc srcLoc) {
     struct Symbol *symbol = malloc(sizeof *symbol);
+    symbol->IsMutable = isMutable;
     symbol->Key = key;
     symbol->Value = value;
     symbol->SrcLoc = srcLoc;
@@ -95,7 +96,7 @@ int SymbolTablePopScope(struct SymbolTable **table) {
     return R_OK;
 }
 
-int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key, struct SrcLoc srcLoc) {
+int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key, int isMutable, struct SrcLoc srcLoc) {
     struct Symbol *symbol, *tmp;
     unsigned int tableIdx;
     if (SymbolTableIsInvalid(table) || !value || !key || !srcLoc.Filename) {
@@ -105,7 +106,7 @@ int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key,
     tableIdx = SymbolTableGetIdx(table, key);
     tmp = table->Symbols[tableIdx];
     if (!tmp) {
-        symbol = SymbolAlloc(key, value, srcLoc);
+        symbol = SymbolAlloc(key, value, isMutable, srcLoc);
         table->Symbols[tableIdx] = symbol;
         return R_OK;
     }
@@ -115,7 +116,7 @@ int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key,
         }
         tmp = tmp->Next;
     }
-    symbol = SymbolAlloc(key, value, srcLoc);
+    symbol = SymbolAlloc(key, value, isMutable, srcLoc);
     tmp->Next = symbol;
     return R_OK;
 }
