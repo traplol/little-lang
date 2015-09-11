@@ -1,6 +1,8 @@
 #include "ast.h"
 #include "result.h"
 
+#include "helpers/strings.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -53,7 +55,7 @@ int AstFree(struct Ast *ast) {
     return R_OK;
 }
 
-int AstMakeBoolean(struct Ast **out_ast, struct Value *boolean) {
+int AstMakeBoolean(struct Ast **out_ast, struct Value *boolean, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast || !boolean) {
         return R_InvalidArgument;
@@ -61,10 +63,11 @@ int AstMakeBoolean(struct Ast **out_ast, struct Value *boolean) {
     ast = AstAlloc(0);
     ast->Type = BooleanNode;
     ast->u.Value = boolean;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeReal(struct Ast **out_ast, struct Value *real) {
+int AstMakeReal(struct Ast **out_ast, struct Value *real, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast || !real) {
         return R_InvalidArgument;
@@ -72,10 +75,11 @@ int AstMakeReal(struct Ast **out_ast, struct Value *real) {
     ast = AstAlloc(0);
     ast->Type = RealNode;
     ast->u.Value = real;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeInteger(struct Ast **out_ast, struct Value *integer) {
+int AstMakeInteger(struct Ast **out_ast, struct Value *integer, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast || !integer) {
         return R_InvalidArgument;
@@ -83,10 +87,11 @@ int AstMakeInteger(struct Ast **out_ast, struct Value *integer) {
     ast = AstAlloc(0);
     ast->Type = IntegerNode;
     ast->u.Value = integer;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeString(struct Ast **out_ast, struct Value *string) {
+int AstMakeString(struct Ast **out_ast, struct Value *string, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast || !string) {
         return R_InvalidArgument;
@@ -94,21 +99,23 @@ int AstMakeString(struct Ast **out_ast, struct Value *string) {
     ast = AstAlloc(0);
     ast->Type = StringNode;
     ast->u.Value = string;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeSymbol(struct Ast **out_ast, char *name) {
+int AstMakeSymbol(struct Ast **out_ast, char *name, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast || !name) {
         return R_InvalidArgument;
     }
     ast = AstAlloc(0);
     ast->Type = SymbolNode;
-    ast->u.SymbolName = name; /* FIXME: Should this be strdup'd? */
+    ast->u.SymbolName = strdup(name); /* FIXME: Should this be strdup'd? */
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeFunction(struct Ast **out_ast, struct Value *function) {
+int AstMakeFunction(struct Ast **out_ast, struct Value *function, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast || !function) {
         return R_InvalidArgument;
@@ -116,12 +123,13 @@ int AstMakeFunction(struct Ast **out_ast, struct Value *function) {
     ast = AstAlloc(0);
     ast->Type = FunctionNode;;
     ast->u.Value = function;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
 
 /* Expressions should be a combination of more expressions and terminals. */
-int AstMakeBinaryOp(struct Ast **out_ast, struct Ast *lhs, enum AstNodeType op, struct Ast *rhs) {
+int AstMakeBinaryOp(struct Ast **out_ast, struct Ast *lhs, enum AstNodeType op, struct Ast *rhs, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast || !lhs || !rhs) {
         return R_InvalidArgument;
@@ -130,10 +138,11 @@ int AstMakeBinaryOp(struct Ast **out_ast, struct Ast *lhs, enum AstNodeType op, 
     ast->Type = op;
     ast->Children[0] = lhs;
     ast->Children[1] = rhs;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeUnaryOp(struct Ast **out_ast, enum AstNodeType op, struct Ast *value) {
+int AstMakeUnaryOp(struct Ast **out_ast, enum AstNodeType op, struct Ast *value, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast || !value) {
         return R_InvalidArgument;
@@ -141,10 +150,11 @@ int AstMakeUnaryOp(struct Ast **out_ast, enum AstNodeType op, struct Ast *value)
     ast = AstAlloc(1);
     ast->Type = op;
     ast->Children[0] = value;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeAssign(struct Ast **out_ast, struct Ast *lValue, struct Ast *rhs) {
+int AstMakeAssign(struct Ast **out_ast, struct Ast *lValue, struct Ast *rhs, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast || !lValue || !rhs) {
         return R_InvalidArgument;
@@ -153,16 +163,17 @@ int AstMakeAssign(struct Ast **out_ast, struct Ast *lValue, struct Ast *rhs) {
     ast->Type = AssignExpr;
     ast->Children[0] = lValue;
     ast->Children[1] = rhs;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeCall(struct Ast **out_ast, char *name, struct Ast *args) {
+int AstMakeCall(struct Ast **out_ast, char *name, struct Ast *args, struct SrcLoc srcLoc) {
     struct Ast *ast, *callSymbol;
     int result;
     if (!out_ast || !name) {
         return R_InvalidArgument;
     }
-    result = AstMakeSymbol(&callSymbol, name);
+    result = AstMakeSymbol(&callSymbol, name, srcLoc);
     if (R_OK != result) {
         return result;
     }
@@ -170,10 +181,11 @@ int AstMakeCall(struct Ast **out_ast, char *name, struct Ast *args) {
     ast->Type = CallExpr;
     ast->Children[0] = callSymbol;
     ast->Children[1] = args;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeReturn(struct Ast **out_ast, struct Ast *value) {
+int AstMakeReturn(struct Ast **out_ast, struct Ast *value, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast) {
         return R_InvalidArgument;
@@ -181,10 +193,11 @@ int AstMakeReturn(struct Ast **out_ast, struct Ast *value) {
     ast = AstAlloc(1);
     ast->Type = ReturnExpr;
     ast->Children[0] = value;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeMut(struct Ast **out_ast, struct Ast *names, struct Ast *values) {
+int AstMakeMut(struct Ast **out_ast, struct Ast *names, struct Ast *values, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast || !names || !values) {
         return R_InvalidArgument;
@@ -199,16 +212,17 @@ int AstMakeMut(struct Ast **out_ast, struct Ast *names, struct Ast *values) {
     ast->Type = MutExpr;
     ast->Children[0] = names;
     ast->Children[1] = values;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeConst(struct Ast **out_ast, char *name, struct Ast *value) {
+int AstMakeConst(struct Ast **out_ast, char *name, struct Ast *value, struct SrcLoc srcLoc) {
     struct Ast *ast, *symbolName;
     int result;
     if (!out_ast || !name || !value) {
         return R_InvalidArgument;
     }
-    result = AstMakeSymbol(&symbolName, name);
+    result = AstMakeSymbol(&symbolName, name, srcLoc);
     if (R_OK != result) {
         return result;
     }
@@ -216,10 +230,11 @@ int AstMakeConst(struct Ast **out_ast, char *name, struct Ast *value) {
     ast->Type = ConstExpr;
     ast->Children[0] = symbolName;
     ast->Children[1] = value;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeFor(struct Ast **out_ast, struct Ast *pre, struct Ast *condition, struct Ast *body, struct Ast *post) {
+int AstMakeFor(struct Ast **out_ast, struct Ast *pre, struct Ast *condition, struct Ast *body, struct Ast *post, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast) {
         return R_InvalidArgument;
@@ -230,10 +245,11 @@ int AstMakeFor(struct Ast **out_ast, struct Ast *pre, struct Ast *condition, str
     ast->Children[1] = condition;
     ast->Children[2] = body;
     ast->Children[3] = post;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeWhile(struct Ast **out_ast, struct Ast *condition, struct Ast *body) {
+int AstMakeWhile(struct Ast **out_ast, struct Ast *condition, struct Ast *body, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast || !condition) {
         return R_InvalidArgument;
@@ -242,10 +258,11 @@ int AstMakeWhile(struct Ast **out_ast, struct Ast *condition, struct Ast *body) 
     ast->Type = WhileExpr;
     ast->Children[0] = condition;
     ast->Children[1] = body;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeIfElse(struct Ast **out_ast, struct Ast *condition, struct Ast *body, struct Ast *elseif) {
+int AstMakeIfElse(struct Ast **out_ast, struct Ast *condition, struct Ast *body, struct Ast *elseif, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast || !condition) {
         return R_InvalidArgument;
@@ -255,6 +272,7 @@ int AstMakeIfElse(struct Ast **out_ast, struct Ast *condition, struct Ast *body,
     ast->Children[0] = condition;
     ast->Children[1] = body;
     ast->Children[2] = elseif;
+    ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
 }

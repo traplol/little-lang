@@ -1,6 +1,8 @@
 #ifndef _LITTLE_LANG_AST_H
 #define _LITTLE_LANG_AST_H
 
+#include "src_loc.h"
+
 enum AstNodeType {
     UNASSIGNED,
     Body,
@@ -57,6 +59,7 @@ struct Ast {
         char *SymbolName;
         struct Value *Value;
     } u;
+    struct SrcLoc SrcLoc;
 };
 
 void AstPrettyPrint(struct Ast *ast);
@@ -65,24 +68,24 @@ int AstMakeBlank(struct Ast **out_ast);
 int AstFree(struct Ast *ast);
 
 /* Terminals */
-int AstMakeBoolean(struct Ast **out_ast, struct Value *boolean);
-int AstMakeReal(struct Ast **out_ast, struct Value *real);
-int AstMakeInteger(struct Ast **out_ast, struct Value *integer);
-int AstMakeString(struct Ast **out_ast, struct Value *string);
-int AstMakeSymbol(struct Ast **out_ast, char *name);
-int AstMakeFunction(struct Ast **out_ast, struct Value *function);
+int AstMakeBoolean(struct Ast **out_ast, struct Value *boolean, struct SrcLoc srcLoc);
+int AstMakeReal(struct Ast **out_ast, struct Value *real, struct SrcLoc srcLoc);
+int AstMakeInteger(struct Ast **out_ast, struct Value *integer, struct SrcLoc srcLoc);
+int AstMakeString(struct Ast **out_ast, struct Value *string, struct SrcLoc srcLoc);
+int AstMakeSymbol(struct Ast **out_ast, char *name, struct SrcLoc srcLoc);
+int AstMakeFunction(struct Ast **out_ast, struct Value *function, struct SrcLoc srcLoc);
 
 /* Expressions should be a combination of more expressions and terminals. */
-int AstMakeBinaryOp(struct Ast **out_ast, struct Ast *lhs, enum AstNodeType op, struct Ast *rhs);
-int AstMakeUnaryOp(struct Ast **out_ast, enum AstNodeType op, struct Ast *value);
-int AstMakeAssign(struct Ast **out_ast, struct Ast *lValue, struct Ast *rhs);
-int AstMakeCall(struct Ast **out_ast, char *name, struct Ast *args);
-int AstMakeReturn(struct Ast **out_ast, struct Ast *value);
-int AstMakeMut(struct Ast **out_ast, struct Ast *names, struct Ast *values);
-int AstMakeConst(struct Ast **out_ast, char *name, struct Ast *value);
-int AstMakeFor(struct Ast **out_ast, struct Ast *pre, struct Ast *condition, struct Ast *body, struct Ast *post);
-int AstMakeWhile(struct Ast **out_ast, struct Ast *condition, struct Ast *body);
-int AstMakeIfElse(struct Ast **out_ast, struct Ast *condition, struct Ast *body, struct Ast *elseif);
+int AstMakeBinaryOp(struct Ast **out_ast, struct Ast *lhs, enum AstNodeType op, struct Ast *rhs, struct SrcLoc srcLoc);
+int AstMakeUnaryOp(struct Ast **out_ast, enum AstNodeType op, struct Ast *value, struct SrcLoc srcLoc);
+int AstMakeAssign(struct Ast **out_ast, struct Ast *lValue, struct Ast *rhs, struct SrcLoc srcLoc);
+int AstMakeCall(struct Ast **out_ast, char *name, struct Ast *args, struct SrcLoc srcLoc);
+int AstMakeReturn(struct Ast **out_ast, struct Ast *value, struct SrcLoc srcLoc);
+int AstMakeMut(struct Ast **out_ast, struct Ast *names, struct Ast *values, struct SrcLoc srcLoc);
+int AstMakeConst(struct Ast **out_ast, char *name, struct Ast *value, struct SrcLoc srcLoc);
+int AstMakeFor(struct Ast **out_ast, struct Ast *pre, struct Ast *condition, struct Ast *body, struct Ast *post, struct SrcLoc srcLoc);
+int AstMakeWhile(struct Ast **out_ast, struct Ast *condition, struct Ast *body, struct SrcLoc srcLoc);
+int AstMakeIfElse(struct Ast **out_ast, struct Ast *condition, struct Ast *body, struct Ast *elseif, struct SrcLoc srcLoc);
 
 int AstAppendChild(struct Ast *ast, struct Ast *child);
 
