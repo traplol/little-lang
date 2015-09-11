@@ -1,12 +1,12 @@
 #ifndef _LITTLE_LANG_SYMBOL_TABLE_H
 #define _LITTLE_LANG_SYMBOL_TABLE_H
 
+#include "src_loc.h"
+
 struct Symbol {
     char *Key;
     struct Value *Value;
-    char *Filename;
-    int LineNumber;
-    int ColumnNumber;
+    struct SrcLoc SrcLoc;
     struct Symbol *Next;
 };
 
@@ -22,7 +22,7 @@ int SymbolTableFree(struct SymbolTable *table);
 int SymbolTablePushScope(struct SymbolTable **table);
 int SymbolTablePopScope(struct SymbolTable **table);
 
-int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key, char *filename, int lineNumber, int columnNumber);
+int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key, struct SrcLoc srcLoc);
 int SymbolTableFindLocal(struct SymbolTable *table, char *key, struct Symbol **out_symbol);
 int SymbolTableFindNearest(struct SymbolTable *table, char *key, struct Symbol **out_symbol);
 

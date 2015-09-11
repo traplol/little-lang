@@ -12,19 +12,16 @@
 struct Symbol **SymbolTableAllocSymbols(unsigned int len) {
     return calloc(sizeof(struct Symbol*), len);
 }
-struct Symbol *SymbolAlloc(char *key, struct Value *value, char *filename, int lineNumber, int columnNumber) {
+struct Symbol *SymbolAlloc(char *key, struct Value *value, struct SrcLoc srcLoc) {
     struct Symbol *symbol = malloc(sizeof *symbol);
     symbol->Key = key;
     symbol->Value = value;
-    symbol->Filename = filename;
-    symbol->LineNumber = lineNumber;
-    symbol->ColumnNumber = columnNumber;
+    symbol->SrcLoc = srcLoc;
     symbol->Next = NULL;
     return symbol;
 }
 
 void SymbolFree(struct Symbol *symbol) {
-    free(symbol->Key);
     free(symbol);
 }
 
@@ -98,17 +95,17 @@ int SymbolTablePopScope(struct SymbolTable **table) {
     return R_OK;
 }
 
-int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key, char *filename, int lineNumber, int columnNumber) {
+int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key, struct SrcLoc srcLoc) {
     struct Symbol *symbol, *tmp;
     unsigned int tableIdx;
-    if (SymbolTableIsInvalid(table) || !value || !key || !filename) {
+    if (SymbolTableIsInvalid(table) || !value || !key || !srcLoc.Filename) {
         return R_InvalidArgument;
     }
 
     tableIdx = SymbolTableGetIdx(table, key);
     tmp = table->Symbols[tableIdx];
     if (!tmp) {
-        symbol = SymbolAlloc(key, value, filename, lineNumber, columnNumber);
+        symbol = SymbolAlloc(key, value, srcLoc);
         table->Symbols[tableIdx] = symbol;
         return R_OK;
     }
@@ -118,7 +115,7 @@ int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key,
         }
         tmp = tmp->Next;
     }
-    symbol = SymbolAlloc(key, value, filename, lineNumber, columnNumber);
+    symbol = SymbolAlloc(key, value, srcLoc);
     tmp->Next = symbol;
     return R_OK;
 }
