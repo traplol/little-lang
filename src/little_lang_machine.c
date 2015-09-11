@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 int LittleLangMachineIsValid(struct LittleLangMachine *llm) {
     return llm && llm->Lexer && llm->GlobalScope && llm->TypeTable;
@@ -94,7 +95,7 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
 
 int DefineFunction(struct SymbolTable *symbolTable, struct Ast *function) {
     struct Value *fn = function->u.Value;
-    return SymbolTableInsert(symbolTable, fn, fn->v.Function->Name, function->SrcLoc);
+    return SymbolTableInsert(symbolTable, fn, fn->v.Function->Name, 1, function->SrcLoc);
 }
 
 int DefineTopLevelFunctions(struct SymbolTable *symbolTable, struct Ast *functionDefs) {
@@ -112,6 +113,8 @@ int DefineTopLevelFunctions(struct SymbolTable *symbolTable, struct Ast *functio
 int LittleLangMachineRun(struct LittleLangMachine *llm) {
     struct Ast *program;
     struct Ast *functionDefs;
+    clock_t start, end;
+    double time;
     int result;
     if (LittleLangMachineIsInvalid(llm)) {
         return R_InvalidArgument;
@@ -124,14 +127,18 @@ int LittleLangMachineRun(struct LittleLangMachine *llm) {
     result = Parse(&functionDefs, &program, llm->Lexer);
     if (R_OK == result) {
         llm->Program = program;
-        printf("Function definitions:\n\n");
+        printf("Function definitions:\n");
         AstPrettyPrint(functionDefs);
         printf("\nProgram:\n");
         AstPrettyPrint(llm->Program);
         InterpreterInit(llm);
         DefineTopLevelFunctions(llm->GlobalScope, functionDefs);
         printf("\n\n");
+        start = clock();
         InterpreterRunProgram(llm);
+        end = clock();
+        time = (end - start) * 1.0 / CLOCKS_PER_SEC;
+        printf("\nfinished program execution in %fs\n", time);
     }
     else {
         llm->Program = NULL;
