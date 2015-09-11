@@ -528,7 +528,7 @@ struct Value *InterpreterDoCallFunction(struct LittleLangMachine *llm, struct Va
     /* Setup params */
     /* TODO: Handle varargs */
     for (i = 0; i < params->NumChildren; ++i) {
-        arg = args->Children[i]->u.Value;
+        arg = InterpreterRunAst(llm, args->Children[i]);
         param = params->Children[i];
         SymbolTableInsert(llm->CurrentScope, arg, param->u.SymbolName, param->SrcLoc);
     }
