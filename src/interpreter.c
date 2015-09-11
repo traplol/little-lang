@@ -467,6 +467,38 @@ struct Value *InterpreterDoLogicNot(struct LittleLangMachine *llm, struct Ast *a
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoAssign(struct LittleLangMachine *llm, struct Ast *ast) {
+    struct Symbol *symbol;
+    struct Value *value;
+    char *symName = ast->Children[0]->u.SymbolName;
+    if (!SymbolTableFindNearest(llm->CurrentScope, symName, &symbol)) {
+        printf("Trying to assign to undefined symbol: '%s' at %s:%d:%d\n",
+               symbol->Key,
+               ast->SrcLoc.Filename,
+               ast->SrcLoc.LineNumber,
+               ast->SrcLoc.ColumnNumber);
+        return &g_TheNilValue;
+    }
+    if (!symbol->IsMutable) {
+        printf("Trying to assign to const symbol: '%s' at %s:%d:%d\n",
+               symbol->Key,
+               ast->SrcLoc.Filename,
+               ast->SrcLoc.LineNumber,
+               ast->SrcLoc.ColumnNumber);
+        return &g_TheNilValue;
+    }
+    value = InterpreterRunAst(llm, ast->Children[1]);
+    if (symbol->Value->TypeInfo != value->TypeInfo) {
+        /* THOUGHT: Duck typing??? */
+        printf("Trying to assign type '%s' to type '%s': '%s' at %s:%d:%d\n",
+               value->TypeInfo->TypeName,
+               symbol->Value->TypeInfo->TypeName,
+               symbol->Key,
+               ast->SrcLoc.Filename,
+               ast->SrcLoc.LineNumber,
+               ast->SrcLoc.ColumnNumber);
+        return &g_TheNilValue;
+    }
+    symbol->Value = value;
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoBoolean(struct Ast *ast){
@@ -511,7 +543,7 @@ struct Value *InterpreterDoCallBuiltinFn(struct LittleLangMachine *llm, struct V
 struct Value *InterpreterDoCallFunction(struct LittleLangMachine *llm, struct Value *function, struct Ast *args, struct SrcLoc srcLoc) {
     unsigned int i;
     struct Value *returnValue, *arg;
-    struct Ast *params, *body, *param, *stmt;
+    struct Ast *params, *body, *param;
     struct Function *fn = function->v.Function;
     params = fn->Params;
     body = fn->Body;
@@ -530,8 +562,9 @@ struct Value *InterpreterDoCallFunction(struct LittleLangMachine *llm, struct Va
     for (i = 0; i < params->NumChildren; ++i) {
         arg = InterpreterRunAst(llm, args->Children[i]);
         param = params->Children[i];
-        SymbolTableInsert(llm->CurrentScope, arg, param->u.SymbolName, param->SrcLoc);
+        SymbolTableInsert(llm->CurrentScope, arg, param->u.SymbolName, 1, param->SrcLoc);
     }
+    /* Execute body. */
     for (i = 0; i < body->NumChildren; ++i) {
         returnValue = InterpreterRunAst(llm, body->Children[i]);
     }
@@ -549,9 +582,43 @@ struct Value *InterpreterDoReturn(struct LittleLangMachine *llm, struct Ast *ast
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoMut(struct LittleLangMachine *llm, struct Ast *ast) {
+    unsigned int i;
+    struct Ast *names, *values, *curName;
+    struct Symbol *symbol;
+    struct Value *value;
+    names = ast->Children[0];
+    values = ast->Children[1];
+    for (i = 0; i < names->NumChildren; ++i) {
+        curName = names->Children[i];
+        if (SymbolTableFindNearest(llm->CurrentScope, curName->u.SymbolName, &symbol)) {
+            printf("Symbol already defined: '%s' at %s:%d:%d\n",
+                symbol->Key,
+                symbol->SrcLoc.Filename,
+                symbol->SrcLoc.LineNumber,
+                symbol->SrcLoc.ColumnNumber);
+            return &g_TheNilValue;
+        }
+        value = InterpreterRunAst(llm, values->Children[i]);
+        SymbolTableInsert(llm->CurrentScope, value, curName->u.SymbolName, 1, curName->SrcLoc);
+    }
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoConst(struct LittleLangMachine *llm, struct Ast *ast) {
+    struct Ast *name, *valueAst;
+    struct Symbol *symbol;
+    struct Value *value;
+    name = ast->Children[0];
+    valueAst = ast->Children[1];
+    if (SymbolTableFindNearest(llm->CurrentScope, name->u.SymbolName, &symbol)) {
+        printf("Symbol already defined: '%s' at %s:%d:%d\n",
+            symbol->Key,
+            symbol->SrcLoc.Filename,
+            symbol->SrcLoc.LineNumber,
+            symbol->SrcLoc.ColumnNumber);
+        return &g_TheNilValue;
+    }
+    value = InterpreterRunAst(llm, valueAst);
+    SymbolTableInsert(llm->CurrentScope, value, name->u.SymbolName, 0, name->SrcLoc);
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoFor(struct LittleLangMachine *llm, struct Ast *ast) {
