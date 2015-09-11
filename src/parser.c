@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
 const char *tokenStrings[Token_NUM_TOKENS] = {
     [TokenSemicolon] = ";",
     [TokenComma] = ",",
@@ -86,18 +87,18 @@ int check(enum TokenType type, struct TokenStream *ts) {
 int ParseErrorUnexpectedToken(struct Token *token) {
     fprintf(stderr, "Unexpected token: '%s' at %s:%d:%d\n",
             token->TokenStr,
-            token->Filename,
-            token->LineNumber,
-            token->ColumnNumber);
+            token->SrcLoc.Filename,
+            token->SrcLoc.LineNumber,
+            token->SrcLoc.ColumnNumber);
     return R_UnexpectedToken;
 }
 
 int ParseErrorUnexpectedTokenExpected(const char *expected, struct Token *token) {
     fprintf(stderr, "Unexpected token: '%s' at %s:%d:%d, expected '%s'\n",
             token->TokenStr,
-            token->Filename,
-            token->LineNumber,
-            token->ColumnNumber,
+            token->SrcLoc.Filename,
+            token->SrcLoc.LineNumber,
+            token->SrcLoc.ColumnNumber,
             expected);
     return R_UnexpectedToken;
 }
@@ -243,13 +244,15 @@ int ParseConst(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     char *identifier;
     struct Ast *expr;
+    struct Node *save;
+    SAVE(tokenStream, save);
     EXPECT_NO_MSG(TokenConst, tokenStream);
     identifier = tokenStream->Current->Token->TokenStr;
     EXPECT(TokenIdentifer, tokenStream);
     EXPECT(TokenEquals, tokenStream);
     result = ParseExpr(&expr, tokenStream);
     identifier = strdup(identifier);
-    return AstMakeConst(out_ast, identifier, expr);
+    return AstMakeConst(out_ast, identifier, expr, save->Token->SrcLoc);
 }
 
 /* <comma-separated-identifers> := <identifier>
@@ -305,11 +308,13 @@ int ParseMut(struct Ast **out_ast, struct TokenStream *tokenStream) {
     /* TODO: Validate 'mut-expr' */
     int result;
     struct Ast *names, *exprs;
+    struct Node *save;
+    SAVE(tokenStream, save);
     EXPECT_NO_MSG(TokenMut, tokenStream);
     result = ParseCommaSeparatedIdentifiers(&names, tokenStream);
     EXPECT(TokenEquals, tokenStream);
     result = ParseCommaSeparatedExprs(&exprs, tokenStream);
-    return AstMakeMut(out_ast, names, exprs);
+    return AstMakeMut(out_ast, names, exprs, save->Token->SrcLoc);
 }
 
 /* <for> := for <expr> ; <expr> ; <expr> { <stmt-list> } */
@@ -317,6 +322,8 @@ int ParseFor(struct Ast **out_ast, struct TokenStream *tokenStream) {
     /* TODO: Validate 'for' parsing. */
     int result;
     struct Ast *pre, *cond, *post, *body;
+    struct Node *save;
+    SAVE(tokenStream, save);
 
     EXPECT_NO_MSG(TokenFor, tokenStream);
 
@@ -332,7 +339,7 @@ int ParseFor(struct Ast **out_ast, struct TokenStream *tokenStream) {
     result = ParseStmtList(&body, tokenStream);
     EXPECT(TokenRightCurlyBrace, tokenStream);
 
-    return AstMakeFor(out_ast, pre, cond, body, post);
+    return AstMakeFor(out_ast, pre, cond, body, post, save->Token->SrcLoc);
 }
 
 /* <while> := while <expr> { <stmt-list> } */
@@ -340,6 +347,8 @@ int ParseWhile(struct Ast **out_ast, struct TokenStream *tokenStream) {
     /* TODO: Validate 'while' parsing. */
     int result;
     struct Ast *cond, *body;
+    struct Node *save;
+    SAVE(tokenStream, save);
 
     EXPECT_NO_MSG(TokenWhile, tokenStream);
 
@@ -349,7 +358,7 @@ int ParseWhile(struct Ast **out_ast, struct TokenStream *tokenStream) {
     result = ParseStmtList(&body, tokenStream);
     EXPECT(TokenRightCurlyBrace, tokenStream);
 
-    return AstMakeWhile(out_ast, cond, body);
+    return AstMakeWhile(out_ast, cond, body, save->Token->SrcLoc);
 }
 
 /*
@@ -362,7 +371,9 @@ int ParseParamList(struct Ast **out_ast, struct TokenStream *tokenStream) {
     struct Ast *params, *param;
     result = AstMakeBlank(&params); /* FIXME: Do something with result. */
     while (check(TokenIdentifer, tokenStream)) {
-        result = AstMakeSymbol(&param, tokenStream->Current->Token->TokenStr);
+        result = AstMakeSymbol(&param,
+                               tokenStream->Current->Token->TokenStr,
+                               tokenStream->Current->Token->SrcLoc);
         TokenStreamAdvance(tokenStream);
         if (R_OK != result) {
             break;
@@ -402,12 +413,14 @@ int ParseCall(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     struct Ast *args = NULL;
     char *identifier = tokenStream->Current->Token->TokenStr;
+    struct Node *save;
+    SAVE(tokenStream, save);
     EXPECT_NO_MSG(TokenIdentifer, tokenStream);
-    EXPECT(TokenLeftParen, tokenStream);
+    EXPECT_NO_MSG(TokenLeftParen, tokenStream);
     result = ParseArgList(&args, tokenStream); /* FIXME: Do something with result. */
     EXPECT(TokenRightParen, tokenStream);
     identifier = strdup(identifier);
-    return AstMakeCall(out_ast, identifier, args);
+    return AstMakeCall(out_ast, identifier, args, save->Token->SrcLoc);
 }
 
 /*
@@ -438,7 +451,7 @@ int ParseAssign(struct Ast **out_ast, struct TokenStream *tokenStream) {
     EXPECT_NO_MSG(TokenEquals, tokenStream);
     result = ParseExpr(&expr, tokenStream);
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeAssign(out_ast, lvalue, expr);
+    return AstMakeAssign(out_ast, lvalue, expr, save->Token->SrcLoc);
 }
 
 int ParseLiteral(struct Ast **out_ast, struct TokenStream *tokenStream) {
@@ -451,37 +464,28 @@ int ParseLiteral(struct Ast **out_ast, struct TokenStream *tokenStream) {
         default:
             goto fail_cleanup;
         case TokenIntegerConstant:
-            if (R_OK != ValueMake(value,
-                                  &g_TheIntegerTypeInfo,
-                                  &(token->v.Integer),
-                                  sizeof token->v.Integer)) {
+            if (R_OK != ValueMakeInteger(value, token->v.Integer)) {
                 goto fail_cleanup;
             }
-            result = AstMakeInteger(out_ast, value);
+            result = AstMakeInteger(out_ast, value, save->Token->SrcLoc);
             goto success;
         case TokenRealConstant:
-            if (R_OK != ValueMake(value,
-                                  &g_TheRealTypeInfo,
-                                  &(token->v.Real),
-                                  sizeof token->v.Real)) {
+            if (R_OK != ValueMakeReal(value, token->v.Real)) {
                 goto fail_cleanup;
             }
-            result = AstMakeReal(out_ast, value);
+            result = AstMakeReal(out_ast, value, save->Token->SrcLoc);
             goto success;
         case TokenStringLiteral:
-            if (R_OK != ValueMake(value,
-                                  &g_TheStringTypeInfo,
-                                  &(token->v.String),
-                                  sizeof token->v.String)) {
+            if (R_OK != ValueMakeLLString(value, token->v.String)) {
                 goto fail_cleanup;
             }
-            result = AstMakeString(out_ast, value);
+            result = AstMakeString(out_ast, value, save->Token->SrcLoc);
             goto success;
         case TokenTrue:
-            result = AstMakeBoolean(out_ast, &g_TheTrueValue);
+            result = AstMakeBoolean(out_ast, &g_TheTrueValue, save->Token->SrcLoc);
             goto success;
         case TokenFalse:
-            result = AstMakeBoolean(out_ast, &g_TheFalseValue);
+            result = AstMakeBoolean(out_ast, &g_TheFalseValue, save->Token->SrcLoc);
             goto success;
     }
 
@@ -504,7 +508,7 @@ int ParseIdentifier(struct Ast **out_ast, struct TokenStream *tokenStream) {
     SAVE(tokenStream, save);
     EXPECT_NO_MSG(TokenIdentifer, tokenStream);
     identifier = strdup(identifier);
-    return AstMakeSymbol(out_ast, identifier);
+    return AstMakeSymbol(out_ast, identifier, save->Token->SrcLoc);
 }
 
 /* <paren-expr> := ( <expr> ) */
@@ -523,6 +527,8 @@ int ParseUnaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     enum AstNodeType unOp;
     struct Ast *expr;
+    struct Node *save;
+    SAVE(tokenStream, save);
     if (!IsUnaryOperator(tokenStream->Current->Token)) {
         return R_UnexpectedToken;
     }
@@ -530,7 +536,7 @@ int ParseUnaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     TokenStreamAdvance(tokenStream);
     result = ParseTerm(&expr, tokenStream);
     if (R_OK == result) {
-        return AstMakeUnaryOp(out_ast, unOp, expr);
+        return AstMakeUnaryOp(out_ast, unOp, expr, save->Token->SrcLoc);
     }
     *out_ast = NULL;
     return result;
@@ -554,16 +560,19 @@ int ParseTerm(struct Ast **out_ast, struct TokenStream *tokenStream) {
         return R_OK;
     }
     RESTORE(tokenStream, save);
-    result = ParseLValue(&term, tokenStream);
-    if (R_OK == result) {
-        *out_ast = term;
-        return R_OK;
+    if (TokenLeftParen == tokenStream->Current->Next->Token->Type) {
+        result = ParseCall(&term, tokenStream);
+        if (R_OK == result) {
+            *out_ast = term;
+            return R_OK;
+        }
     }
-    RESTORE(tokenStream, save);
-    result = ParseCall(&term, tokenStream);
-    if (R_OK == result) {
-        *out_ast = term;
-        return R_OK;
+    else {
+        result = ParseLValue(&term, tokenStream);
+        if (R_OK == result) {
+            *out_ast = term;
+            return R_OK;
+        }
     }
     RESTORE(tokenStream, save);
     result = ParseParenExpr(&term, tokenStream);
@@ -608,7 +617,7 @@ int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int pr
                 return result;
             }
         }
-        result = AstMakeBinaryOp(&lhs, lhs, binOp, rhs);
+        result = AstMakeBinaryOp(&lhs, lhs, binOp, rhs, tokenStream->Current->Token->SrcLoc);
         if (R_OK != result) {
             return result;
         }
@@ -616,7 +625,7 @@ int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int pr
 }
 
 /*
- * <binary-expr> := <terminal> <binary-op> <binary-rhs>
+ * <binary-expr> := <term> <binary-op> <binary-rhs>
  */
 int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     /* TODO: Parse right associativity such as 3 ** 3 ** 3 should be equal
@@ -660,13 +669,13 @@ int ParseExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
         return R_OK;
     }
     RESTORE(tokenStream, save);
-    result = ParseCall(&ast, tokenStream);
+    result = ParseBinaryExpr(&ast, tokenStream);
     if (R_OK == result) {
         *out_ast = ast;
         return R_OK;
     }
     RESTORE(tokenStream, save);
-    result = ParseBinaryExpr(&ast, tokenStream);
+    result = ParseCall(&ast, tokenStream);
     if (R_OK == result) {
         *out_ast = ast;
         return R_OK;
@@ -681,7 +690,7 @@ int ParseExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
  *            := def <identifier { <stmt-list> }
  */
 int ParseFunction(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    int result;
+    int result, numArgs, isVarArgs = 0;
     char *funcName;
     struct Function *fn;
     struct Value *function;
@@ -704,19 +713,24 @@ int ParseFunction(struct Ast **out_ast, struct TokenStream *tokenStream) {
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
     EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
 
-    fn = malloc(sizeof *fn);
-    fn->Name = strdup(funcName);
-    fn->Params = params;
-    fn->Body = body;
+    if (params) {
+        numArgs = params->NumChildren;
+    }
+    else {
+        numArgs = 0;
+    }
+
+    FunctionMake(&fn, strdup(funcName), numArgs, isVarArgs, params, body);
     function = malloc(sizeof *function);
-    result = ValueMake(function, &g_TheBaseObjectTypeInfo, &fn, sizeof fn);
+    result = ValueMakeFunction(function, fn);
     if (R_OK != result) {
         free(fn);
         free(function);
-        /* TODO: Cleanup the body/param list that may have been alloc'd */
+        AstFree(params);
+        AstFree(body);
         IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
     }
-    return AstMakeFunction(out_ast, function);
+    return AstMakeFunction(out_ast, function, save->Token->SrcLoc);
 }
 
 /*
@@ -742,20 +756,20 @@ int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
     EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
     if (!opt_expect(TokenElse, tokenStream)) { /* no else */
-        return AstMakeIfElse(out_ast, cond, ifBody, NULL);
+        return AstMakeIfElse(out_ast, cond, ifBody, NULL, save->Token->SrcLoc);
     }
     if (opt_expect(TokenLeftCurlyBrace, tokenStream)) { /* else { */
         result = ParseStmtList(&elseBody, tokenStream);
         IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
         EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
-        return AstMakeIfElse(out_ast, cond, ifBody, elseBody);
+        return AstMakeIfElse(out_ast, cond, ifBody, elseBody, save->Token->SrcLoc);
     }
     EXPECT(TokenIf, tokenStream); /* else if */
     /* EXPECT eats ths if but we need it to parse a valid IfElse */
     TokenStreamRewind(tokenStream);
     result = ParseIfElse(&elseBody, tokenStream);
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    return AstMakeIfElse(out_ast, cond, ifBody, elseBody);
+    return AstMakeIfElse(out_ast, cond, ifBody, elseBody, save->Token->SrcLoc);
 }
 
 /*
@@ -827,8 +841,7 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
 }
 
 /*
- * <stmt-terminator> := <newline>
- *                   := ;
+ * <stmt-terminator> := ; TODO: newline stmt-terminator
  *
  * <stmt-list> := <stmt>
  *             := <stmt> <stmt-terminator> <stmt-list>
@@ -837,8 +850,14 @@ int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     struct Ast *tmp;
     struct Ast *ast;
+    struct Ast *functionDefs;
 
     result = AstMakeBlank(&ast);
+    if (R_OK != result) {
+        out_ast = NULL;
+        return result;
+    }
+    result = AstMakeBlank(&functionDefs);
     if (R_OK != result) {
         out_ast = NULL;
         return result;
@@ -859,7 +878,6 @@ int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream) {
         if (check(TokenEOS, tokenStream)) {
             break;
         }
-
     }
     if (ast->NumChildren == 0) {
         AstFree(ast);
@@ -879,16 +897,29 @@ int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream) {
  * <program> := <stmt-list>
  */
 
-int ParseTokenStream(struct Ast **out_ast, struct TokenStream *tokenStream) {
+int ParseTokenStream(struct Ast **out_functionDefs, struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     struct Node *save;
+    struct Ast *functionDefs, *tmp, *ast;
+    AstMakeBlank(&functionDefs);
+    AstMakeBlank(&ast);
     SAVE(tokenStream, save);
     while (TokenEOS != tokenStream->Current->Token->Type) {
-        result = ParseStmtList(out_ast, tokenStream);
+        result = ParseStmt(&tmp, tokenStream);
+        /* Catch any top level function defintions; they need to be stored
+           in the symbol table before anything is allowed to execute. */
+        if (R_OK == result && tmp && FunctionNode == tmp->Type) {
+            result = AstAppendChild(functionDefs, tmp);
+        }
+        else if (R_OK == result && tmp && FunctionNode != tmp->Type) {
+            result = AstAppendChild(ast, tmp);
+        }
         if (R_OK != result) {
             goto parse_error_cleanup;
         }
     }
+    *out_functionDefs = functionDefs;
+    *out_ast = ast;
     return R_OK;
 
 parse_error_cleanup:
@@ -898,88 +929,10 @@ parse_error_cleanup:
     return result;
 }
 
-/****************** Simple eval to test arithmetic ops ******************/
-
-struct Ast *left(struct Ast *ast) {
-    if (!ast->Children) return NULL;
-    return ast->Children[0];
-}
-struct Ast *right(struct Ast *ast) {
-    if (!ast->Children) return NULL;
-    return ast->Children[1];
-}
-int value(struct Value *value) {
-    return value->v.Integer;
-}
-struct Value *eval(struct Ast *ast);
-
-struct Value *add(struct Ast *lhs, struct Ast *rhs) {
-    struct Value *lResult = eval(lhs);
-    struct Value *rResult = eval(rhs);
-    int r = value(lResult) + value(rResult);
-    struct Value *result = malloc(sizeof *result);
-    ValueMake(result, &g_TheIntegerTypeInfo, &r, sizeof r);
-    return result;
-}
-struct Value *sub(struct Ast *lhs, struct Ast *rhs) {
-    struct Value *lResult = eval(lhs);
-    struct Value *rResult = eval(rhs);
-    int r = value(lResult) - value(rResult);
-    struct Value *result = malloc(sizeof *result);
-    ValueMake(result, &g_TheIntegerTypeInfo, &r, sizeof r);
-    return result;
-}
-struct Value *mul(struct Ast *lhs, struct Ast *rhs) {
-    struct Value *lResult = eval(lhs);
-    struct Value *rResult = eval(rhs);
-    int r = value(lResult) * value(rResult);
-    struct Value *result = malloc(sizeof *result);
-    ValueMake(result, &g_TheIntegerTypeInfo, &r, sizeof r);
-    return result;
-}
-struct Value *divide(struct Ast *lhs, struct Ast *rhs) {
-    struct Value *lResult = eval(lhs);
-    struct Value *rResult = eval(rhs);
-    int r = value(lResult) / value(rResult);
-    struct Value *result = malloc(sizeof *result);
-    ValueMake(result, &g_TheIntegerTypeInfo, &r, sizeof r);
-    return result;
-}
-struct Value *mod(struct Ast *lhs, struct Ast *rhs) {
-    struct Value *lResult = eval(lhs);
-    struct Value *rResult = eval(rhs);
-    int r = value(lResult) % value(rResult);
-    struct Value *result = malloc(sizeof *result);
-    ValueMake(result, &g_TheIntegerTypeInfo, &r, sizeof r);
-    return result;
-}
-struct Value *eval(struct Ast *ast) {
-    struct Ast *lhs, *rhs;
-    lhs = left(ast);
-    rhs = right(ast);
-    switch (ast->Type) {
-        default:
-            printf("<UNEXPECTED>\n");
-            return 0;
-        case IntegerNode:
-            return ast->u.Value;
-        case BAddExpr:
-            return add(lhs, rhs);
-        case BSubExpr:
-            return sub(lhs, rhs);
-        case BMulExpr:
-            return mul(lhs, rhs);
-        case BDivExpr:
-            return divide(lhs, rhs);
-        case BModExpr:
-            return mod(lhs, rhs);
-    }
-}
-
 /************************ Public Functions **************************/
 
 
-int Parse(struct Ast **out_ast, struct Lexer *lexer) {
+int Parse(struct Ast **out_functionDefs, struct Ast **out_ast, struct Lexer *lexer) {
     struct TokenStream *tokenStream;
     struct Token *token;
     int result;
@@ -1003,13 +956,12 @@ int Parse(struct Ast **out_ast, struct Lexer *lexer) {
         return result;
     }
 
-    result = ParseTokenStream(out_ast, tokenStream);
+    result = ParseTokenStream(out_functionDefs, out_ast, tokenStream);
     if (R_OK != result) {
         puts("Parse failed!");
         *out_ast = NULL;
         return result;
     }
-//    printf("eval: %d\n", value(eval((*out_ast)->Children[0])));
     puts("Parse succesfull!");
 
     return TokenStreamFree(tokenStream);

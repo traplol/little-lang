@@ -4,6 +4,6 @@
 #include "ast.h"
 #include "lexer.h"
 
-int Parse(struct Ast **out_ast, struct Lexer *lexer);
+int Parse(struct Ast **out_functionDef, struct Ast **out_ast, struct Lexer *lexer);
 
 #endif
