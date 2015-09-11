@@ -232,6 +232,12 @@ struct Token *LexerGetNextToken(struct Lexer *lexer, int consumeToken) {
     enum TokenType out_type;
     while (*lexer->Pos && IsWhitespace(*lexer->Pos)) 
         LEX_ADV(lexer);
+    if (*lexer->Pos == '#') {
+        while (*lexer->Pos && '\n' != *lexer->Pos) {
+            LEX_ADV(lexer);
+        }
+        return LexerGetNextToken(lexer, consumeToken);
+    }
     oldPos = lexer->Pos;
     oldCurrentLineNumber = line = lexer->CurrentLineNumber;
     oldCurrentColumnNumber = column = lexer->CurrentColumnNumber;
