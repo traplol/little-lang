@@ -1,7 +1,9 @@
 #include "little_lang_machine.h"
 #include "parser.h"
 #include "globals.h"
+#include "interpreter.h"
 #include "helpers/strings.h"
+#include "value.h"
 #include "result.h"
 
 #include <stdio.h>
@@ -90,8 +92,26 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
     return R_OK;
 }
 
+int DefineFunction(struct SymbolTable *symbolTable, struct Ast *function) {
+    struct Value *fn = function->u.Value;
+    return SymbolTableInsert(symbolTable, fn, fn->v.Function->Name, function->SrcLoc);
+}
+
+int DefineTopLevelFunctions(struct SymbolTable *symbolTable, struct Ast *functionDefs) {
+    unsigned int i;
+    int result;
+    for (i = 0; i < functionDefs->NumChildren; ++i) {
+        result = DefineFunction(symbolTable, functionDefs->Children[i]);
+        if (R_OK != result) {
+            break;
+        }
+    }
+    return result;
+}
+
 int LittleLangMachineRun(struct LittleLangMachine *llm) {
     struct Ast *program;
+    struct Ast *functionDefs;
     int result;
     if (LittleLangMachineIsInvalid(llm)) {
         return R_InvalidArgument;
@@ -101,9 +121,17 @@ int LittleLangMachineRun(struct LittleLangMachine *llm) {
         return result;
     }
 
-    result = Parse(&program, llm->Lexer);
+    result = Parse(&functionDefs, &program, llm->Lexer);
     if (R_OK == result) {
         llm->Program = program;
+        printf("Function definitions:\n\n");
+        AstPrettyPrint(functionDefs);
+        printf("\nProgram:\n");
+        AstPrettyPrint(llm->Program);
+        InterpreterInit(llm);
+        DefineTopLevelFunctions(llm->GlobalScope, functionDefs);
+        printf("\n\n");
+        InterpreterRunProgram(llm);
     }
     else {
         llm->Program = NULL;

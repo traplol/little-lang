@@ -12,6 +12,5 @@ int main(int argc, char **argv) {
     }
     result = LittleLangMachineRun(&llm);
 
-    AstPrettyPrint(llm.Program);
     return result;
 }
