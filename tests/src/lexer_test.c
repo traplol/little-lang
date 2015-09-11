@@ -27,8 +27,8 @@ TEST(LexerMakeFree) {
 
 #define LEX_TEST_LC(lex, str, lin, col, tok, typ)                       \
     _LEX_TEST(lex,str,tok,typ);                                         \
-    assert_eq(lin, token->LineNumber, "Line number incorrectly parsed for '" str "'."); \
-    assert_eq(col, token->ColumnNumber, "Column number incorrectly parsed for '" str "'."); \
+    assert_eq(lin, token->SrcLoc.LineNumber, "Line number incorrectly parsed for '" str "'."); \
+    assert_eq(col, token->SrcLoc.ColumnNumber, "Column number incorrectly parsed for '" str "'."); \
     _LEX_TOK_FREE(tok);
     
 
@@ -43,17 +43,17 @@ TEST(LexerNextToken) {
     struct Token *token;
     char *filename = strdup("test.ll");
     char *code = strdup(
-        "def fortytwo {\n"
+        "\n\ndef fortytwo {\n"
         "    42;\n"
         "}");
     LexerMake(lexer, filename, code);
 
-    LEX_TEST_LC(lexer, "def", 1, 1, token, TokenDef);
-    LEX_TEST_LC(lexer, "fortytwo", 1, 5, token, TokenIdentifer);
-    LEX_TEST_LC(lexer, "{", 1, 14, token, TokenLeftCurlyBrace);
-    LEX_TEST_LC(lexer, "42", 2, 5, token, TokenIntegerConstant);
-    LEX_TEST_LC(lexer, ";", 2, 7, token, TokenSemicolon);
-    LEX_TEST_LC(lexer, "}", 3, 1, token, TokenRightCurlyBrace);
+    LEX_TEST_LC(lexer, "def", 3, 1, token, TokenDef);
+    LEX_TEST_LC(lexer, "fortytwo", 3, 5, token, TokenIdentifer);
+    LEX_TEST_LC(lexer, "{", 3, 14, token, TokenLeftCurlyBrace);
+    LEX_TEST_LC(lexer, "42", 4, 5, token, TokenIntegerConstant);
+    LEX_TEST_LC(lexer, ";", 4, 7, token, TokenSemicolon);
+    LEX_TEST_LC(lexer, "}", 5, 1, token, TokenRightCurlyBrace);
 
     LexerFree(lexer);
     free(lexer);
@@ -195,8 +195,8 @@ TEST(LexerEdgeCases) {
     struct Token *token;
     char *filename = strdup("test.ll");
     char *code = strdup(
-        "(\"str in parens\")\n"
-        "(;;)\n"
+        "(\"str in parens\")\n\n"
+        "(;;)\n\n\n"
         "(((()))) (()())\n"
         );
     LexerMake(lexer, filename, code);
@@ -205,26 +205,26 @@ TEST(LexerEdgeCases) {
     LEX_TEST_LC(lexer, "\"str in parens\"", 1, 2, token, TokenStringLiteral);
     LEX_TEST_LC(lexer, ")", 1, 17, token, TokenRightParen);
 
-    LEX_TEST_LC(lexer, "(", 2, 1, token, TokenLeftParen);
-    LEX_TEST_LC(lexer, ";", 2, 2, token, TokenSemicolon);
-    LEX_TEST_LC(lexer, ";", 2, 3, token, TokenSemicolon);
-    LEX_TEST_LC(lexer, ")", 2, 4, token, TokenRightParen);
-
     LEX_TEST_LC(lexer, "(", 3, 1, token, TokenLeftParen);
-    LEX_TEST_LC(lexer, "(", 3, 2, token, TokenLeftParen);
-    LEX_TEST_LC(lexer, "(", 3, 3, token, TokenLeftParen);
-    LEX_TEST_LC(lexer, "(", 3, 4, token, TokenLeftParen);
-    LEX_TEST_LC(lexer, ")", 3, 5, token, TokenRightParen);
-    LEX_TEST_LC(lexer, ")", 3, 6, token, TokenRightParen);
-    LEX_TEST_LC(lexer, ")", 3, 7, token, TokenRightParen);
-    LEX_TEST_LC(lexer, ")", 3, 8, token, TokenRightParen);
+    LEX_TEST_LC(lexer, ";", 3, 2, token, TokenSemicolon);
+    LEX_TEST_LC(lexer, ";", 3, 3, token, TokenSemicolon);
+    LEX_TEST_LC(lexer, ")", 3, 4, token, TokenRightParen);
 
-    LEX_TEST_LC(lexer, "(", 3, 10, token, TokenLeftParen);
-    LEX_TEST_LC(lexer, "(", 3, 11, token, TokenLeftParen);
-    LEX_TEST_LC(lexer, ")", 3, 12, token, TokenRightParen);
-    LEX_TEST_LC(lexer, "(", 3, 13, token, TokenLeftParen);
-    LEX_TEST_LC(lexer, ")", 3, 14, token, TokenRightParen);
-    LEX_TEST_LC(lexer, ")", 3, 15, token, TokenRightParen);
+    LEX_TEST_LC(lexer, "(", 6, 1, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, "(", 6, 2, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, "(", 6, 3, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, "(", 6, 4, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, ")", 6, 5, token, TokenRightParen);
+    LEX_TEST_LC(lexer, ")", 6, 6, token, TokenRightParen);
+    LEX_TEST_LC(lexer, ")", 6, 7, token, TokenRightParen);
+    LEX_TEST_LC(lexer, ")", 6, 8, token, TokenRightParen);
+
+    LEX_TEST_LC(lexer, "(", 6, 10, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, "(", 6, 11, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, ")", 6, 12, token, TokenRightParen);
+    LEX_TEST_LC(lexer, "(", 6, 13, token, TokenLeftParen);
+    LEX_TEST_LC(lexer, ")", 6, 14, token, TokenRightParen);
+    LEX_TEST_LC(lexer, ")", 6, 15, token, TokenRightParen);
 }
 
 int main() {
