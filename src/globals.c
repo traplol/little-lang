@@ -14,6 +14,8 @@ struct Value g_TheFalseValue;
 struct Value g_TheNilValue;
 
 struct TypeInfo g_TheBaseObjectTypeInfo;
+struct TypeInfo g_TheFunctionTypeInfo;
+struct TypeInfo g_TheBuiltinFnTypeInfo;
 struct TypeInfo g_TheIntegerTypeInfo;
 struct TypeInfo g_TheRealTypeInfo;
 struct TypeInfo g_TheStringTypeInfo;
@@ -25,16 +27,22 @@ int GlobalsInitTypeInfos(void) {
     RETURN_ON_FAIL(result);
     g_TheBaseObjectTypeInfo.DerivedFrom = &g_TheBaseObjectTypeInfo;
 
-    result = TypeInfoMake(&g_TheIntegerTypeInfo, TypeBaseObject, &g_TheBaseObjectTypeInfo, "Integer");
+    result = TypeInfoMake(&g_TheFunctionTypeInfo, TypeBaseObject, &g_TheBaseObjectTypeInfo, "Function");
     RETURN_ON_FAIL(result);
 
-    result = TypeInfoMake(&g_TheRealTypeInfo, TypeBaseObject, &g_TheBaseObjectTypeInfo, "Real");
+    result = TypeInfoMake(&g_TheBuiltinFnTypeInfo, TypeBaseObject, &g_TheBaseObjectTypeInfo, "BuiltinFn");
     RETURN_ON_FAIL(result);
 
-    result = TypeInfoMake(&g_TheStringTypeInfo, TypeBaseObject, &g_TheBaseObjectTypeInfo, "String");
+    result = TypeInfoMake(&g_TheIntegerTypeInfo, TypeInteger, &g_TheBaseObjectTypeInfo, "Integer");
     RETURN_ON_FAIL(result);
 
-    result = TypeInfoMake(&g_TheBooleanTypeInfo, TypeBaseObject, &g_TheBaseObjectTypeInfo, "Boolean");
+    result = TypeInfoMake(&g_TheRealTypeInfo, TypeReal, &g_TheBaseObjectTypeInfo, "Real");
+    RETURN_ON_FAIL(result);
+
+    result = TypeInfoMake(&g_TheStringTypeInfo, TypeString, &g_TheBaseObjectTypeInfo, "String");
+    RETURN_ON_FAIL(result);
+
+    result = TypeInfoMake(&g_TheBooleanTypeInfo, TypeBoolean, &g_TheBaseObjectTypeInfo, "Boolean");
     RETURN_ON_FAIL(result);
 
     return R_OK;
@@ -42,13 +50,13 @@ int GlobalsInitTypeInfos(void) {
 
 int GlobalsInitSingletonValues(void) {
     int result;
-    result = ValueMake(&g_TheTrueValue, &g_TheBooleanTypeInfo, 0, 0);
+    result = ValueMakeObject(&g_TheTrueValue, &g_TheBooleanTypeInfo, 0, 0);
     RETURN_ON_FAIL(result);
 
-    result = ValueMake(&g_TheFalseValue, &g_TheBooleanTypeInfo, 0, 0);
+    result = ValueMakeObject(&g_TheFalseValue, &g_TheBooleanTypeInfo, 0, 0);
     RETURN_ON_FAIL(result);
 
-    result = ValueMake(&g_TheNilValue, &g_TheBaseObjectTypeInfo, 0, 0);
+    result = ValueMakeObject(&g_TheNilValue, &g_TheBaseObjectTypeInfo, 0, 0);
     RETURN_ON_FAIL(result);
 
     return R_OK;
