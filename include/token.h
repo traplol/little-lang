@@ -1,6 +1,8 @@
 #ifndef _LITTLE_LANG_TOKEN_H
 #define _LITTLE_LANG_TOKEN_H
 
+#include "src_loc.h"
+
 enum TokenType {
     TokenUnknown,
     TokenEOS,
@@ -62,9 +64,7 @@ enum TokenType {
 struct Token {
     enum TokenType Type;
     char *TokenStr;
-    char *Filename;
-    int LineNumber;
-    int ColumnNumber;
+    struct SrcLoc SrcLoc;
     union {
         char *String;
         double Real;

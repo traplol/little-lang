@@ -87,9 +87,9 @@ int TokenMake(struct Token *token, enum TokenType type, char *tokenStr, char *fi
     }
     token->Type = type;
     token->TokenStr = strdup(tokenStr);
-    token->Filename = filename;
-    token->LineNumber = lineNumber;
-    token->ColumnNumber = columnNumber;
+    token->SrcLoc.Filename = filename;
+    token->SrcLoc.LineNumber = lineNumber;
+    token->SrcLoc.ColumnNumber = columnNumber;
     TokenSetValue(token);
     return R_OK;
 }
