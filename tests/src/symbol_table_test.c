@@ -1,12 +1,13 @@
+#include "../src/globals.c"
 #include "../helpers/strings.c"
 #include "../src/type_info.c"
 #include "../src/value.c"
 #include "../src/symbol_table.c"
 
-#include "string.h"
 #include "c_test.h"
 #include "test_helpers.h"
 
+struct SrcLoc srcLoc = {"test.ll", -1, -1};
 
 TEST(SymbolTableMakeGlobalScope) {
     struct SymbolTable *st = malloc(sizeof *st);
@@ -48,10 +49,10 @@ TEST(SymbolTableInsert) {
     char *filename = strdup("testfile");
     
     TypeInfoMake(ti, TypeInteger, NULL, typeName);
-    ValueMake(v, ti, &data, sizeof(data));
+    ValueMakeObject(v, ti, &data, sizeof(data));
     SymbolTableMakeGlobalScope(st);
-    assert_eq(R_OK, SymbolTableInsert(st, v, name, filename, 1, 5), "Failed to insert symbol into symbol table.");
-    assert_eq(R_KeyAlreadyInTable, SymbolTableInsert(st, v, name, filename, 1, 5), "Failed to skip insert of duplicate name.");
+    assert_eq(R_OK, SymbolTableInsert(st, v, name, srcLoc), "Failed to insert symbol into symbol table.");
+    assert_eq(R_KeyAlreadyInTable, SymbolTableInsert(st, v, name, srcLoc), "Failed to skip insert of duplicate name.");
 
     SymbolTableFree(st);
     TypeInfoFree(ti);
@@ -72,10 +73,10 @@ TEST(SymbolTableFindLocal) {
     char *filename = strdup("testfile");
     
     TypeInfoMake(ti, TypeInteger, NULL, typeName);
-    ValueMake(v, ti, &data, sizeof(data));
+    ValueMakeObject(v, ti, &data, sizeof(data));
     SymbolTableMakeGlobalScope(st);
     assert_eq(0, SymbolTableFindLocal(st, name, &out), "Found Symbol that shouldn't be found.");
-    SymbolTableInsert(st, v, name, filename, 1, 5);
+    SymbolTableInsert(st, v, name, srcLoc);
 
     assert_ne(0, SymbolTableFindLocal(st, name, &out), "Failed to find key local scope.");
     assert_eq(v, out->Value, "SymbolTableFindNearest did not set out variable correctly.");
@@ -100,9 +101,9 @@ TEST(SymbolTableFindNearest) {
 
     
     TypeInfoMake(ti, TypeInteger, NULL, typeName);
-    ValueMake(v, ti, &data, sizeof(data));
+    ValueMakeObject(v, ti, &data, sizeof(data));
     SymbolTableMakeGlobalScope(st);
-    SymbolTableInsert(st, v, name, filename, 1, 5);
+    SymbolTableInsert(st, v, name, srcLoc);
     SymbolTablePushScope(&st);
 
     assert_ne(0, SymbolTableFindNearest(st, name, &out), "Failed to find key local scope.");
@@ -118,6 +119,7 @@ TEST(SymbolTableFindNearest) {
 }
 
 int main() {
+    GlobalsInit();
     TEST_RUN(SymbolTableMakeGlobalScope);
     TEST_RUN(SymbolTableFree);
     TEST_RUN(SymbolTablePushPopScope);
