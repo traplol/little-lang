@@ -526,7 +526,7 @@ struct Value *InterpreterDoAssign(struct LittleLangMachine *llm, struct Ast *ast
     }
     value = InterpreterRunAst(llm, ast->Children[1]);
     symbol->Value = value;
-    return &g_TheNilValue;
+    return value;
 }
 struct Value *InterpreterDoBoolean(struct Ast *ast){
     return ast->u.Value;
@@ -574,7 +574,16 @@ struct Value *InterpreterDoCallFunction(struct LittleLangMachine *llm, struct Va
     struct Function *fn = function->v.Function;
     params = fn->Params;
     body = fn->Body;
-    if (args->NumChildren < params->NumChildren) {
+    if (params && args->NumChildren < params->NumChildren) {
+        /* TODO: Throw proper error. */
+        printf("Wrong number of args for call: '%s' at %s:%d:%d\n",
+               fn->Name,
+               srcLoc.Filename,
+               srcLoc.LineNumber,
+               srcLoc.ColumnNumber);
+        return &g_TheNilValue;
+    }
+    else if (params && args->NumChildren > params->NumChildren && !fn->IsVarArgs) {
         /* TODO: Throw proper error. */
         printf("Wrong number of args for call: '%s' at %s:%d:%d\n",
                fn->Name,
@@ -586,10 +595,12 @@ struct Value *InterpreterDoCallFunction(struct LittleLangMachine *llm, struct Va
     SymbolTablePushScope(&(llm->CurrentScope));
     /* Setup params */
     /* TODO: Handle varargs */
-    for (i = 0; i < params->NumChildren; ++i) {
-        arg = InterpreterRunAst(llm, args->Children[i]);
-        param = params->Children[i];
-        SymbolTableInsert(llm->CurrentScope, arg, param->u.SymbolName, 1, param->SrcLoc);
+    if (params) {
+        for (i = 0; i < params->NumChildren; ++i) {
+            arg = InterpreterRunAst(llm, args->Children[i]);
+            param = params->Children[i];
+            SymbolTableInsert(llm->CurrentScope, arg, param->u.SymbolName, 1, param->SrcLoc);
+        }
     }
     /* Execute body. */
     for (i = 0; i < body->NumChildren; ++i) {
