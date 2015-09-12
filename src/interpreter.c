@@ -325,9 +325,47 @@ struct Value *InterpreterDoLogicAnd(struct LittleLangMachine *llm, struct Ast *a
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoLogicEq(struct LittleLangMachine *llm, struct Ast *ast) {
+    int result;
+    struct Value *lhs = InterpreterRunAst(llm, ast->Children[0]);
+    struct Value *rhs = InterpreterRunAst(llm, ast->Children[1]);
+    double epsilon = 1.11e-16; /* TODO: get rid of this magic number. */
+    enum TypeInfoType lhsType = lhs->TypeInfo->Type;
+    enum TypeInfoType rhsType = rhs->TypeInfo->Type;
+    
+    if ((TypeReal == lhsType || TypeInteger == lhsType) &&
+        (TypeReal == rhsType || TypeInteger == rhsType)) {
+        goto numeric_types;
+    }
+    else {
+        goto non_numeric_types;
+    }
+
+numeric_types:
+    if (TypeReal == lhsType && lhsType == rhsType) {
+        result = fabs(lhs->v.Real - rhs->v.Real) < epsilon;
+    }
+    else if (TypeInteger == lhsType && lhsType == rhsType) {
+        result = lhs->v.Integer == rhs->v.Integer;
+    }
+    else if (TypeInteger == lhsType && TypeReal == rhsType){
+        result = fabs(lhs->v.Integer - rhs->v.Real) < epsilon;
+    }
+    else { /* TypeReal == lhsType && TypeInteger == rhsType */
+        result = fabs(lhs->v.Real - rhs->v.Integer) < epsilon;
+    }
+    return TO_BOOLEAN(result);
+
+non_numeric_types:
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoLogicNotEq(struct LittleLangMachine *llm, struct Ast *ast) {
+    struct Value *value = InterpreterDoLogicEq(llm, ast);
+    if (&g_TheTrueValue == value) {
+        return &g_TheFalseValue;
+    }
+    else if (&g_TheFalseValue == value) {
+        return &g_TheTrueValue;
+    }
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoLogicLt(struct LittleLangMachine *llm, struct Ast *ast) {
@@ -515,9 +553,9 @@ struct Value *InterpreterDoString(struct Ast *ast){
 }
 struct Value *InterpreterDoSymbol(struct LittleLangMachine *llm, struct Ast *ast){
     struct Symbol *sym;
-    if (R_True != SymbolTableFindNearest(llm->CurrentScope, ast->u.SymbolName, &sym)) {
+    if (!SymbolTableFindNearest(llm->CurrentScope, ast->u.SymbolName, &sym)) {
         printf("Undefined symbol '%s'.", ast->u.SymbolName);
-        return NULL;
+        return &g_TheNilValue;
     }
     return sym->Value;
 }
@@ -573,6 +611,9 @@ struct Value *InterpreterDoCallFunction(struct LittleLangMachine *llm, struct Va
 }
 struct Value *InterpreterDoCall(struct LittleLangMachine *llm, struct Ast *ast) {
     struct Value *func = InterpreterDoSymbol(llm, ast->Children[0]);
+    if (&g_TheNilValue == func) {
+        return &g_TheNilValue;
+    }
     if (func->IsBuiltInFn) {
         return InterpreterDoCallBuiltinFn(llm, func, ast->Children[1]);
     }
@@ -622,10 +663,38 @@ struct Value *InterpreterDoConst(struct LittleLangMachine *llm, struct Ast *ast)
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoFor(struct LittleLangMachine *llm, struct Ast *ast) {
-    return &g_TheNilValue;
+    struct Ast *pre, *cond, *body, *post;
+    struct Value *value = &g_TheNilValue;
+    pre = ast->Children[0];
+    cond = ast->Children[1];
+    body = ast->Children[2];
+    post = ast->Children[3];
+    SymbolTablePushScope(&(llm->CurrentScope));
+    InterpreterRunAst(llm, pre);
+    while (1) {
+        if (&g_TheTrueValue != InterpreterRunAst(llm, cond)) {
+            break;
+        }
+        value = InterpreterRunAst(llm, body);
+        InterpreterRunAst(llm, post);
+    }
+    SymbolTablePopScope(&(llm->CurrentScope));
+    return value;
 }
 struct Value *InterpreterDoWhile(struct LittleLangMachine *llm, struct Ast *ast) {
-    return &g_TheNilValue;
+    struct Ast *cond, *body;
+    struct Value *value = &g_TheNilValue;
+    cond = ast->Children[0];
+    body = ast->Children[1];
+    SymbolTablePushScope(&(llm->CurrentScope));
+    while (1) {
+        if (&g_TheTrueValue != InterpreterRunAst(llm, cond)) {
+            break;
+        }
+        value = InterpreterRunAst(llm, body);
+    }
+    SymbolTablePopScope(&(llm->CurrentScope));
+    return value;
 }
 struct Value *InterpreterDoIfElse(struct LittleLangMachine *llm, struct Ast *ast) {
     struct Ast *cond, *body, *ifelse;
