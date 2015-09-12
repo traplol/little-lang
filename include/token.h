@@ -23,6 +23,7 @@ enum TokenType {
     TokenWhile,
     TokenIf,
     TokenElse,
+    TokenNil,
     TokenTrue,
     TokenFalse,
 

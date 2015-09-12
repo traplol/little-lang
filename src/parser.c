@@ -487,10 +487,13 @@ int ParseLiteral(struct Ast **out_ast, struct TokenStream *tokenStream) {
         case TokenFalse:
             result = AstMakeBoolean(out_ast, &g_TheFalseValue, save->Token->SrcLoc);
             goto success;
+        case TokenNil:
+            result = AstMakeBoolean(out_ast, &g_TheNilValue, save->Token->SrcLoc);
+            goto success;
     }
 
 success:
-    if (TokenTrue == token->Type || TokenFalse == token->Type) {
+    if (TokenTrue == token->Type || TokenFalse == token->Type || TokenNil == token->Type) {
         free(value);
     }
     TokenStreamAdvance(tokenStream);
