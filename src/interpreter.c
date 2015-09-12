@@ -463,7 +463,6 @@ numeric_types:
 
 non_numeric_types:
     return &g_TheNilValue;
-    return &g_TheNilValue;
 }
 struct Value *InterpreterDoLogicGt(struct LittleLangMachine *llm, struct Ast *ast) {
     int result;
