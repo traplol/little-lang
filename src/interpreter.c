@@ -319,9 +319,35 @@ struct Value *InterpreterDoXorExpr(struct LittleLangMachine *llm, struct Ast *as
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoLogicOr(struct LittleLangMachine *llm, struct Ast *ast) {
+    struct Value *lhs, *rhs;
+    lhs = InterpreterRunAst(llm, ast->Children[0]);
+    if (&g_TheTrueValue == lhs) {
+        return &g_TheTrueValue;
+    }
+    rhs = InterpreterRunAst(llm, ast->Children[1]);
+    if (&g_TheTrueValue == rhs) {
+        return &g_TheTrueValue;
+    }
+    if (&g_TheFalseValue == rhs) {
+        return &g_TheFalseValue;
+    }
+    /* TODO: Runtime error */
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoLogicAnd(struct LittleLangMachine *llm, struct Ast *ast) {
+    struct Value *lhs, *rhs;
+    lhs = InterpreterRunAst(llm, ast->Children[0]);
+    if (&g_TheFalseValue == lhs) {
+        return &g_TheFalseValue;
+    }
+    rhs = InterpreterRunAst(llm, ast->Children[1]);
+    if (&g_TheFalseValue == rhs) {
+        return &g_TheFalseValue;
+    }
+    if (&g_TheTrueValue == lhs && lhs == rhs) {
+        return &g_TheTrueValue;
+    }
+    /* TODO: Runtime error */
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoLogicEq(struct LittleLangMachine *llm, struct Ast *ast) {
@@ -356,7 +382,10 @@ numeric_types:
     return TO_BOOLEAN(result);
 
 non_numeric_types:
-    return &g_TheNilValue;
+    if (lhs == rhs) {
+        return &g_TheTrueValue;
+    }
+    return &g_TheFalseValue;
 }
 struct Value *InterpreterDoLogicNotEq(struct LittleLangMachine *llm, struct Ast *ast) {
     struct Value *value = InterpreterDoLogicEq(llm, ast);
@@ -398,7 +427,10 @@ numeric_types:
     return TO_BOOLEAN(result);
 
 non_numeric_types:
-    return &g_TheNilValue;
+    if (lhs != rhs) {
+        return &g_TheTrueValue;
+    }
+    return &g_TheFalseValue;
 }
 struct Value *InterpreterDoLogicLtEq(struct LittleLangMachine *llm, struct Ast *ast) {
     int result;
