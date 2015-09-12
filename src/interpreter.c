@@ -547,6 +547,13 @@ struct Value *InterpreterDoNegate(struct LittleLangMachine *llm, struct Ast *ast
 
 }
 struct Value *InterpreterDoLogicNot(struct LittleLangMachine *llm, struct Ast *ast) {
+    struct Value *rhs = InterpreterRunAst(llm, ast->Children[0]);
+    if (&g_TheTrueValue == rhs) {
+        return &g_TheFalseValue;
+    }
+    if (&g_TheFalseValue == rhs) {
+        return &g_TheTrueValue;
+    }
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoAssign(struct LittleLangMachine *llm, struct Ast *ast) {
