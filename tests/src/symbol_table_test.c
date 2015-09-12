@@ -51,8 +51,8 @@ TEST(SymbolTableInsert) {
     TypeInfoMake(ti, TypeInteger, NULL, typeName);
     ValueMakeObject(v, ti, &data, sizeof(data));
     SymbolTableMakeGlobalScope(st);
-    assert_eq(R_OK, SymbolTableInsert(st, v, name, srcLoc), "Failed to insert symbol into symbol table.");
-    assert_eq(R_KeyAlreadyInTable, SymbolTableInsert(st, v, name, srcLoc), "Failed to skip insert of duplicate name.");
+    assert_eq(R_OK, SymbolTableInsert(st, v, name, 0, srcLoc), "Failed to insert symbol into symbol table.");
+    assert_eq(R_KeyAlreadyInTable, SymbolTableInsert(st, v, name, 0, srcLoc), "Failed to skip insert of duplicate name.");
 
     SymbolTableFree(st);
     TypeInfoFree(ti);
@@ -76,7 +76,7 @@ TEST(SymbolTableFindLocal) {
     ValueMakeObject(v, ti, &data, sizeof(data));
     SymbolTableMakeGlobalScope(st);
     assert_eq(0, SymbolTableFindLocal(st, name, &out), "Found Symbol that shouldn't be found.");
-    SymbolTableInsert(st, v, name, srcLoc);
+    SymbolTableInsert(st, v, name, 0, srcLoc);
 
     assert_ne(0, SymbolTableFindLocal(st, name, &out), "Failed to find key local scope.");
     assert_eq(v, out->Value, "SymbolTableFindNearest did not set out variable correctly.");
@@ -103,7 +103,7 @@ TEST(SymbolTableFindNearest) {
     TypeInfoMake(ti, TypeInteger, NULL, typeName);
     ValueMakeObject(v, ti, &data, sizeof(data));
     SymbolTableMakeGlobalScope(st);
-    SymbolTableInsert(st, v, name, srcLoc);
+    SymbolTableInsert(st, v, name, 0, srcLoc);
     SymbolTablePushScope(&st);
 
     assert_ne(0, SymbolTableFindNearest(st, name, &out), "Failed to find key local scope.");
