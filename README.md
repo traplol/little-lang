@@ -91,22 +91,6 @@ const fifty = 50
 fifty = 40 # throws a runtime error.
 ```
 
-#### Function definitions
-
-```
-def MyPrint(a, b, c) {
-	print(a, b, c)
-}
-```
-
-or optionally, the parameters list may be omitted
-
-```
-def HelloWorld {
-	println("Hello world!")
-}
-```
-
 #### Control flow
 Standard ```if/else/else if``` construct.
 
@@ -147,4 +131,48 @@ while x > 0 {
 	println(x)
 	x = x - 1
 }
+```
+
+#### Function definitions
+
+```
+def MyPrint(a, b, c) {
+	print(a, b, c)
+}
+```
+
+or optionally, the parameters list may be omitted
+
+```
+def HelloWorld {
+	println("Hello world!")
+}
+```
+
+The return value of a function is the value of the last statement executed, even from loops
+or conditional blocks.
+
+```
+def returns_42 {
+	42
+}
+println(returns_42()) # prints "42"
+
+def max(x, y) {
+    if x > y {
+        x
+    }
+    else {
+        y
+    }
+}
+println(max(99, 100), max(50, 49), max(10, 10)) # prints "100 50 10"
+
+def returns_x {
+    mut x = 0
+    while x < 10 {
+        x = x + 1
+    }
+}
+println(returns_x()) # prints "10"
 ```
