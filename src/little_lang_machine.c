@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 int LittleLangMachineIsValid(struct LittleLangMachine *llm) {
@@ -38,10 +39,35 @@ char *ReadFile(char *filename) {
     return code;
 }
 
+int FileExists(char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file) {
+        fclose(file);
+        return 1;
+    }
+    return 0;
+}
+
+#define STR_EQ(s1, s2) (strcmp(s1, s2) == 0)
 int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv) {
-    /* TODO: Parse args correctly. */
-    char *filename = argv[0];
-    char *code = ReadFile(filename);
+    char *filename = NULL, *code, *arg;
+    for (; argc; ++argv, --argc) {
+        arg = argv[0];
+        if(STR_EQ("-P", arg) || STR_EQ("--pretty-print-ast", arg)) {
+            llm->CmdOpts.PrettyPrintAst = 1;
+        }
+        else if(STR_EQ("-T", arg) || STR_EQ("--time-execution", arg)) {
+            llm->CmdOpts.TimeExecution = 1;
+        }
+        else if (STR_EQ("-args", arg)) {
+            --argc, ++argv;
+            break;
+        }
+        else if (!filename && FileExists(arg)) {
+            filename = arg;
+        }
+    }
+    code = ReadFile(filename);
     llm->CmdOpts.argc = argc;
     llm->CmdOpts.argv = argv;
     llm->CmdOpts.code = code;
@@ -57,7 +83,7 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
     if (!llm) {
         return R_InvalidArgument;
     }
-    
+    memset(&(llm->CmdOpts), 0, sizeof (llm->CmdOpts));
     result = LittleLangMachineDoOpts(llm, argc, argv);
     if (R_OK != result) {
         return result;
@@ -127,18 +153,22 @@ int LittleLangMachineRun(struct LittleLangMachine *llm) {
     result = Parse(&functionDefs, &program, llm->Lexer);
     if (R_OK == result) {
         llm->Program = program;
-        printf("Function definitions:\n");
-        AstPrettyPrint(functionDefs);
-        printf("\nProgram:\n");
-        AstPrettyPrint(llm->Program);
+        if (llm->CmdOpts.PrettyPrintAst) {
+            printf("Function definitions:\n");
+            AstPrettyPrint(functionDefs);
+            printf("\nProgram:\n");
+            AstPrettyPrint(llm->Program);
+            printf("\n\n");
+        }
         InterpreterInit(llm);
         DefineTopLevelFunctions(llm->GlobalScope, functionDefs);
-        printf("\n\n");
         start = clock();
         InterpreterRunProgram(llm);
         end = clock();
-        time = (end - start) * 1.0 / CLOCKS_PER_SEC;
-        printf("\nfinished program execution in %fs\n", time);
+        if (llm->CmdOpts.TimeExecution) {
+            time = (end - start) * 1.0 / CLOCKS_PER_SEC;
+            printf("\nfinished program execution in %fs\n", time);
+        }
     }
     else {
         llm->Program = NULL;

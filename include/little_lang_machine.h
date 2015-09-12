@@ -17,6 +17,9 @@ struct LittleLangMachine {
         char **argv;
         char *code;
         char *filename;
+        int PrettyPrintAst;
+        int TimeExecution;
+        int ReplMode;
     } CmdOpts;
     int Error;
 };

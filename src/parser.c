@@ -967,11 +967,10 @@ int Parse(struct Ast **out_functionDefs, struct Ast **out_ast, struct Lexer *lex
 
     result = ParseTokenStream(out_functionDefs, out_ast, tokenStream);
     if (R_OK != result) {
-        puts("Parse failed!");
+        puts("Parse error!");
         *out_ast = NULL;
         return result;
     }
-    puts("Parse succesfull!");
 
     return TokenStreamFree(tokenStream);
 }
