@@ -64,3 +64,87 @@ argument separated with a space.
 to the end.
 
 ```type(x)``` -- Returns a String object, takes one argument, and returns the value's type name.
+
+### Constructs
+
+#### Defining variables
+All variables must be defined as either ```mut``` or ```const``` and have an initial value assigned to them. 
+```mut``` variables are mutable and can have their values and even types changed. ```const``` variables, on the 
+other hand, cannot change value or be modified.
+
+```mut``` can take a comma separated list of names and values for assignment and will fail to parse if there is
+a mismatched number of values/names.
+
+```
+mut x, y, z = 1, 2, 3
+print(x, y, z)        # prints "1 2 3"
+
+mut a, b, c = 4, 5    # throws an error before program execution.
+
+mut x, x, z = 1, 2, 3 # throws an error at runtime for trying to redeclare an existing variable.
+```
+
+```const```, on the other hand, expects only one name and one value.
+
+```
+const fifty = 50
+fifty = 40 # throws a runtime error.
+```
+
+#### Function definitions
+
+```
+def MyPrint(a, b, c) {
+	print(a, b, c)
+}
+```
+
+or optionally, the parameters list may be omitted
+
+```
+def HelloWorld {
+	println("Hello world!")
+}
+```
+
+#### Control flow
+Standard ```if/else/else if``` construct.
+
+```
+if x < y {
+	println("x is greater!")
+}
+else if x > y {
+	println("y is greater!")
+}
+else if x == y {
+	println("x and y are the same!")
+}
+else {
+	println("this shouldn't happen...")
+}
+```
+
+Note that the ```else``` isn't required.
+
+```
+if x == y {
+	println("x is equal to y")
+}
+```
+
+#### Loops
+
+The two looping constructs are ```for``` and ```while``` loops.
+```
+for mut x = 1; x < 10; x = x + 1 {
+	println(x)
+}
+# notice that this doesn't throw a runtime error because the `x' 
+# declared in the for loop has gone out of scope.
+mut x = 10
+while x > 0 {
+	println(x)
+	x = x - 1
+}
+```
