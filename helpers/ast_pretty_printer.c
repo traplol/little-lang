@@ -96,7 +96,6 @@ const char *fmtNode(struct Ast *node) {
     }
     switch (node->Type) {
         default: return nodeString[node->Type];
-        case Body: return "\n\t";
         case FunctionNode: return fmtFunction(node);
         case SymbolNode: return fmtSymbol(node);
         case BooleanNode:
@@ -142,12 +141,13 @@ void printCommaSeparated(struct Ast *node) {
     }
 }
 void printBody(struct Ast *node) {
-    unsigned int i;
+    printf(" {\n");
     ++tabs;
-    printf("{\n");
     printNodes(node);
-    printf("\n}\n");
     --tabs;
+    printf("\n");
+    printTabs();
+    printf("}\n");
 }
 void printBinaryExpr(struct Ast *node) {
     printf("(%s ", fmtNode(node));
@@ -182,7 +182,7 @@ void printFunction(struct Ast *node) {
     printf("(");
     params = node->u.Value->v.Function->Params;
     printCommaSeparated(params);
-    printf(") ");
+    printf(")");
     body = node->u.Value->v.Function->Body;
     printNode(body);
 }
@@ -233,10 +233,13 @@ void printWhile(struct Ast *node) {
 void printIfElse(struct Ast *node) {
     printf("if ");
     printNode(node->Children[0]);
-    printf(" ");
     printBody(node->Children[1]);
     if (node->Children[2]) {
-        printf("else ");
+        printTabs();
+        printf("else");
+        if (IfElseExpr == node->Children[2]->Type) {
+            printf(" ");
+        }
         printNode(node->Children[2]);
     }
 }
