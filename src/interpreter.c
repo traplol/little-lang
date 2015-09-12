@@ -525,17 +525,6 @@ struct Value *InterpreterDoAssign(struct LittleLangMachine *llm, struct Ast *ast
         return &g_TheNilValue;
     }
     value = InterpreterRunAst(llm, ast->Children[1]);
-    if (symbol->Value->TypeInfo != value->TypeInfo) {
-        /* THOUGHT: Duck typing??? */
-        printf("Trying to assign type '%s' to type '%s': '%s' at %s:%d:%d\n",
-               value->TypeInfo->TypeName,
-               symbol->Value->TypeInfo->TypeName,
-               symbol->Key,
-               ast->SrcLoc.Filename,
-               ast->SrcLoc.LineNumber,
-               ast->SrcLoc.ColumnNumber);
-        return &g_TheNilValue;
-    }
     symbol->Value = value;
     return &g_TheNilValue;
 }
