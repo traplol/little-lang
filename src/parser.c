@@ -595,7 +595,7 @@ int ParseTerm(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
 /* The right hand side of a binary expression. */
 int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int prec, struct Ast *lhs) {
-    int result, tokenPrec;
+    int result, tokenPrec, nextPrec;
     enum AstNodeType binOp;
     struct Ast *rhs;
     while (1) {
@@ -611,7 +611,8 @@ int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int pr
             return result;
         }
         /* ParseTerm should set us on an operator unless it failed... */
-        if (tokenPrec < GetBinaryOperatorPrecedence(tokenStream->Current->Token)) {
+        nextPrec = GetBinaryOperatorPrecedence(tokenStream->Current->Token);
+        if (tokenPrec < nextPrec) {
             result = ParseBinaryRhs(&rhs, tokenStream, tokenPrec + 1, rhs);
             if (R_OK != result) {
                 return result;
@@ -632,8 +633,9 @@ int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
      * to 3 ** (3 ** 3) or 3 ** 27 not (3 ** 3) ** 3 */
     int result;
     int opPrec;
-    enum AstNodeType binOp;
     struct Ast *lhs, *ast;
+    struct Node *save;
+    SAVE(tokenStream, save);
     result = ParseTerm(&lhs, tokenStream);
     if (R_OK != result) {
         return result;
@@ -642,9 +644,15 @@ int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
         *out_ast = lhs;
         return R_OK;
     }
-    binOp = GetBinaryOperatorType(tokenStream->Current->Token);
     opPrec = GetBinaryOperatorPrecedence(tokenStream->Current->Token);
     result = ParseBinaryRhs(&ast, tokenStream, opPrec, lhs);
+    while (1) {
+        opPrec = GetBinaryOperatorPrecedence(tokenStream->Current->Token);
+        if (-1 == opPrec) {
+            break;
+        }
+        result = ParseBinaryRhs(&ast, tokenStream, opPrec, ast);
+    }
     if (R_OK == result) {
         *out_ast = ast;
         return R_OK;
@@ -676,6 +684,18 @@ int ParseExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     }
     RESTORE(tokenStream, save);
     result = ParseCall(&ast, tokenStream);
+    if (R_OK == result) {
+        *out_ast = ast;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    result = ParseMut(&ast, tokenStream);
+    if (R_OK == result) {
+        *out_ast = ast;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    result = ParseConst(&ast, tokenStream);
     if (R_OK == result) {
         *out_ast = ast;
         return R_OK;
@@ -778,8 +798,6 @@ int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream) {
  *        := <ifelse>
  *        := <for>
  *        := <while>
- *        := <mut-expr>
- *        := <const-expr>
  *        := <epsilon>
  */
 int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
@@ -820,18 +838,6 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
     }
     RESTORE(tokenStream, save);
     result = ParseWhile(&ast, tokenStream);
-    if (R_OK == result) {
-        *out_ast = ast;
-        return R_OK;
-    }
-    RESTORE(tokenStream, save);
-    result = ParseMut(&ast, tokenStream);
-    if (R_OK == result) {
-        *out_ast = ast;
-        return R_OK;
-    }
-    RESTORE(tokenStream, save);
-    result = ParseConst(&ast, tokenStream);
     if (R_OK == result) {
         *out_ast = ast;
         return R_OK;
