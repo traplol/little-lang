@@ -21,19 +21,19 @@ char *ToString(struct Value *value) {
     switch (value->TypeInfo->Type) {
         default:
             if (&g_TheNilValue == value) {
-                return "nil";
+                return strdup("nil");
             }
             return value->TypeInfo->TypeName;
         case TypeString:
             return value->v.String->CString;
         case TypeBoolean:
             if (&g_TheTrueValue == value) {
-                return "true";
+                return strdup("true");
             }
             if (&g_TheFalseValue == value) {
-                return "false";
+                return strdup("false");
             }
-            return "<bad boolean>"; /* ??? how does this happen? */
+            return strdup("<bad boolean>"); /* ??? how does this happen? */
         case TypeInteger:
             snprintf(buf, 80, "%d", value->v.Integer);
             return strdup(buf);
