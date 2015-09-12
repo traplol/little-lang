@@ -58,7 +58,7 @@ struct Value *_rt_print(unsigned int argc, struct Value **argv) {
 }
 
 struct Value *_rt_println(unsigned int argc, struct Value **argv) {
-    struct Value *value = _rt_print(argc, argv);
+    struct Value *value = RT_print(argc, argv);
     printf("\n");
     return value;
 }
