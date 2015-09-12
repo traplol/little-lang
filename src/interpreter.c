@@ -530,7 +530,21 @@ non_numeric_types:
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoNegate(struct LittleLangMachine *llm, struct Ast *ast) {
+    struct Value *rhs = InterpreterRunAst(llm, ast->Children[0]);
+    struct Value *value;
+    if (TypeReal == rhs->TypeInfo->Type) {
+        value = ValueAlloc();
+        ValueMakeReal(value, rhs->v.Real * -1);
+        return value;
+    }
+    else if (TypeInteger == rhs->TypeInfo->Type){
+        value = ValueAlloc();
+        ValueMakeInteger(value, rhs->v.Integer * -1);
+        return value;
+    }
+    /* TODO: Runtime Error */
     return &g_TheNilValue;
+
 }
 struct Value *InterpreterDoLogicNot(struct LittleLangMachine *llm, struct Ast *ast) {
     return &g_TheNilValue;
