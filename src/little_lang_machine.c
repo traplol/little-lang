@@ -48,12 +48,29 @@ int FileExists(char *filename) {
     return 0;
 }
 
+void ShowHelpMsg(void) {
+    fprintf(stderr,
+            "usage little-lang [option | file] ... [-args ...]"
+            "\n"
+            "\n-h --help                     Show this message."
+            "\n-P --pretty-print-ast         Pretty print the program's AST."
+            "\n-T --time-execution           Times the execution of the program."
+            "\nfile                          The program source to run."
+            "\n-args ...                     Passes anything after this flag to the program."
+            "\n"
+        );
+}
+
 #define STR_EQ(s1, s2) (strcmp(s1, s2) == 0)
 int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv) {
     char *filename = NULL, *code, *arg;
     for (; argc; ++argv, --argc) {
         arg = argv[0];
-        if(STR_EQ("-P", arg) || STR_EQ("--pretty-print-ast", arg)) {
+        if(STR_EQ("-h", arg) || STR_EQ("--help", arg)) {
+            ShowHelpMsg();
+            exit(0);
+        }
+        else if(STR_EQ("-P", arg) || STR_EQ("--pretty-print-ast", arg)) {
             llm->CmdOpts.PrettyPrintAst = 1;
         }
         else if(STR_EQ("-T", arg) || STR_EQ("--time-execution", arg)) {
