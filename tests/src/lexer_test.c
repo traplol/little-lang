@@ -130,6 +130,7 @@ const char *SourceCode =
     " false "
     " , "
     " nil "
+    " class "
     ;
 TEST(LexerTestAllTokenTypes) {
     struct Lexer *lexer = malloc(sizeof *lexer);
@@ -184,6 +185,7 @@ TEST(LexerTestAllTokenTypes) {
     LEX_TEST(lexer, "false", token, TokenFalse);
     LEX_TEST(lexer, ",", token, TokenComma);
     LEX_TEST(lexer, "nil", token, TokenNil);
+    LEX_TEST(lexer, "class", token, TokenClass);
 
     LEX_TEST(lexer, "<EOS>", token, TokenEOS);
     assert_eq(Token_NUM_TOKENS, lex_tests, "Not all tokens have been tested.");

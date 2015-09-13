@@ -19,6 +19,8 @@ enum TokenType {
     TokenMut,
     TokenConst,
 
+    TokenClass,
+
     TokenFor,
     TokenWhile,
     TokenIf,
