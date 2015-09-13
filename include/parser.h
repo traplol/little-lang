@@ -4,6 +4,12 @@
 #include "ast.h"
 #include "lexer.h"
 
-int Parse(struct Ast **out_functionDef, struct Ast **out_ast, struct Lexer *lexer);
+struct ParsedTrees {
+    struct Ast *Classes;
+    struct Ast *TopLevelFunctions;
+    struct Ast *Program;
+};
+
+int Parse(struct ParsedTrees *parsedTrees, struct Lexer *lexer);
 
 #endif

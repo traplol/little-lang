@@ -906,12 +906,12 @@ int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream) {
  * <program> := <stmt-list>
  */
 
-int ParseTokenStream(struct Ast **out_functionDefs, struct Ast **out_ast, struct TokenStream *tokenStream) {
+int ParseTokenStream(struct ParsedTrees *parsedTrees, struct TokenStream *tokenStream) {
     int result;
     struct Node *save;
-    struct Ast *functionDefs, *tmp, *ast;
+    struct Ast *functionDefs, *program, *tmp;
     AstMakeBlank(&functionDefs);
-    AstMakeBlank(&ast);
+    AstMakeBlank(&program);
     SAVE(tokenStream, save);
     while (TokenEOS != tokenStream->Current->Token->Type) {
         result = ParseStmt(&tmp, tokenStream);
@@ -921,14 +921,14 @@ int ParseTokenStream(struct Ast **out_functionDefs, struct Ast **out_ast, struct
             result = AstAppendChild(functionDefs, tmp);
         }
         else if (R_OK == result && tmp && FunctionNode != tmp->Type) {
-            result = AstAppendChild(ast, tmp);
+            result = AstAppendChild(program, tmp);
         }
         if (R_OK != result) {
             goto parse_error_cleanup;
         }
     }
-    *out_functionDefs = functionDefs;
-    *out_ast = ast;
+    parsedTrees->TopLevelFunctions = functionDefs;
+    parsedTrees->Program = program;
     return R_OK;
 
 parse_error_cleanup:
@@ -941,11 +941,11 @@ parse_error_cleanup:
 /************************ Public Functions **************************/
 
 
-int Parse(struct Ast **out_functionDefs, struct Ast **out_ast, struct Lexer *lexer) {
+int Parse(struct ParsedTrees *parsedTrees, struct Lexer *lexer) {
     struct TokenStream *tokenStream;
     struct Token *token;
     int result;
-    if (!out_ast || !lexer) {
+    if (!parsedTrees || !lexer) {
         return R_InvalidArgument;
     }
     tokenStream = malloc(sizeof *tokenStream);
@@ -965,10 +965,9 @@ int Parse(struct Ast **out_functionDefs, struct Ast **out_ast, struct Lexer *lex
         return result;
     }
 
-    result = ParseTokenStream(out_functionDefs, out_ast, tokenStream);
+    result = ParseTokenStream(parsedTrees, tokenStream);
     if (R_OK != result) {
         puts("Parse error!");
-        *out_ast = NULL;
         return result;
     }
 

@@ -154,8 +154,7 @@ int DefineTopLevelFunctions(struct SymbolTable *symbolTable, struct Ast *functio
 }
 
 int LittleLangMachineRun(struct LittleLangMachine *llm) {
-    struct Ast *program;
-    struct Ast *functionDefs;
+    struct ParsedTrees *parsedTrees;
     clock_t start, end;
     double time;
     int result;
@@ -166,19 +165,19 @@ int LittleLangMachineRun(struct LittleLangMachine *llm) {
     if (R_OK != result) {
         return result;
     }
-
-    result = Parse(&functionDefs, &program, llm->Lexer);
+    parsedTrees = calloc(sizeof *parsedTrees, 1);
+    result = Parse(parsedTrees, llm->Lexer);
     if (R_OK == result) {
-        llm->Program = program;
+        llm->Program = parsedTrees->Program;
         if (llm->CmdOpts.PrettyPrintAst) {
             printf("Function definitions:\n");
-            AstPrettyPrint(functionDefs);
+            AstPrettyPrint(parsedTrees->TopLevelFunctions);
             printf("\nProgram:\n");
             AstPrettyPrint(llm->Program);
             printf("\n\n");
         }
         InterpreterInit(llm);
-        DefineTopLevelFunctions(llm->GlobalScope, functionDefs);
+        DefineTopLevelFunctions(llm->GlobalScope, parsedTrees->TopLevelFunctions);
         start = clock();
         InterpreterRunProgram(llm);
         end = clock();
@@ -189,7 +188,10 @@ int LittleLangMachineRun(struct LittleLangMachine *llm) {
     }
     else {
         llm->Program = NULL;
-        AstFree(program);
+        AstFree(parsedTrees->Classes);
+        AstFree(parsedTrees->TopLevelFunctions);
+        AstFree(parsedTrees->Program);
     }
+    free(parsedTrees);
     return result;
 }
