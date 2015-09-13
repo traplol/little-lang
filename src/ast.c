@@ -72,7 +72,7 @@ int AstMakeTrue(struct Ast **out_ast, struct SrcLoc srcLoc) {
     return AstMakeBoolean(out_ast, &g_TheTrueValue, srcLoc);
 }
 int AstMakeFalse(struct Ast **out_ast, struct SrcLoc srcLoc) {
-    return AstMakeBoolean(out_ast, &g_TheTrueValue, srcLoc);
+    return AstMakeBoolean(out_ast, &g_TheFalseValue, srcLoc);
 }
 int AstMakeNil(struct Ast **out_ast, struct SrcLoc srcLoc) {
     struct Ast *ast;
