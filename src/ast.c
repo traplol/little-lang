@@ -1,5 +1,6 @@
 #include "ast.h"
 #include "result.h"
+#include "globals.h"
 
 #include "helpers/strings.h"
 
@@ -63,6 +64,24 @@ int AstMakeBoolean(struct Ast **out_ast, struct Value *boolean, struct SrcLoc sr
     ast = AstAlloc(0);
     ast->Type = BooleanNode;
     ast->u.Value = boolean;
+    ast->SrcLoc = srcLoc;
+    *out_ast = ast;
+    return R_OK;
+}
+int AstMakeTrue(struct Ast **out_ast, struct SrcLoc srcLoc) {
+    return AstMakeBoolean(out_ast, &g_TheTrueValue, srcLoc);
+}
+int AstMakeFalse(struct Ast **out_ast, struct SrcLoc srcLoc) {
+    return AstMakeBoolean(out_ast, &g_TheTrueValue, srcLoc);
+}
+int AstMakeNil(struct Ast **out_ast, struct SrcLoc srcLoc) {
+    struct Ast *ast;
+    if (!out_ast) {
+        return R_InvalidArgument;
+    }
+    ast = AstAlloc(0);
+    ast->Type = NilNode;
+    ast->u.Value = &g_TheNilValue;
     ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;

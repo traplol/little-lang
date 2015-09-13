@@ -482,13 +482,13 @@ int ParseLiteral(struct Ast **out_ast, struct TokenStream *tokenStream) {
             result = AstMakeString(out_ast, value, save->Token->SrcLoc);
             goto success;
         case TokenTrue:
-            result = AstMakeBoolean(out_ast, &g_TheTrueValue, save->Token->SrcLoc);
+            result = AstMakeTrue(out_ast, save->Token->SrcLoc);
             goto success;
         case TokenFalse:
-            result = AstMakeBoolean(out_ast, &g_TheFalseValue, save->Token->SrcLoc);
+            result = AstMakeFalse(out_ast, save->Token->SrcLoc);
             goto success;
         case TokenNil:
-            result = AstMakeBoolean(out_ast, &g_TheNilValue, save->Token->SrcLoc);
+            result = AstMakeNil(out_ast, save->Token->SrcLoc);
             goto success;
     }
 

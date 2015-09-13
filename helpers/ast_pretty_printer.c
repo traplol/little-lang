@@ -8,8 +8,6 @@
 #include <stdlib.h>
 
 const char *nodeString[] = {
-    [UNASSIGNED] = "UNASSIGNED",
-    [Body] = "THIS SHOULDNT BE SEEN",
     [BAddExpr] = "+",
     [BSubExpr] = "-",
     [BMulExpr] = "*",
@@ -32,19 +30,7 @@ const char *nodeString[] = {
     [UNegExpr] = "u-",
     [ULogicNotExpr] = "u!",
     [AssignExpr] = "assign",
-    [BooleanNode] = "THIS SHOULDNT BE SEEN",
-    [RealNode] = "THIS SHOULDNT BE SEEN",
-    [IntegerNode] = "THIS SHOULDNT BE SEEN",
-    [StringNode] = "THIS SHOULDNT BE SEEN",
-    [SymbolNode] = "Sym",
-    [FunctionNode] = "THIS SHOULDNT BE SEEN",
-    [CallExpr] = "Call",
     [ReturnExpr] = "Ret",
-    [MutExpr] = "Mut",
-    [ConstExpr] = "Const",
-    [ForExpr] = "For",
-    [WhileExpr] = "While",
-    [IfElseExpr] = "IfElse",
 };
 
 const char *fmtBooleanLiteral(struct Ast *node) {
@@ -160,6 +146,9 @@ void printUnaryExpr(struct Ast *node) {
     printf("(%s ", fmtNode(node));
     printNode(node->Children[0]);
     printf(")");
+}
+void printNil(void) {
+    printf("nil");
 }
 void printBoolean(struct Ast *node) {
     printf("%s", fmtNode(node));
@@ -293,6 +282,9 @@ void printNode(struct Ast *node) {
         case UNegExpr:
         case ULogicNotExpr:
             printUnaryExpr(node);
+            break;
+        case NilNode:
+            printNil();
             break;
         case BooleanNode:
             printBoolean(node);

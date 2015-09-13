@@ -33,6 +33,7 @@ enum AstNodeType {
 
     AssignExpr,
 
+    NilNode,
     BooleanNode,
     RealNode,
     IntegerNode,
@@ -69,6 +70,9 @@ int AstFree(struct Ast *ast);
 
 /* Terminals */
 int AstMakeBoolean(struct Ast **out_ast, struct Value *boolean, struct SrcLoc srcLoc);
+int AstMakeTrue(struct Ast **out_ast, struct SrcLoc srcLoc);
+int AstMakeFalse(struct Ast **out_ast, struct SrcLoc srcLoc);
+int AstMakeNil(struct Ast **out_ast, struct SrcLoc srcLoc);
 int AstMakeReal(struct Ast **out_ast, struct Value *real, struct SrcLoc srcLoc);
 int AstMakeInteger(struct Ast **out_ast, struct Value *integer, struct SrcLoc srcLoc);
 int AstMakeString(struct Ast **out_ast, struct Value *string, struct SrcLoc srcLoc);
