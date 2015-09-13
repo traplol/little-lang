@@ -109,12 +109,12 @@ TEST(AstMakeAssign) {
 
 TEST(AstMakeCall) {
     struct Ast *ast;
-    assert_eq(R_OK, AstMakeCall(&ast, name, ast1, srcLoc), "AstMakeCall failed.");
-    free(ast->Children[0]); free(ast->Children); free(ast);
-    assert_eq(R_OK, AstMakeCall(&ast, name, NULL, srcLoc), "AstMakeCall with no args failed.");
-    free(ast->Children[0]); free(ast->Children); free(ast);
-    assert_eq(R_InvalidArgument, AstMakeCall(NULL, name, ast1, srcLoc), "AstMakeCall did not fail.");
-    assert_eq(R_InvalidArgument, AstMakeCall(&ast, NULL, ast1, srcLoc), "AstMakeCall did not fail.");
+    assert_eq(R_OK, AstMakeCall(&ast, ast1, ast2, srcLoc), "AstMakeCall failed.");
+    free(ast->Children); free(ast);
+    assert_eq(R_OK, AstMakeCall(&ast, ast1, NULL, srcLoc), "AstMakeCall with no args failed.");
+    free(ast->Children); free(ast);
+    assert_eq(R_InvalidArgument, AstMakeCall(NULL, ast1, ast2, srcLoc), "AstMakeCall did not fail.");
+    assert_eq(R_InvalidArgument, AstMakeCall(&ast, NULL, ast2, srcLoc), "AstMakeCall did not fail.");
 }
 
 TEST(AstMakeReturn) {
