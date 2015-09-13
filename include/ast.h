@@ -42,6 +42,9 @@ enum AstNodeType {
     FunctionNode,
 
     CallExpr,
+    ArrayIdxExpr,
+    MemberAccessExpr,
+
     ReturnExpr,
     MutExpr,
     ConstExpr,
@@ -83,7 +86,9 @@ int AstMakeFunction(struct Ast **out_ast, struct Value *function, struct SrcLoc 
 int AstMakeBinaryOp(struct Ast **out_ast, struct Ast *lhs, enum AstNodeType op, struct Ast *rhs, struct SrcLoc srcLoc);
 int AstMakeUnaryOp(struct Ast **out_ast, enum AstNodeType op, struct Ast *value, struct SrcLoc srcLoc);
 int AstMakeAssign(struct Ast **out_ast, struct Ast *lValue, struct Ast *rhs, struct SrcLoc srcLoc);
-int AstMakeCall(struct Ast **out_ast, char *name, struct Ast *args, struct SrcLoc srcLoc);
+int AstMakeCall(struct Ast **out_ast, struct Ast *primary, struct Ast *args, struct SrcLoc srcLoc);
+int AstMakeArrayIdx(struct Ast **out_ast, struct Ast *postfix, struct Ast *expr, struct SrcLoc srcLoc);
+int AstMakeMemberAccess(struct Ast **out_ast, struct Ast *postfix, struct Ast *symbol, struct SrcLoc srcLoc);
 int AstMakeReturn(struct Ast **out_ast, struct Ast *value, struct SrcLoc srcLoc);
 int AstMakeMut(struct Ast **out_ast, struct Ast *names, struct Ast *values, struct SrcLoc srcLoc);
 int AstMakeConst(struct Ast **out_ast, char *name, struct Ast *value, struct SrcLoc srcLoc);

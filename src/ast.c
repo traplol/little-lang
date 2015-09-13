@@ -186,19 +186,43 @@ int AstMakeAssign(struct Ast **out_ast, struct Ast *lValue, struct Ast *rhs, str
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeCall(struct Ast **out_ast, char *name, struct Ast *args, struct SrcLoc srcLoc) {
-    struct Ast *ast, *callSymbol;
-    int result;
-    if (!out_ast || !name) {
+int AstMakeArrayIdx(struct Ast **out_ast, struct Ast *postfix, struct Ast *expr, struct SrcLoc srcLoc) {
+    struct Ast *ast;
+    if (!out_ast || !postfix || !expr) {
         return R_InvalidArgument;
     }
-    result = AstMakeSymbol(&callSymbol, name, srcLoc);
-    if (R_OK != result) {
-        return result;
+    ast = AstAlloc(2);
+    ast->Type = ArrayIdxExpr;
+    ast->Children[0] = postfix;
+    ast->Children[1] = expr;
+    ast->SrcLoc = srcLoc;
+    *out_ast = ast;
+    return R_OK;
+}
+int AstMakeMemberAccess(struct Ast **out_ast, struct Ast *postfix, struct Ast *symbol, struct SrcLoc srcLoc) {
+    struct Ast *ast;
+    if (!out_ast || !postfix || !symbol) {
+        return R_InvalidArgument;
+    }
+    ast = AstAlloc(2);
+    ast->Type = MemberAccessExpr;
+    ast->Children[0] = postfix;
+    ast->Children[1] = symbol;
+    ast->SrcLoc = srcLoc;
+    *out_ast = ast;
+    return R_OK;
+}
+int AstMakeCall(struct Ast **out_ast, struct Ast *primary, struct Ast *args, struct SrcLoc srcLoc) {
+    struct Ast *ast;
+    if (!out_ast || !primary) {
+        return R_InvalidArgument;
+    }
+    if (!args) {
+        args = AstAlloc(0);
     }
     ast = AstAlloc(2);
     ast->Type = CallExpr;
-    ast->Children[0] = callSymbol;
+    ast->Children[0] = primary;
     ast->Children[1] = args;
     ast->SrcLoc = srcLoc;
     *out_ast = ast;
@@ -310,6 +334,9 @@ int AstMakeBlank(struct Ast **out_ast) {
 int AstAppendChild(struct Ast *ast, struct Ast *child) {
     if (!ast) {
         return R_InvalidArgument;
+    }
+    if (!child) {
+        return R_OK;
     }
     if (ast->NumChildren == ast->CapChildren) {
         AstExpandChildren(ast);

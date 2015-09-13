@@ -40,6 +40,8 @@ struct Value *InterpreterDoAssign(struct LittleLangMachine *llm, struct Ast *ast
 struct Value *InterpreterDoSymbol(struct LittleLangMachine *llm, struct Ast *ast);
 struct Value *InterpreterDoDefFunction(struct LittleLangMachine *llm, struct Ast *ast);
 struct Value *InterpreterDoCall(struct LittleLangMachine *llm, struct Ast *ast);
+struct Value *InterpreterDoArrayIdx(struct LittleLangMachine *llm, struct Ast *ast);
+struct Value *InterpreterDoMemberAccess(struct LittleLangMachine *llm, struct Ast *ast);
 struct Value *InterpreterDoReturn(struct LittleLangMachine *llm, struct Ast *ast);
 struct Value *InterpreterDoMut(struct LittleLangMachine *llm, struct Ast *ast);
 struct Value *InterpreterDoConst(struct LittleLangMachine *llm, struct Ast *ast);
@@ -594,7 +596,7 @@ struct Value *InterpreterDoString(struct Ast *ast){
 struct Value *InterpreterDoSymbol(struct LittleLangMachine *llm, struct Ast *ast){
     struct Symbol *sym;
     if (!SymbolTableFindNearest(llm->CurrentScope, ast->u.SymbolName, &sym)) {
-        printf("Undefined symbol '%s'.", ast->u.SymbolName);
+        printf("Undefined symbol '%s'.\n", ast->u.SymbolName);
         return &g_TheNilValue;
     }
     return sym->Value;
@@ -625,7 +627,7 @@ struct Value *InterpreterDoCallFunction(struct LittleLangMachine *llm, struct Va
     struct Function *fn = function->v.Function;
     params = fn->Params;
     body = fn->Body;
-    if (params && args->NumChildren < params->NumChildren) {
+    if (args->NumChildren < params->NumChildren) {
         /* TODO: Throw proper error. */
         printf("Wrong number of args for call: '%s' at %s:%d:%d\n",
                fn->Name,
@@ -634,7 +636,7 @@ struct Value *InterpreterDoCallFunction(struct LittleLangMachine *llm, struct Va
                srcLoc.ColumnNumber);
         return &g_TheNilValue;
     }
-    else if (params && args->NumChildren > params->NumChildren && !fn->IsVarArgs) {
+    else if (args->NumChildren > params->NumChildren && !fn->IsVarArgs) {
         /* TODO: Throw proper error. */
         printf("Wrong number of args for call: '%s' at %s:%d:%d\n",
                fn->Name,
@@ -661,7 +663,7 @@ struct Value *InterpreterDoCallFunction(struct LittleLangMachine *llm, struct Va
     return returnValue;
 }
 struct Value *InterpreterDoCall(struct LittleLangMachine *llm, struct Ast *ast) {
-    struct Value *func = InterpreterDoSymbol(llm, ast->Children[0]);
+    struct Value *func = InterpreterRunAst(llm, ast->Children[0]);
     if (&g_TheNilValue == func) {
         return &g_TheNilValue;
     }
@@ -669,6 +671,12 @@ struct Value *InterpreterDoCall(struct LittleLangMachine *llm, struct Ast *ast) 
         return InterpreterDoCallBuiltinFn(llm, func, ast->Children[1]);
     }
     return InterpreterDoCallFunction(llm, func, ast->Children[1], ast->SrcLoc);
+}
+struct Value *InterpreterDoArrayIdx(struct LittleLangMachine *llm, struct Ast *ast) {
+    return &g_TheNilValue;
+}
+struct Value *InterpreterDoMemberAccess(struct LittleLangMachine *llm, struct Ast *ast) {
+    return &g_TheNilValue;
 }
 struct Value *InterpreterDoReturn(struct LittleLangMachine *llm, struct Ast *ast) {
     return &g_TheNilValue;
@@ -823,6 +831,8 @@ struct Value *InterpreterRunAst(struct LittleLangMachine *llm, struct Ast *ast) 
         case FunctionNode: return InterpreterDoDefFunction(llm, ast);
 
         case CallExpr: return InterpreterDoCall(llm, ast);
+        case ArrayIdxExpr: return InterpreterDoArrayIdx(llm, ast);
+        case MemberAccessExpr: return InterpreterDoMemberAccess(llm, ast);
         case ReturnExpr: return InterpreterDoReturn(llm, ast);
         case MutExpr: return InterpreterDoMut(llm, ast);
         case ConstExpr: return InterpreterDoConst(llm, ast);

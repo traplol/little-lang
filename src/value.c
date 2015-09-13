@@ -46,6 +46,9 @@ int FunctionMake(struct Function **out_function, char *name, int numArgs, int is
     if (!out_function || !name) {
         return R_InvalidArgument;
     }
+    if (!params) {
+        params = calloc(sizeof *params, 1);
+    }
     function = malloc(sizeof *function);
     function->Name = name;
     function->NumArgs = numArgs;

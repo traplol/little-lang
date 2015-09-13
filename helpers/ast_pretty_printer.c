@@ -176,17 +176,33 @@ void printFunction(struct Ast *node) {
     printNode(body);
 }
 void printCall(struct Ast *node) {
-    unsigned int i;
-    struct Ast *symbol = node->Children[0];
+    struct Ast *primary = node->Children[0];
     struct Ast *args = node->Children[1];
-    printf("Call -> %s(", fmtNode(symbol));
+    printNode(primary);
+    printf("(");
     printCommaSeparated(args);
     printf(")");
+}
+void printArrayIdx(struct Ast *node) {
+    struct Ast *postfix = node->Children[0];
+    struct Ast *expr = node->Children[1];
+    printNode(postfix);
+    printf("[");
+    printNode(expr);
+    printf("]");
+}
+void printMemberAccess(struct Ast *node) {
+    struct Ast *postfix = node->Children[0];
+    struct Ast *identifier = node->Children[1];
+    printNode(postfix);
+    printf(".");
+    printNode(identifier);
 }
 void printAssign(struct Ast *node) {
     struct Ast *symbol = node->Children[0];
     struct Ast *value = node->Children[1];
-    printf("Assign %s <- ", fmtNode(symbol));
+    printNode(symbol);
+    printf(" = ");
     printNode(value);
 }
 void printReturn(struct Ast *node) {
@@ -306,6 +322,12 @@ void printNode(struct Ast *node) {
             break;
         case CallExpr:
             printCall(node);
+            break;
+        case ArrayIdxExpr:
+            printArrayIdx(node);
+            break;
+        case MemberAccessExpr:
+            printMemberAccess(node);
             break;
         case ReturnExpr:
             printReturn(node);
