@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+const char *REPLPrompt_Begin = ">";
+const char *REPLPrompt_Secondary = ".";
+
+
 #define STR_EQ(a,b) (0 == strcmp(a, b))
 #define STRN_EQ(a,b,n) (0 == strncmp(a, b, n))
 
@@ -211,6 +215,7 @@ end_of_stream:
     str = strdup("<EOS>");
     *out_type = TokenEOS;
     *out_str = str;
+    lexer->REPLPrompt = REPLPrompt_Begin;
     return R_OK;
 }
 
@@ -285,7 +290,8 @@ int LexerSharedGetNextREPL(struct Lexer *lexer, struct Token **out_token, int co
     }
     free(lexer->Code);
     buf = malloc(size);
-    printf("%03d > ", lexer->CurrentLineNumber);
+    printf("%03d %s ", lexer->CurrentLineNumber, lexer->REPLPrompt);
+    lexer->REPLPrompt = REPLPrompt_Secondary;
     i = 0;
     while (EOF != (c = fgetc(stdin))) {
         if (i + 1 >= size) {
@@ -293,7 +299,7 @@ int LexerSharedGetNextREPL(struct Lexer *lexer, struct Token **out_token, int co
             buf = realloc(buf, inc);
         }
         buf[i++] = c;
-        if (c == '\n') {
+        if ('\n' == c) {
             break;
         }
     }
@@ -319,6 +325,7 @@ int LexerMake(struct Lexer *lexer, char *filename, char *code) {
     lexer->CurrentLineNumber = 1;
     lexer->CurrentColumnNumber = 1;
     lexer->REPL = 0;
+    lexer->REPLPrompt = REPLPrompt_Begin;
     return R_OK;
 }
 

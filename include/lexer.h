@@ -11,6 +11,7 @@ struct Lexer {
     int CurrentLineNumber;
     int CurrentColumnNumber;
     int REPL;
+    const char *REPLPrompt;
 };
 
 int LexerMake(struct Lexer *lexer, char *filename, char *code);

@@ -164,6 +164,7 @@ int LittleLangMachineMakeTypeTable(struct LittleLangMachine *llm) {
 int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
     struct ParsedTrees *parsedTrees;
     int result;
+    struct Value *value;
     unsigned int i;
     llm->Lexer->REPL = llm->CmdOpts.ReplMode;
     parsedTrees = calloc(sizeof *parsedTrees, 1);
@@ -183,13 +184,15 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
         }
         if (parsedTrees->Program) {
             for (i = 0; i < parsedTrees->Program->NumChildren; ++i) {
-                InterpreterRunAst(llm, parsedTrees->Program->Children[i]);
+                value = InterpreterRunAst(llm, parsedTrees->Program->Children[i]);
+                printf(" => %s\n", ValueToString(value));
             }
         }
         AstFree(parsedTrees->TopLevelFunctions);
         parsedTrees->TopLevelFunctions = NULL;
         AstFree(parsedTrees->Program);
         parsedTrees->Program = NULL;
+        LexerThrowAwayCode(llm->Lexer);
     }
     return result;
 }

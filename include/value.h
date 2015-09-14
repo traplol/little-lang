@@ -56,4 +56,6 @@ int ValueMakeLLString(struct Value *value, char *cString);
 int ValueMakeFunction(struct Value *value, struct Function *function);
 int ValueMakeBuiltinFn(struct Value *value, struct BuiltinFn *builtinFn);
 
+char *ValueToString(struct Value *value);
+
 #endif

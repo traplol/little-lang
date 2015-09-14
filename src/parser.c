@@ -571,7 +571,7 @@ int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int pr
         }
         binOp = GetBinaryOperatorType(tokenStream->Current->Token);
         TokenStreamAdvance(tokenStream);
-        result = ParseAssign(&rhs, tokenStream);
+        result = ParseUnaryExpr(&rhs, tokenStream);
         if (R_OK != result) {
             return result;
         }

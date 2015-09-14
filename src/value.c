@@ -6,6 +6,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 struct Value *ValueAllocBlank(void) {
     struct Value *v = calloc(sizeof *v, 1);
@@ -123,4 +124,34 @@ int ValueMakeBuiltinFn(struct Value *value, struct BuiltinFn *builtinFn) {
     value->IsPassByReference = 0;
     value->v.BuiltinFn = builtinFn;
     return R_OK;
+}
+
+char *ValueToString(struct Value *value) {
+    /* TODO: Find better way to do ToString. */
+    char buf[80];
+
+    switch (value->TypeInfo->Type) {
+        default:
+            if (&g_TheNilValue == value) {
+                return strdup("nil");
+            }
+            return value->TypeInfo->TypeName;
+        case TypeString:
+            return value->v.String->CString;
+        case TypeBoolean:
+            if (&g_TheTrueValue == value) {
+                return strdup("true");
+            }
+            if (&g_TheFalseValue == value) {
+                return strdup("false");
+            }
+            return strdup("<bad boolean>"); /* ??? how does this happen? */
+        case TypeInteger:
+            snprintf(buf, 80, "%d", value->v.Integer);
+            return strdup(buf);
+        case TypeReal:
+            snprintf(buf, 80, "%f", value->v.Real);
+            return strdup(buf);
+    }
+    
 }

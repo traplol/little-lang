@@ -14,41 +14,12 @@ BuiltinFnProc_t RT_type;
 
 struct SrcLoc srcLoc = {"<runtime_core.c>", -1, -1};
 
-char *ToString(struct Value *value) {
-    /* TODO: Find better way to do ToString. */
-    char buf[80];
-
-    switch (value->TypeInfo->Type) {
-        default:
-            if (&g_TheNilValue == value) {
-                return strdup("nil");
-            }
-            return value->TypeInfo->TypeName;
-        case TypeString:
-            return value->v.String->CString;
-        case TypeBoolean:
-            if (&g_TheTrueValue == value) {
-                return strdup("true");
-            }
-            if (&g_TheFalseValue == value) {
-                return strdup("false");
-            }
-            return strdup("<bad boolean>"); /* ??? how does this happen? */
-        case TypeInteger:
-            snprintf(buf, 80, "%d", value->v.Integer);
-            return strdup(buf);
-        case TypeReal:
-            snprintf(buf, 80, "%f", value->v.Real);
-            return strdup(buf);
-    }
-    
-}
 
 struct Value *_rt_print(unsigned int argc, struct Value **argv) {
     unsigned int i;
     char *s;
     for (i = 0; i < argc; ++i) {
-        s = ToString(argv[i]);
+        s = ValueToString(argv[i]);
         printf("%s", s);
         if (i + 1 < argc) {
             printf(" ");
@@ -65,7 +36,7 @@ struct Value *_rt_println(unsigned int argc, struct Value **argv) {
 
 struct Value *_rt_string(unsigned int argc, struct Value **argv) {
     struct Value *value;
-    char *string = strdup(ToString(argv[0]));
+    char *string = strdup(ValueToString(argv[0]));
     value = ValueAlloc();
     ValueMakeLLString(value, string);
     return value;
