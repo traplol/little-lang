@@ -90,7 +90,7 @@ int ParseErrorUnexpectedToken(struct Token *token) {
             token->SrcLoc.Filename,
             token->SrcLoc.LineNumber,
             token->SrcLoc.ColumnNumber);
-    exit(1);
+    return R_UnexpectedToken;
 }
 
 int ParseErrorUnexpectedTokenExpected(const char *expected, struct Token *token) {
@@ -100,7 +100,7 @@ int ParseErrorUnexpectedTokenExpected(const char *expected, struct Token *token)
             token->SrcLoc.LineNumber,
             token->SrcLoc.ColumnNumber,
             expected);
-    exit(1);
+    return R_UnexpectedToken;
 }
 
 int GetBinaryOperatorPrecedence(struct Token *token) {
@@ -856,7 +856,6 @@ int ParseDeclStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
  *        := <for>
  *        := <while>
  *        := <decl-stmt>
- *        := <epsilon>
  */
 int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
     struct Node *save;
@@ -878,6 +877,7 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
     }
     RESTORE(tokenStream, save);
     result = ParseIfElse(&ast, tokenStream);
+ 
     if (R_OK == result) {
         *out_ast = ast;
         return R_OK;
@@ -901,7 +901,7 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
         return R_OK;
     }
     RESTORE(tokenStream, save);
-    return ParseErrorUnexpectedToken(tokenStream->Current->Token);
+    return R_UnexpectedToken;
 }
 
 /*
@@ -978,10 +978,6 @@ int ParseTokenStream(struct ParsedTrees *parsedTrees, struct TokenStream *tokenS
         }
         RESTORE(tokenStream, tryImport);
         result = ParseStmt(&tmp, tokenStream);
-        if (!tmp) {
-            opt_expect(TokenSemicolon, tokenStream);
-            continue;
-        }
         /* Catch any top level function defintions; they need to be stored
            in the symbol table before anything is allowed to execute. */
         if (R_OK == result && tmp && FunctionNode == tmp->Type) {
@@ -1000,9 +996,6 @@ int ParseTokenStream(struct ParsedTrees *parsedTrees, struct TokenStream *tokenS
     return R_OK;
 
 parse_error_cleanup:
-    /* Something happened, restore the old token in case we're in REPL 
-       so it can discard the rest of the stream. */ 
-    RESTORE(tokenStream, save);
     return result;
 }
 
@@ -1024,6 +1017,7 @@ int Parse(struct ParsedTrees *parsedTrees, struct Lexer *lexer) {
     result = ParseTokenStream(parsedTrees, tokenStream);
     if (R_OK != result) {
         puts("Parse error!");
+        TokenStreamFree(tokenStream);
         return result;
     }
 

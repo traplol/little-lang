@@ -15,6 +15,7 @@ struct Lexer {
 
 int LexerMake(struct Lexer *lexer, char *filename, char *code);
 int LexerFree(struct Lexer *lexer);
+int LexerThrowAwayCode(struct Lexer *lexer);
 int LexerNextToken(struct Lexer *lexer, struct Token **out_token);
 int LexerPeekToken(struct Lexer *lexer, struct Token **out_token);
 

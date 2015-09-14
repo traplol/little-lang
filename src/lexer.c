@@ -331,6 +331,17 @@ int LexerFree(struct Lexer *lexer) {
     return R_OK;
 }
 
+int LexerThrowAwayCode(struct Lexer *lexer) {
+    if (LexerIsInvalid(lexer)) {
+        return R_InvalidArgument;
+    }
+    free(lexer->Code);
+    lexer->Code = NULL;
+    lexer->Pos = lexer->Code;
+    lexer->Length = 0;
+    return R_OK;
+}
+
 int LexerNextToken(struct Lexer *lexer, struct Token **out_token) {
     if (!lexer->REPL) {
         return LexerSharedGetNext(lexer, out_token, 1);

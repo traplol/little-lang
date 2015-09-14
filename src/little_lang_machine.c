@@ -168,7 +168,11 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
     llm->Lexer->REPL = llm->CmdOpts.ReplMode;
     parsedTrees = calloc(sizeof *parsedTrees, 1);
     while (1) {
-        Parse(parsedTrees, llm->Lexer);
+        result = Parse(parsedTrees, llm->Lexer);
+        if (R_OK != result) {
+            LexerThrowAwayCode(llm->Lexer);
+            continue;
+        }
         DefineTopLevelFunctions(llm->GlobalScope, parsedTrees->TopLevelFunctions);
         if (llm->CmdOpts.PrettyPrintAst) {
             printf("Functions:\n");
