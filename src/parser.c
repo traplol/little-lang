@@ -445,7 +445,7 @@ int ParsePostfixRhs(struct Ast **out_ast, struct TokenStream *tokenStream, struc
 }
 
 /*
- * <postfix-expr> := <primary> XXXX+
+ * <postfix-expr> := <primary> 
  *                := <postfix-expr> ( <arg-list> )            // call
  *                := <postfix-expr> [ <expr> ]                // array idx
  *                := <postfix-expr> . <identifer>             // member access
@@ -591,7 +591,7 @@ int ParseBinaryRhs(struct Ast **out_ast, struct TokenStream *tokenStream, int pr
 }
 
 /* <primary-expr> := <identifier>
- *                := <literal> XXXX+
+ *                := <literal> 
  *                := <paren-expr>
  */
 int ParsePrimary(struct Ast **out_ast, struct TokenStream *tokenStream) {
@@ -622,7 +622,7 @@ int ParsePrimary(struct Ast **out_ast, struct TokenStream *tokenStream) {
 }
 
 /* 
- * <unary-expr> := <postfix-expr>    XXXX+
+ * <unary-expr> := <postfix-expr>    
  *              := <unary-op> <unary-expr> 
  */
 int ParseUnaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
@@ -652,7 +652,7 @@ int ParseUnaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
 
 /*
- * <binary-expr> := <unary-expr> <binary-op> <binary-rhs> XXXX+
+ * <binary-expr> := <unary-expr> <binary-op> <binary-rhs> 
  */
 int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     /* TODO: Parse right associativity such as 3 ** 3 ** 3 should be equal
@@ -689,7 +689,7 @@ int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
 /*
  * <assign> := <binary-expr>
- *          := <unary-expr> <assignment-operator> <assign> XXXX+
+ *          := <unary-expr> <assignment-operator> <assign> 
  */
 int ParseAssign(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
@@ -714,7 +714,7 @@ int ParseAssign(struct Ast **out_ast, struct TokenStream *tokenStream) {
 }
 
 /*
- * <expr> := <assign> XXXX+
+ * <expr> := <assign> 
  */
 int ParseExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
