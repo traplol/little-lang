@@ -27,15 +27,49 @@ void NodeFree(struct Node *node) {
     free(node);
 }
 
+int TokenStreamREPLNextToken(struct TokenStream *tokenStream) {
+    int result;
+    struct Token *token; 
+    result = LexerNextToken(tokenStream->Lexer, &token);
+    if (R_OK != result) {
+        return result;
+    }
+    result = TokenStreamAppend(tokenStream, token);
+    if (R_OK != result) {
+        return result;
+    }
+    return R_OK;
+}
+
+int TokenStreamAddExistingTokens(struct TokenStream *tokenStream) {
+    int result;
+    struct Token *token;
+    while (R_OK == (result = LexerNextToken(tokenStream->Lexer, &token))) {
+        result = TokenStreamAppend(tokenStream, token);
+        if (R_EndOfTokenStream == result) {
+            result = R_OK;
+            break;
+        }
+    }
+    return result;
+}
+
 /*********************** Public Functions ***********************/
 
-int TokenStreamMake(struct TokenStream *tokenStream) {
+int TokenStreamMake(struct TokenStream *tokenStream, struct Lexer *lexer) {
     if (!tokenStream) {
         return R_InvalidArgument;
     }
     tokenStream->Head = NULL;
     tokenStream->Tail = tokenStream->Head;
     tokenStream->Current = tokenStream->Head;
+    tokenStream->Lexer = lexer;
+    if (lexer->Length > 0) {
+        TokenStreamAddExistingTokens(tokenStream);
+    }
+    else if (lexer->REPL) { /* Setup the first token. */
+        TokenStreamAdvance(tokenStream);
+    }
     return R_OK;
 }
 
@@ -76,11 +110,21 @@ int TokenStreamAppend(struct TokenStream *tokenStream, struct Token *token) {
     return R_OK;
 }
 int TokenStreamAdvance(struct TokenStream *tokenStream) {
+    int result, firstTime;
     if (TokenStreamIsInvalid(tokenStream)) {
         return R_InvalidArgument;
     }
     if (!tokenStream->Current || !tokenStream->Current->Next) {
-        return R_OperationFailed;
+        if (tokenStream->Lexer->REPL) {
+            firstTime = !tokenStream->Head;
+            result = TokenStreamREPLNextToken(tokenStream);
+            if (firstTime) {
+                return result;
+            }
+        }
+        else {
+            return R_OperationFailed;
+        }
     }
     tokenStream->Current = tokenStream->Current->Next;
     return R_OK;

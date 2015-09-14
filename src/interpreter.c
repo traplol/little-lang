@@ -787,6 +787,9 @@ int InterpreterInit(struct LittleLangMachine *llm) {
 
 int InterpreterRunProgram(struct LittleLangMachine *llm) {
     unsigned int i;
+    if (!llm->Program) {
+        return R_OK;
+    }
     for (i = 0; i < llm->Program->NumChildren; ++i) {
         InterpreterRunAst(llm, llm->Program->Children[i]);
     }

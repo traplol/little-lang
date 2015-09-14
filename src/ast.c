@@ -140,8 +140,21 @@ int AstMakeFunction(struct Ast **out_ast, struct Value *function, struct SrcLoc 
         return R_InvalidArgument;
     }
     ast = AstAlloc(0);
-    ast->Type = FunctionNode;;
+    ast->Type = FunctionNode;
     ast->u.Value = function;
+    ast->SrcLoc = srcLoc;
+    *out_ast = ast;
+    return R_OK;
+}
+int AstMakeImport(struct Ast **out_ast, struct Ast *modName, struct Ast *as, struct SrcLoc srcLoc) {
+    struct Ast *ast;
+    if (!out_ast || !modName) {
+        return R_InvalidArgument;
+    }
+    ast = AstAlloc(2);
+    ast->Type = ImportExpr;
+    ast->Children[0] = modName;
+    ast->Children[1] = as;
     ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;

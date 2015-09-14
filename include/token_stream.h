@@ -1,6 +1,8 @@
 #ifndef _LITTLE_LANG_TOKEN_STREAM_H
 #define _LITTLE_LANG_TOKEN_STREAM_H
 
+#include "lexer.h"
+
 struct Node {
     struct Node *Prev;
     struct Token *Token;
@@ -11,10 +13,11 @@ struct TokenStream {
     struct Node *Head;
     struct Node *Tail;
     struct Node *Current;
+    struct Lexer *Lexer;
 };
 
 /* Initializes the token stream. */
-int TokenStreamMake(struct TokenStream *tokenStream);
+int TokenStreamMake(struct TokenStream *tokenStream, struct Lexer *lexer);
 /* Frees the token stream */
 int TokenStreamFree(struct TokenStream *tokenStream);
 

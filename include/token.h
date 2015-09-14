@@ -16,6 +16,9 @@ enum TokenType {
 
     TokenDef,
 
+    TokenImport,
+    TokenAs,
+
     TokenMut,
     TokenConst,
 

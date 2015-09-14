@@ -49,6 +49,8 @@ enum AstNodeType {
     MutExpr,
     ConstExpr,
 
+    ImportExpr,
+
     ForExpr,
     WhileExpr,
     IfElseExpr,
@@ -81,6 +83,7 @@ int AstMakeInteger(struct Ast **out_ast, struct Value *integer, struct SrcLoc sr
 int AstMakeString(struct Ast **out_ast, struct Value *string, struct SrcLoc srcLoc);
 int AstMakeSymbol(struct Ast **out_ast, char *name, struct SrcLoc srcLoc);
 int AstMakeFunction(struct Ast **out_ast, struct Value *function, struct SrcLoc srcLoc);
+int AstMakeImport(struct Ast **out_ast, struct Ast *modName, struct Ast *as, struct SrcLoc srcLoc);
 
 /* Expressions should be a combination of more expressions and terminals. */
 int AstMakeBinaryOp(struct Ast **out_ast, struct Ast *lhs, enum AstNodeType op, struct Ast *rhs, struct SrcLoc srcLoc);

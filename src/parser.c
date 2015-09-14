@@ -940,18 +940,43 @@ int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream) {
     return result;
 }
 
+int ParseImport(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    int result;
+    struct Ast *modName, *as = NULL;
+    struct Node *save;
+    SAVE(tokenStream, save);
+    EXPECT_NO_MSG(TokenImport, tokenStream);
+    EXPECT(TokenStringLiteral, tokenStream);
+    TokenStreamRewind(tokenStream);
+    result = ParseLiteral(&modName, tokenStream);
+    if (opt_expect(TokenAs, tokenStream)) {
+        EXPECT(TokenIdentifer, tokenStream);
+        TokenStreamRewind(tokenStream);
+        result = ParseIdentifier(&as, tokenStream);
+    }
+    return AstMakeImport(out_ast, modName, as, save->Token->SrcLoc);
+}
+
 /*
  * <program> := <stmt-list>
+ *           := <import>
  */
-
 int ParseTokenStream(struct ParsedTrees *parsedTrees, struct TokenStream *tokenStream) {
     int result;
-    struct Node *save;
-    struct Ast *functionDefs, *program, *tmp;
+    struct Node *save, *tryImport;
+    struct Ast *imports, *functionDefs, *program, *tmp;
+    AstMakeBlank(&imports);
     AstMakeBlank(&functionDefs);
     AstMakeBlank(&program);
     SAVE(tokenStream, save);
-    while (TokenEOS != tokenStream->Current->Token->Type) {
+    while (tokenStream->Current && TokenEOS != tokenStream->Current->Token->Type) {
+        SAVE(tokenStream, tryImport);
+        result = ParseImport(&tmp, tokenStream);
+        if (R_OK == result) {
+            AstAppendChild(imports, tmp);
+            continue;
+        }
+        RESTORE(tokenStream, tryImport);
         result = ParseStmt(&tmp, tokenStream);
         if (!tmp) {
             opt_expect(TokenSemicolon, tokenStream);
@@ -969,6 +994,7 @@ int ParseTokenStream(struct ParsedTrees *parsedTrees, struct TokenStream *tokenS
             goto parse_error_cleanup;
         }
     }
+    parsedTrees->Imports = imports;
     parsedTrees->TopLevelFunctions = functionDefs;
     parsedTrees->Program = program;
     return R_OK;
@@ -985,24 +1011,12 @@ parse_error_cleanup:
 
 int Parse(struct ParsedTrees *parsedTrees, struct Lexer *lexer) {
     struct TokenStream *tokenStream;
-    struct Token *token;
     int result;
     if (!parsedTrees || !lexer) {
         return R_InvalidArgument;
     }
     tokenStream = malloc(sizeof *tokenStream);
-    result = TokenStreamMake(tokenStream);
-    if (R_OK != result) {
-        return result;
-    }
-
-    while (R_OK == (result = LexerNextToken(lexer, &token)) && token->Type != TokenUnknown) {
-        result = TokenStreamAppend(tokenStream, token);
-        if (R_EndOfTokenStream == result) {
-            result = R_OK;
-            break;
-        }
-    }
+    result = TokenStreamMake(tokenStream, lexer);
     if (R_OK != result) {
         return result;
     }

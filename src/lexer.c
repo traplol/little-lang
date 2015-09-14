@@ -105,6 +105,8 @@ int LexerParseIdentOrKeyword(struct Lexer *lexer, enum TokenType *out_type, char
     }
     *tmp = 0;
     if (STR_EQ(str, "def")) { type = TokenDef; }
+    else if (STR_EQ(str, "import")) { type = TokenImport; }
+    else if (STR_EQ(str, "as")) { type = TokenAs; }
     else if (STR_EQ(str, "mut")) { type = TokenMut; }
     else if (STR_EQ(str, "const")) { type = TokenConst; }
     else if (STR_EQ(str, "class")) { type = TokenClass; }
@@ -128,8 +130,8 @@ int LexerParseNumber(struct Lexer *lexer, enum TokenType *out_type, char **out_s
     int fp = 0;
     end = begin = lexer->Pos;
 
-    while (IsDigit(*end) || '.' == *end) {
-        if ('.' == *end) {
+    while (IsDigit(*end) || ('.' == *end && IsDigit(*(end+1)))) {
+        if ('.' == *end && IsDigit(*(end+1))) {
             LEX_ADVE(lexer, end);
             fp = 1;
             while (IsDigit(*end)) {
@@ -271,6 +273,38 @@ int LexerSharedGetNext(struct Lexer *lexer, struct Token **out_token, int consum
     *out_token = token;
     return R_OK;
 }
+int LexerSharedGetNextREPL(struct Lexer *lexer, struct Token **out_token, int consume) {
+    char *buf;
+    const int inc = 1024;
+    int c, i, len, size = inc;
+    while (lexer->Pos && IsWhitespace(*lexer->Pos)) {
+        LEX_ADV(lexer);
+    }
+    if (lexer->Pos && *lexer->Pos) {
+        return LexerSharedGetNext(lexer, out_token, consume);
+    }
+    free(lexer->Code);
+    buf = malloc(size);
+    printf("%03d > ", lexer->CurrentLineNumber);
+    i = 0;
+    while (EOF != (c = fgetc(stdin))) {
+        if (i + 1 >= size) {
+            size += inc;
+            buf = realloc(buf, inc);
+        }
+        buf[i++] = c;
+        if (c == '\n') {
+            break;
+        }
+    }
+    buf[i] = 0;
+    len = strlen(buf);
+    buf = realloc(buf, 1 + len);
+    lexer->Code = buf;
+    lexer->Pos = lexer->Code;
+    lexer->Length = len;
+    return LexerSharedGetNext(lexer, out_token, consume);
+}
 
 /*********************** Public Functions ************************/
 
@@ -281,9 +315,10 @@ int LexerMake(struct Lexer *lexer, char *filename, char *code) {
     lexer->Filename = filename;
     lexer->Code = code;
     lexer->Pos = lexer->Code;
-    lexer->Length = strlen(lexer->Code);
+    lexer->Length = !lexer->Code ? 0 : strlen(lexer->Code);
     lexer->CurrentLineNumber = 1;
     lexer->CurrentColumnNumber = 1;
+    lexer->REPL = 0;
     return R_OK;
 }
 
@@ -297,9 +332,15 @@ int LexerFree(struct Lexer *lexer) {
 }
 
 int LexerNextToken(struct Lexer *lexer, struct Token **out_token) {
-    return LexerSharedGetNext(lexer, out_token, 1);
+    if (!lexer->REPL) {
+        return LexerSharedGetNext(lexer, out_token, 1);
+    }
+    return LexerSharedGetNextREPL(lexer, out_token, 1);
 }
 
 int LexerPeekToken(struct Lexer *lexer, struct Token **out_token) {
-    return LexerSharedGetNext(lexer, out_token, 0);
+    if (!lexer->REPL) {
+        return LexerSharedGetNext(lexer, out_token, 0);
+    }
+    return LexerSharedGetNextREPL(lexer, out_token, 0);
 }

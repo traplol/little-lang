@@ -55,6 +55,7 @@ void ShowHelpMsg(void) {
             "\n-h --help                     Show this message."
             "\n-P --pretty-print-ast         Pretty print the program's AST."
             "\n-T --time-execution           Times the execution of the program."
+            "\n-i                            Enters REPL mode after program execution."
             "\nfile                          The program source to run."
             "\n-args ...                     Passes anything after this flag to the program."
             "\n"
@@ -63,7 +64,9 @@ void ShowHelpMsg(void) {
 
 #define STR_EQ(s1, s2) (strcmp(s1, s2) == 0)
 int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv) {
-    char *filename = NULL, *code, *arg;
+    char *filename = NULL, *arg;
+    /* Init everything off. */
+    memset(&(llm->CmdOpts), 0, sizeof (llm->CmdOpts));
     for (; argc; ++argv, --argc) {
         arg = argv[0];
         if(STR_EQ("-h", arg) || STR_EQ("--help", arg)) {
@@ -80,58 +83,22 @@ int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv
             --argc, ++argv;
             break;
         }
+        else if (STR_EQ("-i", arg)) {
+            llm->CmdOpts.ReplMode = 1;
+        }
         else if (!filename && FileExists(arg)) {
             filename = arg;
         }
     }
-    code = ReadFile(filename);
     llm->CmdOpts.argc = argc;
     llm->CmdOpts.argv = argv;
-    llm->CmdOpts.code = code;
-    llm->CmdOpts.filename = filename;
-    return R_OK;
-}
-
-/************************** Public Functions *****************************/
-
-int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) {
-    int result;
-
-    if (!llm) {
-        return R_InvalidArgument;
+    if (filename) {
+        llm->CmdOpts.code = ReadFile(filename);
+        llm->CmdOpts.filename = filename;
     }
-    memset(&(llm->CmdOpts), 0, sizeof (llm->CmdOpts));
-    result = LittleLangMachineDoOpts(llm, argc, argv);
-    if (R_OK != result) {
-        return result;
-    }
-
-    llm->Error = R_OK;
-    
-    llm->Lexer = malloc(sizeof(*llm->Lexer));
-    result = LexerMake(llm->Lexer, llm->CmdOpts.filename, llm->CmdOpts.code);
-    if (R_OK != result) {
-        free(llm->Lexer);
-        llm->Lexer = NULL;
-        return result;
-    }
-
-    llm->GlobalScope = malloc(sizeof(*llm->GlobalScope));
-    llm->CurrentScope = llm->GlobalScope;
-    result = SymbolTableMakeGlobalScope(llm->GlobalScope);
-    if (R_OK != result) {
-        free(llm->GlobalScope);
-        llm->GlobalScope = NULL;
-        llm->CurrentScope = NULL;
-        return result;
-    }
-
-    llm->TypeTable = malloc(sizeof(*llm->TypeTable));
-    result = TypeTableMake(llm->TypeTable, 0);
-    if (R_OK != result) {
-        free(llm->TypeTable);
-        llm->TypeTable = NULL;
-        return result;
+    else {
+        llm->CmdOpts.ReplMode = 1;
+        llm->CmdOpts.filename = "<stdin>";
     }
     return R_OK;
 }
@@ -144,6 +111,9 @@ int DefineFunction(struct SymbolTable *symbolTable, struct Ast *function) {
 int DefineTopLevelFunctions(struct SymbolTable *symbolTable, struct Ast *functionDefs) {
     unsigned int i;
     int result;
+    if (!functionDefs) {
+        return R_OK;
+    }
     for (i = 0; i < functionDefs->NumChildren; ++i) {
         result = DefineFunction(symbolTable, functionDefs->Children[i]);
         if (R_OK != result) {
@@ -152,6 +122,99 @@ int DefineTopLevelFunctions(struct SymbolTable *symbolTable, struct Ast *functio
     }
     return result;
 }
+
+int LittleLangMachineMakeLexer(struct LittleLangMachine *llm) {
+    int result;
+    llm->Lexer = malloc(sizeof(*llm->Lexer));
+    result = LexerMake(llm->Lexer, llm->CmdOpts.filename, llm->CmdOpts.code);
+    if (R_OK != result) {
+        free(llm->Lexer);
+        llm->Lexer = NULL;
+        return result;
+    }
+    return R_OK;
+}
+
+int LittleLangMachineMakeSymbolTables(struct LittleLangMachine *llm) {
+    int result;
+    llm->GlobalScope = malloc(sizeof(*llm->GlobalScope));
+    llm->CurrentScope = llm->GlobalScope;
+    result = SymbolTableMakeGlobalScope(llm->GlobalScope);
+    if (R_OK != result) {
+        free(llm->GlobalScope);
+        llm->CurrentScope = NULL;
+        llm->GlobalScope = NULL;
+        return result;
+    }
+    return R_OK;
+}
+
+int LittleLangMachineMakeTypeTable(struct LittleLangMachine *llm) {
+    int result;
+    llm->TypeTable = malloc(sizeof(*llm->TypeTable));
+    result = TypeTableMake(llm->TypeTable, 0);
+    if (R_OK != result) {
+        free(llm->TypeTable);
+        llm->TypeTable = NULL;
+        return result;
+    }
+    return R_OK;
+}
+
+int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
+    struct ParsedTrees *parsedTrees;
+    int result;
+    unsigned int i;
+    llm->Lexer->REPL = llm->CmdOpts.ReplMode;
+    parsedTrees = calloc(sizeof *parsedTrees, 1);
+    while (1) {
+        Parse(parsedTrees, llm->Lexer);
+        DefineTopLevelFunctions(llm->GlobalScope, parsedTrees->TopLevelFunctions);
+        if (llm->CmdOpts.PrettyPrintAst) {
+            printf("Functions:\n");
+            AstPrettyPrint(parsedTrees->TopLevelFunctions);
+            printf("Program:\n");
+            AstPrettyPrint(parsedTrees->Program);
+            printf("\n\n");
+        }
+        if (parsedTrees->Program) {
+            for (i = 0; i < parsedTrees->Program->NumChildren; ++i) {
+                InterpreterRunAst(llm, parsedTrees->Program->Children[i]);
+            }
+        }
+        AstFree(parsedTrees->TopLevelFunctions);
+        parsedTrees->TopLevelFunctions = NULL;
+        AstFree(parsedTrees->Program);
+        parsedTrees->Program = NULL;
+    }
+    return result;
+}
+
+/************************** Public Functions *****************************/
+
+int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) {
+    int result;
+
+    if (!llm) {
+        return R_InvalidArgument;
+    }
+    result = LittleLangMachineDoOpts(llm, argc, argv);
+    if (R_OK != result) {
+        return result;
+    }
+
+    result = LittleLangMachineMakeLexer(llm);
+    if (R_OK != result) {
+        return result;
+    }
+    result = LittleLangMachineMakeSymbolTables(llm);
+    if (R_OK != result) {
+        return result;
+    }
+    result = LittleLangMachineMakeTypeTable(llm);
+    return result;
+}
+
 
 int LittleLangMachineRun(struct LittleLangMachine *llm) {
     struct ParsedTrees *parsedTrees;
@@ -167,10 +230,12 @@ int LittleLangMachineRun(struct LittleLangMachine *llm) {
     }
     parsedTrees = calloc(sizeof *parsedTrees, 1);
     result = Parse(parsedTrees, llm->Lexer);
-    if (R_OK == result) {
+    if (1 || R_OK == result) {
         llm->Program = parsedTrees->Program;
         if (llm->CmdOpts.PrettyPrintAst) {
-            printf("Function definitions:\n");
+            printf("Imports:\n");
+            AstPrettyPrint(parsedTrees->Imports);
+            printf("\nFunction definitions:\n");
             AstPrettyPrint(parsedTrees->TopLevelFunctions);
             printf("\nProgram:\n");
             AstPrettyPrint(llm->Program);
@@ -184,6 +249,9 @@ int LittleLangMachineRun(struct LittleLangMachine *llm) {
         if (llm->CmdOpts.TimeExecution) {
             time = (end - start) * 1.0 / CLOCKS_PER_SEC;
             printf("\nfinished program execution in %fs\n", time);
+        }
+        if (llm->CmdOpts.ReplMode) {
+            LittleLangMachineREPLMode(llm);
         }
     }
     else {

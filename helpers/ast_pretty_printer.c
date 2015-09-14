@@ -165,6 +165,18 @@ void printString(struct Ast *node) {
 void printSymbol(struct Ast *node) {
     printf("%s", fmtNode(node));
 }
+void printImport(struct Ast *node) {
+    struct Ast *import, *as;
+    import = node->Children[0];
+    as = node->Children[1];
+    printf("import ");
+    printNode(import);
+    if (as) {
+        printf(" as ");
+        printNode(as);
+    }
+    printf("\n");
+}
 void printFunction(struct Ast *node) {
     struct Ast *params, *body;
     printf("def %s", fmtNode(node));
@@ -316,6 +328,9 @@ void printNode(struct Ast *node) {
             break;
         case SymbolNode:
             printSymbol(node);
+            break;
+        case ImportExpr:
+            printImport(node);
             break;
         case FunctionNode:
             printFunction(node);

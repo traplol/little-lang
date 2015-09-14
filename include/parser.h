@@ -5,6 +5,7 @@
 #include "lexer.h"
 
 struct ParsedTrees {
+    struct Ast *Imports;
     struct Ast *Classes;
     struct Ast *TopLevelFunctions;
     struct Ast *Program;

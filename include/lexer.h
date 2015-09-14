@@ -10,6 +10,7 @@ struct Lexer {
     unsigned int Length;
     int CurrentLineNumber;
     int CurrentColumnNumber;
+    int REPL;
 };
 
 int LexerMake(struct Lexer *lexer, char *filename, char *code);
