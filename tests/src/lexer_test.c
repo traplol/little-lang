@@ -48,11 +48,15 @@ TEST(LexerNextToken) {
         "}");
     LexerMake(lexer, filename, code);
 
+    LEX_TEST_LC(lexer, "<newline>", 1, 1, token, TokenNewline);
+    LEX_TEST_LC(lexer, "<newline>", 2, 1, token, TokenNewline);
     LEX_TEST_LC(lexer, "def", 3, 1, token, TokenDef);
     LEX_TEST_LC(lexer, "fortytwo", 3, 5, token, TokenIdentifer);
     LEX_TEST_LC(lexer, "{", 3, 14, token, TokenLeftCurlyBrace);
+    LEX_TEST_LC(lexer, "<newline>", 3, 15, token, TokenNewline);
     LEX_TEST_LC(lexer, "42", 4, 5, token, TokenIntegerConstant);
     LEX_TEST_LC(lexer, ";", 4, 7, token, TokenSemicolon);
+    LEX_TEST_LC(lexer, "<newline>", 4, 8, token, TokenNewline);
     LEX_TEST_LC(lexer, "}", 5, 1, token, TokenRightCurlyBrace);
 
     LexerFree(lexer);
@@ -133,6 +137,7 @@ const char *SourceCode =
     " class "
     " import "
     " as "
+    " \n "
     ;
 TEST(LexerTestAllTokenTypes) {
     struct Lexer *lexer = malloc(sizeof *lexer);
@@ -190,6 +195,7 @@ TEST(LexerTestAllTokenTypes) {
     LEX_TEST(lexer, "class", token, TokenClass);
     LEX_TEST(lexer, "import", token, TokenImport);
     LEX_TEST(lexer, "as", token, TokenAs);
+    LEX_TEST(lexer, "<newline>", token, TokenNewline);
 
     LEX_TEST(lexer, "<EOS>", token, TokenEOS);
     assert_eq(Token_NUM_TOKENS, lex_tests, "Not all tokens have been tested.");
@@ -212,11 +218,16 @@ TEST(LexerEdgeCases) {
     LEX_TEST_LC(lexer, "(", 1, 1, token, TokenLeftParen);
     LEX_TEST_LC(lexer, "\"str in parens\"", 1, 2, token, TokenStringLiteral);
     LEX_TEST_LC(lexer, ")", 1, 17, token, TokenRightParen);
+    LEX_TEST_LC(lexer, "<newline>", 1, 18, token, TokenNewline);
+    LEX_TEST_LC(lexer, "<newline>", 2, 1, token, TokenNewline);
 
     LEX_TEST_LC(lexer, "(", 3, 1, token, TokenLeftParen);
     LEX_TEST_LC(lexer, ";", 3, 2, token, TokenSemicolon);
     LEX_TEST_LC(lexer, ";", 3, 3, token, TokenSemicolon);
     LEX_TEST_LC(lexer, ")", 3, 4, token, TokenRightParen);
+    LEX_TEST_LC(lexer, "<newline>", 3, 5, token, TokenNewline);
+    LEX_TEST_LC(lexer, "<newline>", 4, 1, token, TokenNewline);
+    LEX_TEST_LC(lexer, "<newline>", 5, 1, token, TokenNewline);
 
     LEX_TEST_LC(lexer, "(", 6, 1, token, TokenLeftParen);
     LEX_TEST_LC(lexer, "(", 6, 2, token, TokenLeftParen);
@@ -233,6 +244,7 @@ TEST(LexerEdgeCases) {
     LEX_TEST_LC(lexer, "(", 6, 13, token, TokenLeftParen);
     LEX_TEST_LC(lexer, ")", 6, 14, token, TokenRightParen);
     LEX_TEST_LC(lexer, ")", 6, 15, token, TokenRightParen);
+    LEX_TEST_LC(lexer, "<newline>", 6, 16, token, TokenNewline);
 }
 
 int main() {

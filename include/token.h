@@ -7,6 +7,7 @@ enum TokenType {
     TokenUnknown,
     TokenEOS,
     TokenSemicolon,
+    TokenNewline,
     TokenComma,
     
     TokenIdentifer,

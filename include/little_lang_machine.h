@@ -6,6 +6,7 @@
 #include "lexer.h"
 #include "ast.h"
 
+
 struct LittleLangMachine {
     struct Lexer *Lexer;
     struct SymbolTable *GlobalScope;

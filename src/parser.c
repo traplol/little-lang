@@ -12,6 +12,7 @@
 
 const char *tokenStrings[Token_NUM_TOKENS] = {
     [TokenSemicolon] = ";",
+    [TokenNewline] = "<newline>",
     [TokenComma] = ",",
     [TokenIdentifer] = "<ident>",
     [TokenDef] = "def",
@@ -49,7 +50,17 @@ const char *tokenStrings[Token_NUM_TOKENS] = {
 #define EXPECT(typ, ts)                                                 \
     do {                                                                \
         if ((typ) != (ts)->Current->Token->Type) {                      \
-            return ParseErrorUnexpectedTokenExpected(tokenStrings[(typ)], (ts)->Current->Token); \
+            return ParseErrorUnexpectedTokenExpected(typ, (ts)->Current->Token); \
+        }                                                               \
+        else {                                                          \
+            TokenStreamAdvance((ts));                                   \
+        }                                                               \
+    } while(0)
+
+#define EXPECT_EITHER(typ1, typ2, ts)                                   \
+    do {                                                                \
+        if ((typ1) != (ts)->Current->Token->Type && (typ2) != (ts->Current->Token->Type)) { \
+            return ParseErrorUnexpectedTokenExpectedEither(typ1, typ2, (ts)->Current->Token); \
         }                                                               \
         else {                                                          \
             TokenStreamAdvance((ts));                                   \
@@ -93,13 +104,24 @@ int ParseErrorUnexpectedToken(struct Token *token) {
     return R_UnexpectedToken;
 }
 
-int ParseErrorUnexpectedTokenExpected(const char *expected, struct Token *token) {
+int ParseErrorUnexpectedTokenExpected(enum TokenType type, struct Token *token) {
     fprintf(stderr, "Unexpected token: '%s' at %s:%d:%d, expected '%s'\n",
             token->TokenStr,
             token->SrcLoc.Filename,
             token->SrcLoc.LineNumber,
             token->SrcLoc.ColumnNumber,
-            expected);
+            tokenStrings[type]);
+    return R_UnexpectedToken;
+}
+
+int ParseErrorUnexpectedTokenExpectedEither(enum TokenType type1, enum TokenType type2, struct Token *token) {
+    fprintf(stderr, "Unexpected token: '%s' at %s:%d:%d, expected either '%s' or '%s'\n",
+            token->TokenStr,
+            token->SrcLoc.Filename,
+            token->SrcLoc.LineNumber,
+            token->SrcLoc.ColumnNumber,
+            tokenStrings[type1],
+            tokenStrings[type2]);
     return R_UnexpectedToken;
 }
 
@@ -335,9 +357,9 @@ int ParseFor(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
     result = ParseAssign(&post, tokenStream);
 
-    EXPECT(TokenLeftCurlyBrace, tokenStream);
+    //EXPECT(TokenLeftCurlyBrace, tokenStream);
     result = ParseStmtList(&body, tokenStream);
-    EXPECT(TokenRightCurlyBrace, tokenStream);
+    //EXPECT(TokenRightCurlyBrace, tokenStream);
 
     return AstMakeFor(out_ast, pre, cond, body, post, save->Token->SrcLoc);
 }
@@ -354,9 +376,9 @@ int ParseWhile(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
     result = ParseAssign(&cond, tokenStream);
 
-    EXPECT(TokenLeftCurlyBrace, tokenStream);
+    //EXPECT(TokenLeftCurlyBrace, tokenStream);
     result = ParseStmtList(&body, tokenStream);
-    EXPECT(TokenRightCurlyBrace, tokenStream);
+    //EXPECT(TokenRightCurlyBrace, tokenStream);
 
     return AstMakeWhile(out_ast, cond, body, save->Token->SrcLoc);
 }
@@ -405,7 +427,7 @@ int ParseArgList(struct Ast **out_ast, struct TokenStream *tokenStream) {
     *out_ast = args;
     return result;
 }
-
+/* ( arg-list ), [ expr ], .identifier, etc */
 int ParsePostfixRhs(struct Ast **out_ast, struct TokenStream *tokenStream, struct Ast *expr) {
     int result;
     union {
@@ -761,10 +783,10 @@ int ParseFunction(struct Ast **out_ast, struct TokenStream *tokenStream) {
     else {
         params = NULL; /* no params */
     }
-    EXPECT(TokenLeftCurlyBrace, tokenStream);  /* { */
+    //EXPECT(TokenLeftCurlyBrace, tokenStream);  /* { */
     result = ParseStmtList(&body, tokenStream); /* body */
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
+    //EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
 
     if (params) {
         numArgs = params->NumChildren;
@@ -802,16 +824,17 @@ int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream) {
     result = ParseAssign(&cond, tokenStream); /* condition */
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
 
-    EXPECT(TokenLeftCurlyBrace, tokenStream); /* { */
+    //EXPECT(TokenLeftCurlyBrace, tokenStream); /* { */
 
     result = ParseStmtList(&ifBody, tokenStream); /* body of if */
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
 
-    EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
+    //EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
     if (!opt_expect(TokenElse, tokenStream)) { /* no else */
         return AstMakeIfElse(out_ast, cond, ifBody, NULL, save->Token->SrcLoc);
     }
-    if (opt_expect(TokenLeftCurlyBrace, tokenStream)) { /* else { */
+    //if (opt_expect(TokenLeftCurlyBrace, tokenStream)) { /* else { */
+    if (check(TokenLeftCurlyBrace, tokenStream)) { /* else { */
         result = ParseStmtList(&elseBody, tokenStream);
         IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
         EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
@@ -865,7 +888,8 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
     if (check(TokenEOS, tokenStream) || /* End of stream */
         check(TokenSemicolon, tokenStream) || /* ; */
-        check(TokenRightCurlyBrace, tokenStream)) { /* { } */
+        check(TokenNewline, tokenStream) || /* <newline> */
+        check(TokenRightCurlyBrace, tokenStream)) { /* { */
         *out_ast = NULL;
         return R_OK;
     }
@@ -907,29 +931,30 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
 /*
  * <stmt-terminator> := ; TODO: newline stmt-terminator
  *
- * <stmt-list> := <stmt>
- *             := <stmt> <stmt-terminator> <stmt-list>
+ * <stmt-list> := { <stmt> }
+ *             := { <stmt> <stmt-terminator> <stmt-list> }
  */
 int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     struct Ast *tmp;
     struct Ast *ast;
+    EXPECT(TokenLeftCurlyBrace, tokenStream);
     result = AstMakeBlank(&ast);
     if (R_OK != result) {
         out_ast = NULL;
         return result;
     }
-    while (R_OK == (result = ParseStmt(&tmp, tokenStream)) && tmp) {
-        if (R_OK != (result = AstAppendChild(ast, tmp))) {
-            break;
-        }
+    while (R_OK == (result = ParseStmt(&tmp, tokenStream))) {
+        AstAppendChild(ast, tmp);
         if (check(TokenRightCurlyBrace, tokenStream)) {
             break;
         }
         if (check(TokenEOS, tokenStream)) {
             break;
         }
+        EXPECT_EITHER(TokenSemicolon, TokenNewline, tokenStream);
     }
+    EXPECT(TokenRightCurlyBrace, tokenStream);
     if (R_OK == result) {
         ast->Type = Body;
         *out_ast = ast;
@@ -978,6 +1003,7 @@ int ParseTokenStream(struct ParsedTrees *parsedTrees, struct TokenStream *tokenS
         }
         RESTORE(tokenStream, tryImport);
         result = ParseStmt(&tmp, tokenStream);
+        EXPECT_EITHER(TokenSemicolon, TokenNewline, tokenStream);
         /* Catch any top level function defintions; they need to be stored
            in the symbol table before anything is allowed to execute. */
         if (R_OK == result && tmp && FunctionNode == tmp->Type) {

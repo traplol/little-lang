@@ -43,7 +43,7 @@ int LexerIsInvalid(struct Lexer *lexer) {
 }
 
 int IsWhitespace(int c) {
-    return ' ' == c || '\t' == c || '\r' == c || '\n' ==  c;
+    return ' ' == c || '\t' == c || '\r' == c ;/* || '\n' ==  c; */
 }
 int IsDigit(int c) {
     return '0' <= c && c <= '9';
@@ -202,6 +202,7 @@ int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_st
     else if (STRN_EQ("|", str, 1)) { type = TokenBar; adv = 1;}
     else if (STRN_EQ("<", str, 1)) { type = TokenLt; adv = 1;}
     else if (STRN_EQ(">", str, 1)) { type = TokenGt; adv = 1;}
+    else if (STRN_EQ("\n", str, 1)) { goto handle_newline; }
     else if (!*str) { goto end_of_stream; }
     else { type = TokenUnknown; }
 
@@ -209,6 +210,12 @@ int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_st
     LEX_ADVN(lexer, adv);
     *out_type = type;
     *out_str = str;
+    return R_OK;
+
+handle_newline:
+    LEX_ADVN(lexer, 1);
+    *out_type = TokenNewline;
+    *out_str = strdup("<newline>");
     return R_OK;
 
 end_of_stream:
