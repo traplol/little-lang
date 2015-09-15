@@ -830,8 +830,9 @@ int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream) {
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
 
     //EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
-    //while (opt_expect(TokenNewline, tokenStream))
-    //;
+    while (opt_expect(TokenNewline, tokenStream)) {
+        ;
+    }
     if (!opt_expect(TokenElse, tokenStream)) { /* no else */
         return AstMakeIfElse(out_ast, cond, ifBody, NULL, save->Token->SrcLoc);
     }
@@ -930,7 +931,8 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
 }
 
 /*
- * <stmt-terminator> := ; TODO: newline stmt-terminator
+ * <stmt-terminator> := ; <statement-terminator>
+ *                   := <newline> <statement-terminator>
  *
  * <stmt-list> := { <stmt> }
  *             := { <stmt> <stmt-terminator> <stmt-list> }
@@ -959,9 +961,6 @@ int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream) {
         EXPECT_EITHER(TokenSemicolon, TokenNewline, tokenStream);
     }
     EXPECT(TokenRightCurlyBrace, tokenStream);
-    while (opt_expect(TokenNewline, tokenStream)) {
-        ;
-    }
     if (R_OK == result) {
         ast->Type = Body;
         *out_ast = ast;

@@ -168,7 +168,7 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
     struct Ast *stmt = NULL;
     struct Value *value;
     llm->Lexer->REPL = llm->CmdOpts.ReplMode;
-    tokenStream = malloc(sizeof *tokenStream);
+    tokenStream = calloc(sizeof *tokenStream, 1);
     while (1) {
         LexerThrowAwayCode(llm->Lexer);
         TokenStreamFree(tokenStream);
