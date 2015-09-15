@@ -4,5 +4,6 @@
 #include "ast.h"
 
 void AstPrettyPrint(struct Ast *ast);
+void AstPrettyPrintNode(struct Ast *node);
 
 #endif

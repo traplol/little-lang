@@ -3,6 +3,7 @@
 #include "globals.h"
 #include "interpreter.h"
 #include "helpers/strings.h"
+#include "helpers/ast_pretty_printer.h"
 #include "value.h"
 #include "result.h"
 
@@ -162,37 +163,34 @@ int LittleLangMachineMakeTypeTable(struct LittleLangMachine *llm) {
 }
 
 int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
-    struct ParsedTrees *parsedTrees;
+    struct TokenStream *tokenStream;
     int result;
+    struct Ast *stmt = NULL;
     struct Value *value;
-    unsigned int i;
     llm->Lexer->REPL = llm->CmdOpts.ReplMode;
-    parsedTrees = calloc(sizeof *parsedTrees, 1);
+    tokenStream = malloc(sizeof *tokenStream);
     while (1) {
-        result = Parse(parsedTrees, llm->Lexer);
-        if (R_OK != result) {
-            LexerThrowAwayCode(llm->Lexer);
+        LexerThrowAwayCode(llm->Lexer);
+        TokenStreamFree(tokenStream);
+        TokenStreamMake(tokenStream, llm->Lexer);
+        AstFree(stmt);
+
+        result = ParseStmt(&stmt, tokenStream);
+        if (R_OK != result || !stmt) {
             continue;
         }
-        DefineTopLevelFunctions(llm->GlobalScope, parsedTrees->TopLevelFunctions);
         if (llm->CmdOpts.PrettyPrintAst) {
-            printf("Functions:\n");
-            AstPrettyPrint(parsedTrees->TopLevelFunctions);
-            printf("Program:\n");
-            AstPrettyPrint(parsedTrees->Program);
+            printf("Ast:\n");
+            AstPrettyPrintNode(stmt);
             printf("\n\n");
         }
-        if (parsedTrees->Program) {
-            for (i = 0; i < parsedTrees->Program->NumChildren; ++i) {
-                value = InterpreterRunAst(llm, parsedTrees->Program->Children[i]);
-                printf(" => %s\n", ValueToString(value));
-            }
+        if (FunctionNode == stmt->Type) {
+            DefineFunction(llm->GlobalScope, stmt);
         }
-        AstFree(parsedTrees->TopLevelFunctions);
-        parsedTrees->TopLevelFunctions = NULL;
-        AstFree(parsedTrees->Program);
-        parsedTrees->Program = NULL;
-        LexerThrowAwayCode(llm->Lexer);
+        else {
+            value = InterpreterRunAst(llm, stmt);
+            printf(" => %s\n", ValueToString(value));
+        }
     }
     return result;
 }

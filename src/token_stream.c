@@ -84,6 +84,9 @@ int TokenStreamFree(struct TokenStream *tokenStream) {
         NodeFree(head);
         head = next;
     }
+    tokenStream->Head = NULL;
+    tokenStream->Current = NULL;
+    tokenStream->Tail = NULL;
     return R_OK;
 }
 

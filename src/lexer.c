@@ -2,10 +2,12 @@
 #include "result.h"
 
 #include "helpers/strings.h"
+#include "helpers/io.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
 
 const char *REPLPrompt_Begin = ">";
 const char *REPLPrompt_Secondary = ".";
@@ -35,7 +37,7 @@ const char *REPLPrompt_Secondary = ".";
 
 /************************ Helpers ************************/
 int LexerIsValid(struct Lexer *lexer) {
-    return lexer && lexer->Filename && lexer->Code;
+    return lexer && lexer->Filename;
 }
 
 int LexerIsInvalid(struct Lexer *lexer) {
@@ -43,7 +45,8 @@ int LexerIsInvalid(struct Lexer *lexer) {
 }
 
 int IsWhitespace(int c) {
-    return ' ' == c || '\t' == c || '\r' == c ;/* || '\n' ==  c; */
+    if ('\n' == c) return 0;
+    return isspace(c);
 }
 int IsDigit(int c) {
     return '0' <= c && c <= '9';
@@ -297,10 +300,9 @@ int LexerSharedGetNextREPL(struct Lexer *lexer, struct Token **out_token, int co
     }
     free(lexer->Code);
     buf = malloc(size);
-    printf("%03d %s ", lexer->CurrentLineNumber, lexer->REPLPrompt);
+    printf("%03d > ", lexer->CurrentLineNumber);
     lexer->REPLPrompt = REPLPrompt_Secondary;
-    i = 0;
-    while (EOF != (c = fgetc(stdin))) {
+    for (i = 0; EOF != (c = getchar());) {
         if (i + 1 >= size) {
             size += inc;
             buf = realloc(buf, inc);

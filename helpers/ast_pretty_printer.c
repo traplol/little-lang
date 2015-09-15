@@ -381,6 +381,11 @@ void printNodes(struct Ast *ast) {
     }
 }
 
+void AstPrettyPrintNode(struct Ast *node) {
+    if (node) {
+        printNode(node);
+    }
+}
 void AstPrettyPrint(struct Ast *ast) {
     int nodes = countNodes(ast);
     printf("%d nodes in graph.\n", nodes);
