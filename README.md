@@ -223,3 +223,18 @@ def returns_x {
 }
 println(returns_x()) # prints "10"
 ```
+
+#### Imports
+A rudimentary module import system is in place to allow for multiple source file programs where each file may be
+considered as a namespace. All imports will happen in the order they appear in the source code, however they will
+be executed before the main program is loaded. At the moment importing isn't possible in the REPL but that is a 
+planned feature.
+
+```
+import "path/to/file.ll" as libName
+
+libName.SomeFunc()
+```
+
+*NOTE:* There are currently no cycle/loop checks for recursive imports which will result in a stack overflow in the 
+interpreter.
