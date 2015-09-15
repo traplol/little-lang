@@ -80,7 +80,7 @@ $ ./bin/little-lang tests/little-lang/fizzbuzz.ll
 ### Builtins
 
 #### Nil
-```nil``` -- anything may point to it, it's a long value that only evaluates to itself.
+```nil``` -- anything may point to it, it's a lone value that only evaluates to itself.
 
 #### Booleans
 little-lang has no concept if "truthy" values, booleans only evaluate to themselves, e.g:
