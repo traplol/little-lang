@@ -10,4 +10,7 @@ char *strdup(const char *s);
 /* Duplicates n characters from s */
 char *strndup(const char *s, unsigned int n);
 
+/* Generates a valid, deterministic identifier based on a seed. */
+char *ident_generator(int seed);
+
 #endif
