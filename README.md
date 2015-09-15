@@ -7,16 +7,63 @@ system, garbage collection, and dynamically scoped closures.
 
 ### Basics
 
-At the moment little-lang can only interpret whole source programs but a REPL will be implemented.
+little-lang can interpret whole source programs or be used as a REPL.
 
 ```
 $ cat hello-world.ll
 println("Hello", "World!")
 $ little-lang ./hello-world.ll
 Hello World!
+$ little-lang
+001 > println("Hello world!")
+Hello world!
+ => nil
+002 > 
 ```
 
-Expressions are separated by either a semicolon or until the expression fails to parse. The only type of comments
+The little-lang REPL can also be preloaded with a program.
+
+```
+$ cat tests/little-lang/fib.ll 
+def fib(n) {
+    if n < 2 {
+        n
+    }
+    else {
+        fib(n - 2) + fib(n - 1)
+    }
+}
+
+println(fib(30))
+
+$ little-lang tests/little-lang/fib.ll -i
+832040
+011 > fib(26)
+ => 121393
+012 > 
+```
+
+*NOTE:* Due to the ambiguity of parsing something like:
+```
+001 > if 1 + 1 == 2 {
+002 > 	print("yes!")
+003 > }
+004 > 
+[...]
+009 > else {
+010 >   print("wut?")
+011 > }
+yes! => nil
+```
+solo ```if``` expressions should be "closed" with a semicolon like:
+```
+001 > if 1 + 1 == 2 {
+002 > 	print("yes!")
+003 > }; # Notice this semicolon!
+yes! => nil
+```
+
+Expressions are separated by either a semicolon or a newline. The only type of comments
 are ```# until end of line``` comments.
 
 ### Compiling
