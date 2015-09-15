@@ -13,6 +13,21 @@ unsigned int string_hash(const char *str) {
     return hash;
 }
 
+char *str_cat(char *l, char *r) {
+    int len = strlen(l) + strlen(r);
+    char *s = malloc(len + 1);
+    while(*l) {
+        *s++ = *l++;
+    }
+    while(*r) {
+        *s++ = *r++;
+    }
+
+    *s = 0;
+    return s-len;
+}
+
+#ifndef _GNU_SOURCE
 char *strdup(const char *s) {
     unsigned int len = strlen(s);
     char *r = malloc(len + 1);
@@ -26,6 +41,7 @@ char *strndup(const char *s, unsigned int n) {
     r[len] = '\0';
     return memcpy(r, s, len);
 }
+#endif /* _GNU_SOURCE */
 
 char get_random_uppercase() {
     int r = rand() % 26;

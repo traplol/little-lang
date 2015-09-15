@@ -50,7 +50,7 @@ struct Value *_rt_type(unsigned int argc, struct Value **argv) {
     return value;
 }
 
-int RegisterRuntime_core(struct LittleLangMachine *llm) {
+int RegisterRuntime_core(void) {
     struct Value *value;
     struct BuiltinFn *fn;
 
@@ -58,24 +58,24 @@ int RegisterRuntime_core(struct LittleLangMachine *llm) {
     value = ValueAlloc();
     BuiltinFnMake(&fn, "print", 0, 1, RT_print);
     ValueMakeBuiltinFn(value, fn);
-    SymbolTableInsert(llm->GlobalScope, value, fn->Name, 0, srcLoc);
+    SymbolTableInsert(&g_TheGlobalScope, value, fn->Name, 0, srcLoc);
 
     RT_println = _rt_println;
     value = ValueAlloc();
     BuiltinFnMake(&fn, "println", 0, 1, RT_println);
     ValueMakeBuiltinFn(value, fn);
-    SymbolTableInsert(llm->GlobalScope, value, fn->Name, 0, srcLoc);
+    SymbolTableInsert(&g_TheGlobalScope, value, fn->Name, 0, srcLoc);
 
     RT_string = _rt_string;
     value = ValueAlloc();
     BuiltinFnMake(&fn, "string", 1, 0, RT_string);
     ValueMakeBuiltinFn(value, fn);
-    SymbolTableInsert(llm->GlobalScope, value, fn->Name, 0, srcLoc);
+    SymbolTableInsert(&g_TheGlobalScope, value, fn->Name, 0, srcLoc);
 
     RT_type = _rt_type;
     value = ValueAlloc();
     BuiltinFnMake(&fn, "type", 1, 0, RT_type);
     ValueMakeBuiltinFn(value, fn);
-    SymbolTableInsert(llm->GlobalScope, value, fn->Name, 0, srcLoc);
+    SymbolTableInsert(&g_TheGlobalScope, value, fn->Name, 0, srcLoc);
     return R_OK;
 }

@@ -14,6 +14,7 @@
 #define R_OperationFailed       6
 #define R_GlobalsAlreadyInitted 7
 #define R_EndOfTokenStream      8
+#define R_FileNotFound          9
 
 
 #endif

@@ -3,7 +3,7 @@
 
 #include "runtime_core.h"
 
-int RegisterRuntimes(struct LittleLangMachine *llm) {
-    RegisterRuntime_core(llm);
+int RegisterRuntimes(void) {
+    RegisterRuntime_core();
     return R_OK;
 }

@@ -1,5 +1,6 @@
 #include "globals.h"
 #include "value.h"
+#include "symbol_table.h"
 #include "result.h"
 
 #define RETURN_ON_FAIL(r)                       \
@@ -20,6 +21,8 @@ struct TypeInfo g_TheIntegerTypeInfo;
 struct TypeInfo g_TheRealTypeInfo;
 struct TypeInfo g_TheStringTypeInfo;
 struct TypeInfo g_TheBooleanTypeInfo;
+
+struct SymbolTable g_TheGlobalScope;
 
 int GlobalsInitTypeInfos(void) {
     int result;
@@ -62,10 +65,14 @@ int GlobalsInitSingletonValues(void) {
     return R_OK;
 }
 
-static int __globalValuesInitted = 0;
+int GlobalsInitGlobalScope(void) {
+    return SymbolTableMakeGlobalScope(&g_TheGlobalScope);
+}
+
+static int __globalValuesInitialized = 0;
 int GlobalsInit(void) {
     int result;
-    if (__globalValuesInitted) {
+    if (__globalValuesInitialized) {
         return R_GlobalsAlreadyInitted;
     }
     result = GlobalsInitTypeInfos();
@@ -73,6 +80,10 @@ int GlobalsInit(void) {
 
     result = GlobalsInitSingletonValues();
     RETURN_ON_FAIL(result);
-    __globalValuesInitted = 1;
+
+    result = GlobalsInitGlobalScope();
+    RETURN_ON_FAIL(result);
+
+    __globalValuesInitialized = 1;
     return R_OK;
 }

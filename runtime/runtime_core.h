@@ -6,7 +6,9 @@
 
 extern BuiltinFnProc_t RT_string;
 extern BuiltinFnProc_t RT_print;
+extern BuiltinFnProc_t RT_println;
+extern BuiltinFnProc_t RT_type;
 
-int RegisterRuntime_core(struct LittleLangMachine *llm);
+int RegisterRuntime_core(void);
 
 #endif

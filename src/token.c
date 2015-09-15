@@ -15,19 +15,6 @@ char escape_char(char c) {
     }
 }
 
-char *str_cat(char *l, char *r) {
-    int len = strlen(l) + strlen(r);
-    char *s = malloc(len + 1);
-    while(*l) {
-        *s++ = *l++;
-    }
-    while(*r) {
-        *s++ = *r++;
-    }
-
-    *s = 0;
-    return s-len;
-}
 
 char *parse_escaped_string(char *str) {
     #define SIZE 256

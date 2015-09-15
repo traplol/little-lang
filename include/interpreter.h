@@ -5,12 +5,12 @@
 #include "ast.h"
 
 /* Initializes the core runtime. */
-int InterpreterInit(struct LittleLangMachine *llm);
+int InterpreterInit(void);
 
 /* Runs the entire program from top to bottom. */
-int InterpreterRunProgram(struct LittleLangMachine *llm);
+int InterpreterRunProgram(struct Module *module);
 
 /* Executes a single AST, useful for REPL */
-struct Value *InterpreterRunAst(struct LittleLangMachine *llm, struct Ast *ast);
+struct Value *InterpreterRunAst(struct Module *module, struct Ast *ast);
 
 #endif

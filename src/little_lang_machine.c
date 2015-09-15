@@ -7,13 +7,16 @@
 #include "value.h"
 #include "result.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
+char *SourceDirectory;
+
 int LittleLangMachineIsValid(struct LittleLangMachine *llm) {
-    return llm && llm->Lexer && llm->GlobalScope && llm->TypeTable;
+    return llm && llm->Lexer && llm->AllImportedModules && llm->ThisModule;
 }
 
 int LittleLangMachineIsInvalid(struct LittleLangMachine *llm) {
@@ -47,6 +50,30 @@ int FileExists(char *filename) {
         return 1;
     }
     return 0;
+}
+
+char *AbsPath(char *path) {
+    char actualPath[PATH_MAX+1];
+    if (!FileExists(path)) {
+        return NULL;
+    }
+    if (!realpath(path, actualPath)) {
+        return NULL;
+    }
+    return strdup(actualPath);
+}
+
+char *GetPath(char *path) {
+    char *tmp;
+    if (!FileExists(path)) {
+        tmp = str_cat(SourceDirectory, "/");
+        path = str_cat(tmp, path);
+        free(tmp);
+        if (!FileExists(path)) {
+            return NULL;
+        }
+    }
+    return AbsPath(path);
 }
 
 void ShowHelpMsg(void) {
@@ -96,6 +123,8 @@ int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv
     if (filename) {
         llm->CmdOpts.code = ReadFile(filename);
         llm->CmdOpts.filename = filename;
+        SourceDirectory = strdup(filename);
+        dirname(SourceDirectory);
     }
     else {
         llm->CmdOpts.ReplMode = 1;
@@ -136,31 +165,31 @@ int LittleLangMachineMakeLexer(struct LittleLangMachine *llm) {
     return R_OK;
 }
 
-int LittleLangMachineMakeSymbolTables(struct LittleLangMachine *llm) {
-    int result;
-    llm->GlobalScope = malloc(sizeof(*llm->GlobalScope));
-    llm->CurrentScope = llm->GlobalScope;
-    result = SymbolTableMakeGlobalScope(llm->GlobalScope);
-    if (R_OK != result) {
-        free(llm->GlobalScope);
-        llm->CurrentScope = NULL;
-        llm->GlobalScope = NULL;
-        return result;
-    }
-    return R_OK;
-}
-
-int LittleLangMachineMakeTypeTable(struct LittleLangMachine *llm) {
-    int result;
-    llm->TypeTable = malloc(sizeof(*llm->TypeTable));
-    result = TypeTableMake(llm->TypeTable, 0);
-    if (R_OK != result) {
-        free(llm->TypeTable);
-        llm->TypeTable = NULL;
-        return result;
-    }
-    return R_OK;
-}
+//int LittleLangMachineMakeSymbolTables(struct LittleLangMachine *llm) {
+//    int result;
+//    llm->GlobalScope = malloc(sizeof(*llm->GlobalScope));
+//    llm->CurrentScope = llm->GlobalScope;
+//    result = SymbolTableMakeGlobalScope(llm->GlobalScope);
+//    if (R_OK != result) {
+//        free(llm->GlobalScope);
+//        llm->CurrentScope = NULL;
+//        llm->GlobalScope = NULL;
+//        return result;
+//    }
+//    return R_OK;
+//}
+//
+//int LittleLangMachineMakeTypeTable(struct LittleLangMachine *llm) {
+//    int result;
+//    llm->TypeTable = malloc(sizeof(*llm->TypeTable));
+//    result = TypeTableMake(llm->TypeTable, 0);
+//    if (R_OK != result) {
+//        free(llm->TypeTable);
+//        llm->TypeTable = NULL;
+//        return result;
+//    }
+//    return R_OK;
+//}
 
 int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
     struct TokenStream *tokenStream;
@@ -185,14 +214,128 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
             printf("\n\n");
         }
         if (FunctionNode == stmt->Type) {
-            DefineFunction(llm->GlobalScope, stmt);
+            DefineFunction(llm->ThisModule->ModuleScope, stmt);
         }
         else {
-            value = InterpreterRunAst(llm, stmt);
+            value = InterpreterRunAst(llm->ThisModule, stmt);
             printf(" => %s\n", ValueToString(value));
         }
     }
     return result;
+}
+
+int ParseProgramTrees(char *absPath, struct ParsedTrees **out_programTrees) {
+    int result;
+    struct ParsedTrees *programTrees;
+    struct Lexer *lexer;
+    char *code;
+    if (!absPath || !out_programTrees) {
+        return R_InvalidArgument;
+    }
+    code = ReadFile(absPath);
+    lexer = calloc(sizeof *lexer, 1);
+    result = LexerMake(lexer, absPath, code);
+    if (R_OK != result) {
+        return result;
+    }
+    programTrees = calloc(sizeof *programTrees, 1);
+    result = Parse(programTrees, lexer);
+    if (R_OK != result) {
+        return result;
+    }
+    *out_programTrees = programTrees;
+    return R_OK;
+}
+
+int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, struct Module **out_module);
+int ImportModules(struct LittleLangMachine *llm, struct Ast *imports, struct ModuleTable **out_imports) {
+    int result;
+    struct Ast *moduleName, *as, *import;
+    struct ModuleTable *moduleTable;
+    struct Module *module;
+    char *filename, *absPath;
+    unsigned int i;
+    if (!llm || !imports || !out_imports) {
+        return R_InvalidArgument;
+    }
+    moduleTable = calloc(sizeof *moduleTable, 1);
+    result = ModuleTableMake(moduleTable);
+    if (R_OK != result) {
+        goto cleanup;
+    }
+    for (i = 0; i < imports->NumChildren; ++i) {
+        import = imports->Children[i];
+        moduleName = import->Children[0];
+        filename = moduleName->u.Value->v.String->CString;
+        absPath = GetPath(filename);
+        as = import->Children[1];
+        ModuleTableFind(llm->AllImportedModules, absPath, &module);
+        if (!module) {
+            result = LittleLangMachineLoadModule(llm, filename, &module);   
+            ModuleTableInsert(llm->AllImportedModules, absPath, module);
+            if (R_OK != result) {
+                goto cleanup;
+            }
+        }
+        if (as) {
+            ModuleTableInsert(moduleTable, as->u.SymbolName, module);
+        }
+        else {
+            /* TODO: Load into ThisModule */
+        }
+        free(absPath);
+    }
+
+    *out_imports = moduleTable;
+    return R_OK;
+
+cleanup:
+    ModuleTableFree(moduleTable);
+    free(moduleTable);
+    return result;
+}
+
+int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, struct Module **out_module) {
+    int result;
+    struct ParsedTrees *programTrees;
+    struct ModuleTable *imports;
+    struct Module *module;
+    char *absPath;
+    if (!llm || !out_module || !filename) {
+        return R_InvalidArgument;
+    }
+    absPath = GetPath(filename);
+    if (!absPath) {
+        fprintf(stderr, "File not found: %s\n", filename);
+        return R_FileNotFound;
+    }
+    result = ParseProgramTrees(absPath, &programTrees);
+    if (R_OK != result) {
+        return result;
+    }
+    result = ImportModules(llm, programTrees->Imports, &imports);
+    if (R_OK != result) {
+        return result;
+    }
+    module = calloc(sizeof *module, 1);
+    result = ModuleMake(module, programTrees->Program, imports);
+    if (R_OK != result) {
+        free(module);
+        return result;
+    }
+    DefineTopLevelFunctions(module->ModuleScope, programTrees->TopLevelFunctions);
+    InterpreterRunProgram(module);
+
+    *out_module = module;
+    return R_OK;
+}
+
+int LittleLangMakeModuleLookupTable(struct LittleLangMachine *llm) {
+    if (!llm) {
+        return R_InvalidArgument;
+    }
+    llm->AllImportedModules = calloc(sizeof *llm->AllImportedModules, 1);
+    return ModuleTableMake(llm->AllImportedModules);
 }
 
 /************************** Public Functions *****************************/
@@ -207,25 +350,22 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
     if (R_OK != result) {
         return result;
     }
-
     result = LittleLangMachineMakeLexer(llm);
     if (R_OK != result) {
         return result;
     }
-    result = LittleLangMachineMakeSymbolTables(llm);
+    result = LittleLangMakeModuleLookupTable(llm);
     if (R_OK != result) {
         return result;
     }
-    result = LittleLangMachineMakeTypeTable(llm);
     return result;
 }
 
 
 int LittleLangMachineRun(struct LittleLangMachine *llm) {
-    struct ParsedTrees *parsedTrees;
+    int result;
     clock_t start, end;
     double time;
-    int result;
     if (LittleLangMachineIsInvalid(llm)) {
         return R_InvalidArgument;
     }
@@ -233,38 +373,25 @@ int LittleLangMachineRun(struct LittleLangMachine *llm) {
     if (R_OK != result) {
         return result;
     }
-    parsedTrees = calloc(sizeof *parsedTrees, 1);
-    result = Parse(parsedTrees, llm->Lexer);
-    if (1 || R_OK == result) {
-        llm->Program = parsedTrees->Program;
-        if (llm->CmdOpts.PrettyPrintAst) {
-            printf("Imports:\n");
-            AstPrettyPrint(parsedTrees->Imports);
-            printf("\nFunction definitions:\n");
-            AstPrettyPrint(parsedTrees->TopLevelFunctions);
-            printf("\nProgram:\n");
-            AstPrettyPrint(llm->Program);
-            printf("\n\n");
-        }
-        InterpreterInit(llm);
-        DefineTopLevelFunctions(llm->GlobalScope, parsedTrees->TopLevelFunctions);
-        start = clock();
-        InterpreterRunProgram(llm);
-        end = clock();
-        if (llm->CmdOpts.TimeExecution) {
-            time = (end - start) * 1.0 / CLOCKS_PER_SEC;
-            printf("\nfinished program execution in %fs\n", time);
-        }
-        if (llm->CmdOpts.ReplMode) {
-            LittleLangMachineREPLMode(llm);
-        }
+    InterpreterInit();
+    start = clock();
+    LittleLangMachineLoadModule(llm, llm->CmdOpts.filename, &llm->ThisModule);
+    end = clock();
+    if (llm->CmdOpts.TimeExecution) {
+        time = (end - start) * 1.0 / CLOCKS_PER_SEC;
+        printf("\nfinished program execution in %fs\n", time);
     }
-    else {
-        llm->Program = NULL;
-        AstFree(parsedTrees->Classes);
-        AstFree(parsedTrees->TopLevelFunctions);
-        AstFree(parsedTrees->Program);
+    if (llm->CmdOpts.ReplMode) {
+        LittleLangMachineREPLMode(llm);
     }
-    free(parsedTrees);
+    if (llm->CmdOpts.PrettyPrintAst) {
+        // printf("Imports:\n");
+        // AstPrettyPrint(parsedTrees->Imports);
+        // printf("\nFunction definitions:\n");
+        // AstPrettyPrint(parsedTrees->TopLevelFunctions);
+        printf("\nProgram:\n");
+        AstPrettyPrint(llm->ThisModule->Program);
+        printf("\n\n");
+    }
     return result;
 }

@@ -3,7 +3,7 @@
 
 #include "little_lang_machine.h"
 
-int RegisterRuntimes(struct LittleLangMachine *llm);
+int RegisterRuntimes(void);
 
 #endif
 

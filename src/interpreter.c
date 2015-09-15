@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "symbol_table.h"
+#include "module_table.h"
 #include "globals.h"
 #include "runtime/registrar.h"
 #include "value.h"
@@ -10,61 +11,61 @@
 #include <math.h>
 
 
-#define TO_BOOLEAN(b) (b) ? &g_TheTrueValue : &g_TheFalseValue
+#define TO_BOOLEAN(b) ((b) ? &g_TheTrueValue : &g_TheFalseValue)
 
 /* Forward declarations. */
-struct Value *InterpreterRunAst(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoBody(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoAdd(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoSub(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoMul(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoDiv(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoMod(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoPow(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoLShift(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoRShift(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoArithOr(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoArithAnd(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoXorExpr(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoLogicOr(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoLogicAnd(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoLogicEq(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoLogicNotEq(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoLogicLt(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoLogicLtEq(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoLogicGt(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoLogicGtEq(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoNegate(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoLogicNot(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoAssign(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoSymbol(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoDefFunction(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoCall(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoArrayIdx(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoMemberAccess(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoReturn(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoMut(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoConst(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoFor(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoWhile(struct LittleLangMachine *llm, struct Ast *ast);
-struct Value *InterpreterDoIfElse(struct LittleLangMachine *llm, struct Ast *ast);
+struct Value *InterpreterRunAst(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoBody(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoAdd(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoSub(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoMul(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoDiv(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoMod(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoPow(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoLShift(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoRShift(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoArithOr(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoArithAnd(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoXorExpr(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoLogicOr(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoLogicAnd(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoLogicEq(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoLogicNotEq(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoLogicLt(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoLogicLtEq(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoLogicGt(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoLogicGtEq(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoNegate(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoLogicNot(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoAssign(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoSymbol(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoDefFunction(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoArrayIdx(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoReturn(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoMut(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoConst(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoFor(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoWhile(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoIfElse(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoBoolean(struct Ast *ast);
 struct Value *InterpreterDoReal(struct Ast *ast);
 struct Value *InterpreterDoInteger(struct Ast *ast);
 struct Value *InterpreterDoString(struct Ast *ast);
 
 /* Function definitions */
-struct Value *InterpreterDoBody(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoBody(struct Module *module, struct Ast *ast) {
     unsigned int i;
     struct Value *value = &g_TheNilValue;
     for (i = 0; i < ast->NumChildren; ++i) {
-        value = InterpreterRunAst(llm, ast->Children[i]);
+        value = InterpreterRunAst(module, ast->Children[i]);
     }
     return value;
 }
-struct Value *InterpreterDoAdd(struct LittleLangMachine *llm, struct Ast *ast) {
-    struct Value *lhs = InterpreterRunAst(llm, ast->Children[0]);
-    struct Value *rhs = InterpreterRunAst(llm, ast->Children[1]);
+struct Value *InterpreterDoAdd(struct Module *module, struct Ast *ast) {
+    struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
+    struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
     enum TypeInfoType lhsType = lhs->TypeInfo->Type;
     enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     struct Value *value = ValueAlloc();
@@ -110,9 +111,9 @@ numeric_types:
 non_numeric_types:
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoSub(struct LittleLangMachine *llm, struct Ast *ast) {
-    struct Value *lhs = InterpreterRunAst(llm, ast->Children[0]);
-    struct Value *rhs = InterpreterRunAst(llm, ast->Children[1]);
+struct Value *InterpreterDoSub(struct Module *module, struct Ast *ast) {
+    struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
+    struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
     enum TypeInfoType lhsType = lhs->TypeInfo->Type;
     enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     struct Value *value = ValueAlloc();
@@ -158,9 +159,9 @@ numeric_types:
 non_numeric_types:
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoMul(struct LittleLangMachine *llm, struct Ast *ast) {
-    struct Value *lhs = InterpreterRunAst(llm, ast->Children[0]);
-    struct Value *rhs = InterpreterRunAst(llm, ast->Children[1]);
+struct Value *InterpreterDoMul(struct Module *module, struct Ast *ast) {
+    struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
+    struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
     enum TypeInfoType lhsType = lhs->TypeInfo->Type;
     enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     struct Value *value = ValueAlloc();
@@ -206,9 +207,9 @@ numeric_types:
 non_numeric_types:
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoDiv(struct LittleLangMachine *llm, struct Ast *ast) {
-    struct Value *lhs = InterpreterRunAst(llm, ast->Children[0]);
-    struct Value *rhs = InterpreterRunAst(llm, ast->Children[1]);
+struct Value *InterpreterDoDiv(struct Module *module, struct Ast *ast) {
+    struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
+    struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
     enum TypeInfoType lhsType = lhs->TypeInfo->Type;
     enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     struct Value *value = ValueAlloc();
@@ -254,9 +255,9 @@ numeric_types:
 non_numeric_types:
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoMod(struct LittleLangMachine *llm, struct Ast *ast) {
-    struct Value *lhs = InterpreterRunAst(llm, ast->Children[0]);
-    struct Value *rhs = InterpreterRunAst(llm, ast->Children[1]);
+struct Value *InterpreterDoMod(struct Module *module, struct Ast *ast) {
+    struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
+    struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
     enum TypeInfoType lhsType = lhs->TypeInfo->Type;
     enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     struct Value *value = ValueAlloc();
@@ -302,31 +303,31 @@ numeric_types:
 non_numeric_types:
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoPow(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoPow(struct Module *module, struct Ast *ast) {
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoLShift(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoLShift(struct Module *module, struct Ast *ast) {
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoRShift(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoRShift(struct Module *module, struct Ast *ast) {
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoArithOr(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoArithOr(struct Module *module, struct Ast *ast) {
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoArithAnd(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoArithAnd(struct Module *module, struct Ast *ast) {
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoXorExpr(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoXorExpr(struct Module *module, struct Ast *ast) {
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoLogicOr(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoLogicOr(struct Module *module, struct Ast *ast) {
     struct Value *lhs, *rhs;
-    lhs = InterpreterRunAst(llm, ast->Children[0]);
+    lhs = InterpreterRunAst(module, ast->Children[0]);
     if (&g_TheTrueValue == lhs) {
         return &g_TheTrueValue;
     }
-    rhs = InterpreterRunAst(llm, ast->Children[1]);
+    rhs = InterpreterRunAst(module, ast->Children[1]);
     if (&g_TheTrueValue == rhs) {
         return &g_TheTrueValue;
     }
@@ -336,13 +337,13 @@ struct Value *InterpreterDoLogicOr(struct LittleLangMachine *llm, struct Ast *as
     /* TODO: Runtime error */
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoLogicAnd(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoLogicAnd(struct Module *module, struct Ast *ast) {
     struct Value *lhs, *rhs;
-    lhs = InterpreterRunAst(llm, ast->Children[0]);
+    lhs = InterpreterRunAst(module, ast->Children[0]);
     if (&g_TheFalseValue == lhs) {
         return &g_TheFalseValue;
     }
-    rhs = InterpreterRunAst(llm, ast->Children[1]);
+    rhs = InterpreterRunAst(module, ast->Children[1]);
     if (&g_TheFalseValue == rhs) {
         return &g_TheFalseValue;
     }
@@ -352,10 +353,10 @@ struct Value *InterpreterDoLogicAnd(struct LittleLangMachine *llm, struct Ast *a
     /* TODO: Runtime error */
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoLogicEq(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoLogicEq(struct Module *module, struct Ast *ast) {
     int result;
-    struct Value *lhs = InterpreterRunAst(llm, ast->Children[0]);
-    struct Value *rhs = InterpreterRunAst(llm, ast->Children[1]);
+    struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
+    struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
     double epsilon = 1.11e-16; /* TODO: get rid of this magic number. */
     enum TypeInfoType lhsType = lhs->TypeInfo->Type;
     enum TypeInfoType rhsType = rhs->TypeInfo->Type;
@@ -389,8 +390,8 @@ non_numeric_types:
     }
     return &g_TheFalseValue;
 }
-struct Value *InterpreterDoLogicNotEq(struct LittleLangMachine *llm, struct Ast *ast) {
-    struct Value *value = InterpreterDoLogicEq(llm, ast);
+struct Value *InterpreterDoLogicNotEq(struct Module *module, struct Ast *ast) {
+    struct Value *value = InterpreterDoLogicEq(module, ast);
     if (&g_TheTrueValue == value) {
         return &g_TheFalseValue;
     }
@@ -399,10 +400,10 @@ struct Value *InterpreterDoLogicNotEq(struct LittleLangMachine *llm, struct Ast 
     }
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoLogicLt(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoLogicLt(struct Module *module, struct Ast *ast) {
     int result;
-    struct Value *lhs = InterpreterRunAst(llm, ast->Children[0]);
-    struct Value *rhs = InterpreterRunAst(llm, ast->Children[1]);
+    struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
+    struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
     enum TypeInfoType lhsType = lhs->TypeInfo->Type;
     enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     if ((TypeReal == lhsType || TypeInteger == lhsType) &&
@@ -434,10 +435,10 @@ non_numeric_types:
     }
     return &g_TheFalseValue;
 }
-struct Value *InterpreterDoLogicLtEq(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoLogicLtEq(struct Module *module, struct Ast *ast) {
     int result;
-    struct Value *lhs = InterpreterRunAst(llm, ast->Children[0]);
-    struct Value *rhs = InterpreterRunAst(llm, ast->Children[1]);
+    struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
+    struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
     enum TypeInfoType lhsType = lhs->TypeInfo->Type;
     enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     if ((TypeReal == lhsType || TypeInteger == lhsType) &&
@@ -466,10 +467,10 @@ numeric_types:
 non_numeric_types:
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoLogicGt(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoLogicGt(struct Module *module, struct Ast *ast) {
     int result;
-    struct Value *lhs = InterpreterRunAst(llm, ast->Children[0]);
-    struct Value *rhs = InterpreterRunAst(llm, ast->Children[1]);
+    struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
+    struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
     enum TypeInfoType lhsType = lhs->TypeInfo->Type;
     enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     if ((TypeReal == lhsType || TypeInteger == lhsType) &&
@@ -498,10 +499,10 @@ numeric_types:
 non_numeric_types:
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoLogicGtEq(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoLogicGtEq(struct Module *module, struct Ast *ast) {
     int result;
-    struct Value *lhs = InterpreterRunAst(llm, ast->Children[0]);
-    struct Value *rhs = InterpreterRunAst(llm, ast->Children[1]);
+    struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
+    struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
     enum TypeInfoType lhsType = lhs->TypeInfo->Type;
     enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     if ((TypeReal == lhsType || TypeInteger == lhsType) &&
@@ -530,8 +531,8 @@ numeric_types:
 non_numeric_types:
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoNegate(struct LittleLangMachine *llm, struct Ast *ast) {
-    struct Value *rhs = InterpreterRunAst(llm, ast->Children[0]);
+struct Value *InterpreterDoNegate(struct Module *module, struct Ast *ast) {
+    struct Value *rhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *value;
     if (TypeReal == rhs->TypeInfo->Type) {
         value = ValueAlloc();
@@ -547,8 +548,8 @@ struct Value *InterpreterDoNegate(struct LittleLangMachine *llm, struct Ast *ast
     return &g_TheNilValue;
 
 }
-struct Value *InterpreterDoLogicNot(struct LittleLangMachine *llm, struct Ast *ast) {
-    struct Value *rhs = InterpreterRunAst(llm, ast->Children[0]);
+struct Value *InterpreterDoLogicNot(struct Module *module, struct Ast *ast) {
+    struct Value *rhs = InterpreterRunAst(module, ast->Children[0]);
     if (&g_TheTrueValue == rhs) {
         return &g_TheFalseValue;
     }
@@ -557,11 +558,11 @@ struct Value *InterpreterDoLogicNot(struct LittleLangMachine *llm, struct Ast *a
     }
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoAssign(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoAssign(struct Module *module, struct Ast *ast) {
     struct Symbol *symbol;
     struct Value *value;
     char *symName = ast->Children[0]->u.SymbolName;
-    if (!SymbolTableFindNearest(llm->CurrentScope, symName, &symbol)) {
+    if (!SymbolTableFindNearest(module->CurrentScope, symName, &symbol)) {
         printf("Trying to assign to undefined symbol: '%s' at %s:%d:%d\n",
                symbol->Key,
                ast->SrcLoc.Filename,
@@ -577,7 +578,7 @@ struct Value *InterpreterDoAssign(struct LittleLangMachine *llm, struct Ast *ast
                ast->SrcLoc.ColumnNumber);
         return &g_TheNilValue;
     }
-    value = InterpreterRunAst(llm, ast->Children[1]);
+    value = InterpreterRunAst(module, ast->Children[1]);
     symbol->Value = value;
     return value;
 }
@@ -593,25 +594,28 @@ struct Value *InterpreterDoInteger(struct Ast *ast){
 struct Value *InterpreterDoString(struct Ast *ast){
     return ast->u.Value;
 }
-struct Value *InterpreterDoSymbol(struct LittleLangMachine *llm, struct Ast *ast){
+struct Value *InterpreterDoSymbol(struct Module *module, struct Ast *ast){
     struct Symbol *sym;
-    if (!SymbolTableFindNearest(llm->CurrentScope, ast->u.SymbolName, &sym)) {
-        printf("Undefined symbol '%s'.\n", ast->u.SymbolName);
-        return &g_TheNilValue;
+    if (SymbolTableFindNearest(module->CurrentScope, ast->u.SymbolName, &sym)) {
+        return sym->Value;
     }
+    else if (SymbolTableFindLocal(&g_TheGlobalScope, ast->u.SymbolName, &sym)) {
+        return sym->Value;
+    }
+    printf("Undefined symbol '%s'.\n", ast->u.SymbolName);
     return sym->Value;
 }
-struct Value *InterpreterDoDefFunction(struct LittleLangMachine *llm, struct Ast *ast){
+struct Value *InterpreterDoDefFunction(struct Module *module, struct Ast *ast){
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoCallBuiltinFn(struct LittleLangMachine *llm, struct Value *function, struct Ast *args) {
+struct Value *InterpreterDoCallBuiltinFn(struct Module *module, struct Value *function, struct Ast *args) {
     unsigned int argc, i;
     struct Value **argv;
     if (args && args->NumChildren > 0) {
         argc = args->NumChildren;
         argv = malloc(sizeof(*argv) * argc);
         for (i = 0; i < argc; ++i) {
-            argv[i] = InterpreterRunAst(llm, args->Children[i]);
+            argv[i] = InterpreterRunAst(module, args->Children[i]);
         }
     }
     else {
@@ -620,7 +624,7 @@ struct Value *InterpreterDoCallBuiltinFn(struct LittleLangMachine *llm, struct V
     }
     return function->v.BuiltinFn->Fn(argc, argv);
 }
-struct Value *InterpreterDoCallFunction(struct LittleLangMachine *llm, struct Value *function, struct Ast *args, struct SrcLoc srcLoc) {
+struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *function, struct Ast *args, struct SrcLoc srcLoc) {
     unsigned int i;
     struct Value *returnValue, *arg;
     struct Ast *params, *body, *param;
@@ -645,43 +649,51 @@ struct Value *InterpreterDoCallFunction(struct LittleLangMachine *llm, struct Va
                srcLoc.ColumnNumber);
         return &g_TheNilValue;
     }
-    SymbolTablePushScope(&(llm->CurrentScope));
+    SymbolTablePushScope(&(module->CurrentScope));
     /* Setup params */
     /* TODO: Handle varargs */
     if (params) {
         for (i = 0; i < params->NumChildren; ++i) {
-            arg = InterpreterRunAst(llm, args->Children[i]);
+            arg = InterpreterRunAst(module, args->Children[i]);
             param = params->Children[i];
-            SymbolTableInsert(llm->CurrentScope, arg, param->u.SymbolName, 1, param->SrcLoc);
+            SymbolTableInsert(module->CurrentScope, arg, param->u.SymbolName, 1, param->SrcLoc);
         }
     }
     /* Execute body. */
     for (i = 0; i < body->NumChildren; ++i) {
-        returnValue = InterpreterRunAst(llm, body->Children[i]);
+        returnValue = InterpreterRunAst(module, body->Children[i]);
     }
-    SymbolTablePopScope(&(llm->CurrentScope));
+    SymbolTablePopScope(&(module->CurrentScope));
     return returnValue;
 }
-struct Value *InterpreterDoCall(struct LittleLangMachine *llm, struct Ast *ast) {
-    struct Value *func = InterpreterRunAst(llm, ast->Children[0]);
+struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
+    struct Value *func = InterpreterRunAst(module, ast->Children[0]);
     if (&g_TheNilValue == func) {
         return &g_TheNilValue;
     }
     if (func->IsBuiltInFn) {
-        return InterpreterDoCallBuiltinFn(llm, func, ast->Children[1]);
+        return InterpreterDoCallBuiltinFn(module, func, ast->Children[1]);
     }
-    return InterpreterDoCallFunction(llm, func, ast->Children[1], ast->SrcLoc);
+    return InterpreterDoCallFunction(module, func, ast->Children[1], ast->SrcLoc);
 }
-struct Value *InterpreterDoArrayIdx(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoArrayIdx(struct Module *module, struct Ast *ast) {
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoMemberAccess(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) {
+    struct Ast *symbol = ast->Children[0];
+    struct Ast *member = ast->Children[1];
+    struct Module *import;
+
+    ModuleTableFind(module->Imports, symbol->u.SymbolName, &import);
+    if (import) {
+        return InterpreterRunAst(import, member);
+    }
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoReturn(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoReturn(struct Module *module, struct Ast *ast) {
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoMut(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoMut(struct Module *module, struct Ast *ast) {
     unsigned int i;
     struct Ast *names, *values, *curName;
     struct Symbol *symbol;
@@ -690,7 +702,7 @@ struct Value *InterpreterDoMut(struct LittleLangMachine *llm, struct Ast *ast) {
     values = ast->Children[1];
     for (i = 0; i < names->NumChildren; ++i) {
         curName = names->Children[i];
-        if (SymbolTableFindNearest(llm->CurrentScope, curName->u.SymbolName, &symbol)) {
+        if (SymbolTableFindNearest(module->CurrentScope, curName->u.SymbolName, &symbol)) {
             printf("Symbol already defined: '%s' at %s:%d:%d\n",
                 symbol->Key,
                 symbol->SrcLoc.Filename,
@@ -698,18 +710,18 @@ struct Value *InterpreterDoMut(struct LittleLangMachine *llm, struct Ast *ast) {
                 symbol->SrcLoc.ColumnNumber);
             return &g_TheNilValue;
         }
-        value = InterpreterRunAst(llm, values->Children[i]);
-        SymbolTableInsert(llm->CurrentScope, value, curName->u.SymbolName, 1, curName->SrcLoc);
+        value = InterpreterRunAst(module, values->Children[i]);
+        SymbolTableInsert(module->CurrentScope, value, curName->u.SymbolName, 1, curName->SrcLoc);
     }
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoConst(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoConst(struct Module *module, struct Ast *ast) {
     struct Ast *name, *valueAst;
     struct Symbol *symbol;
     struct Value *value;
     name = ast->Children[0];
     valueAst = ast->Children[1];
-    if (SymbolTableFindNearest(llm->CurrentScope, name->u.SymbolName, &symbol)) {
+    if (SymbolTableFindNearest(module->CurrentScope, name->u.SymbolName, &symbol)) {
         printf("Symbol already defined: '%s' at %s:%d:%d\n",
             symbol->Key,
             symbol->SrcLoc.Filename,
@@ -717,132 +729,132 @@ struct Value *InterpreterDoConst(struct LittleLangMachine *llm, struct Ast *ast)
             symbol->SrcLoc.ColumnNumber);
         return &g_TheNilValue;
     }
-    value = InterpreterRunAst(llm, valueAst);
-    SymbolTableInsert(llm->CurrentScope, value, name->u.SymbolName, 0, name->SrcLoc);
+    value = InterpreterRunAst(module, valueAst);
+    SymbolTableInsert(module->CurrentScope, value, name->u.SymbolName, 0, name->SrcLoc);
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoFor(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoFor(struct Module *module, struct Ast *ast) {
     struct Ast *pre, *cond, *body, *post;
     struct Value *value = &g_TheNilValue;
     pre = ast->Children[0];
     cond = ast->Children[1];
     body = ast->Children[2];
     post = ast->Children[3];
-    SymbolTablePushScope(&(llm->CurrentScope));
-    InterpreterRunAst(llm, pre);
+    SymbolTablePushScope(&(module->CurrentScope));
+    InterpreterRunAst(module, pre);
     while (1) {
-        if (&g_TheTrueValue != InterpreterRunAst(llm, cond)) {
+        if (&g_TheTrueValue != InterpreterRunAst(module, cond)) {
             break;
         }
-        value = InterpreterRunAst(llm, body);
-        InterpreterRunAst(llm, post);
+        value = InterpreterRunAst(module, body);
+        InterpreterRunAst(module, post);
     }
-    SymbolTablePopScope(&(llm->CurrentScope));
+    SymbolTablePopScope(&(module->CurrentScope));
     return value;
 }
-struct Value *InterpreterDoWhile(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoWhile(struct Module *module, struct Ast *ast) {
     struct Ast *cond, *body;
     struct Value *value = &g_TheNilValue;
     cond = ast->Children[0];
     body = ast->Children[1];
-    SymbolTablePushScope(&(llm->CurrentScope));
+    SymbolTablePushScope(&(module->CurrentScope));
     while (1) {
-        if (&g_TheTrueValue != InterpreterRunAst(llm, cond)) {
+        if (&g_TheTrueValue != InterpreterRunAst(module, cond)) {
             break;
         }
-        value = InterpreterRunAst(llm, body);
+        value = InterpreterRunAst(module, body);
     }
-    SymbolTablePopScope(&(llm->CurrentScope));
+    SymbolTablePopScope(&(module->CurrentScope));
     return value;
 }
-struct Value *InterpreterDoIfElse(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterDoIfElse(struct Module *module, struct Ast *ast) {
     struct Ast *cond, *body, *ifelse;
     struct Value *value;
     cond = ast->Children[0];
     body = ast->Children[1];
     ifelse = ast->Children[2];
-    SymbolTablePushScope(&(llm->CurrentScope));
-    if (&g_TheTrueValue == InterpreterRunAst(llm, cond)) {
-        value = InterpreterRunAst(llm, body);
+    SymbolTablePushScope(&(module->CurrentScope));
+    if (&g_TheTrueValue == InterpreterRunAst(module, cond)) {
+        value = InterpreterRunAst(module, body);
     }
     else if (ifelse && IfElseExpr == ifelse->Type){
-        value = InterpreterDoIfElse(llm, ifelse);
+        value = InterpreterDoIfElse(module, ifelse);
     }
     else if (ifelse && Body == ifelse->Type) {
-        value = InterpreterRunAst(llm, ifelse);
+        value = InterpreterRunAst(module, ifelse);
     }
     else {
         value = &g_TheNilValue;
     }
-    SymbolTablePopScope(&(llm->CurrentScope));
+    SymbolTablePopScope(&(module->CurrentScope));
     return value;
 }
 
 
 /********************* Public Functions **********************/
 
-int InterpreterInit(struct LittleLangMachine *llm) {
-    return RegisterRuntimes(llm);
+int InterpreterInit(void) {
+    return RegisterRuntimes();
 }
 
-int InterpreterRunProgram(struct LittleLangMachine *llm) {
+int InterpreterRunProgram(struct Module *module) {
     unsigned int i;
-    if (!llm->Program) {
+    if (!module->Program) {
         return R_OK;
     }
-    for (i = 0; i < llm->Program->NumChildren; ++i) {
-        InterpreterRunAst(llm, llm->Program->Children[i]);
+    for (i = 0; i < module->Program->NumChildren; ++i) {
+        InterpreterRunAst(module, module->Program->Children[i]);
     }
     return R_OK;
 }
 
-struct Value *InterpreterRunAst(struct LittleLangMachine *llm, struct Ast *ast) {
+struct Value *InterpreterRunAst(struct Module *module, struct Ast *ast) {
     switch (ast->Type) {
-        case Body: return InterpreterDoBody(llm, ast);
+        case Body: return InterpreterDoBody(module, ast);
         
-        case BAddExpr: return InterpreterDoAdd(llm, ast);
-        case BSubExpr: return InterpreterDoSub(llm, ast);
-        case BMulExpr: return InterpreterDoMul(llm, ast);
-        case BDivExpr: return InterpreterDoDiv(llm, ast);
-        case BModExpr: return InterpreterDoMod(llm, ast);
-        case BPowExpr: return InterpreterDoPow(llm, ast);
-        case BLShift: return InterpreterDoLShift(llm, ast);
-        case BRShift: return InterpreterDoRShift(llm, ast);
-        case BArithOrExpr: return InterpreterDoArithOr(llm, ast);
-        case BArithAndExpr: return InterpreterDoArithAnd(llm, ast);
-        case BArithXorExpr: return InterpreterDoXorExpr(llm, ast);
+        case BAddExpr: return InterpreterDoAdd(module, ast);
+        case BSubExpr: return InterpreterDoSub(module, ast);
+        case BMulExpr: return InterpreterDoMul(module, ast);
+        case BDivExpr: return InterpreterDoDiv(module, ast);
+        case BModExpr: return InterpreterDoMod(module, ast);
+        case BPowExpr: return InterpreterDoPow(module, ast);
+        case BLShift: return InterpreterDoLShift(module, ast);
+        case BRShift: return InterpreterDoRShift(module, ast);
+        case BArithOrExpr: return InterpreterDoArithOr(module, ast);
+        case BArithAndExpr: return InterpreterDoArithAnd(module, ast);
+        case BArithXorExpr: return InterpreterDoXorExpr(module, ast);
 
-        case BLogicOrExpr: return InterpreterDoLogicOr(llm, ast);
-        case BLogicAndExpr: return InterpreterDoLogicAnd(llm, ast);
-        case BLogicEqExpr: return InterpreterDoLogicEq(llm, ast);
-        case BLogicNotEqExpr: return InterpreterDoLogicNotEq(llm, ast);
-        case BLogicLtExpr: return InterpreterDoLogicLt(llm, ast);
-        case BLogicLtEqExpr: return InterpreterDoLogicLtEq(llm, ast);
-        case BLogicGtExpr: return InterpreterDoLogicGt(llm, ast);
-        case BLogicGtEqExpr: return InterpreterDoLogicGtEq(llm, ast);
+        case BLogicOrExpr: return InterpreterDoLogicOr(module, ast);
+        case BLogicAndExpr: return InterpreterDoLogicAnd(module, ast);
+        case BLogicEqExpr: return InterpreterDoLogicEq(module, ast);
+        case BLogicNotEqExpr: return InterpreterDoLogicNotEq(module, ast);
+        case BLogicLtExpr: return InterpreterDoLogicLt(module, ast);
+        case BLogicLtEqExpr: return InterpreterDoLogicLtEq(module, ast);
+        case BLogicGtExpr: return InterpreterDoLogicGt(module, ast);
+        case BLogicGtEqExpr: return InterpreterDoLogicGtEq(module, ast);
 
-        case UNegExpr: return InterpreterDoNegate(llm, ast);
-        case ULogicNotExpr: return InterpreterDoLogicNot(llm, ast);
+        case UNegExpr: return InterpreterDoNegate(module, ast);
+        case ULogicNotExpr: return InterpreterDoLogicNot(module, ast);
 
-        case AssignExpr: return InterpreterDoAssign(llm, ast);
+        case AssignExpr: return InterpreterDoAssign(module, ast);
 
         case BooleanNode: return InterpreterDoBoolean(ast);
         case RealNode: return InterpreterDoReal(ast);
         case IntegerNode: return InterpreterDoInteger(ast);
         case StringNode: return InterpreterDoString(ast);
-        case SymbolNode: return InterpreterDoSymbol(llm, ast);
-        case FunctionNode: return InterpreterDoDefFunction(llm, ast);
+        case SymbolNode: return InterpreterDoSymbol(module, ast);
+        case FunctionNode: return InterpreterDoDefFunction(module, ast);
 
-        case CallExpr: return InterpreterDoCall(llm, ast);
-        case ArrayIdxExpr: return InterpreterDoArrayIdx(llm, ast);
-        case MemberAccessExpr: return InterpreterDoMemberAccess(llm, ast);
-        case ReturnExpr: return InterpreterDoReturn(llm, ast);
-        case MutExpr: return InterpreterDoMut(llm, ast);
-        case ConstExpr: return InterpreterDoConst(llm, ast);
+        case CallExpr: return InterpreterDoCall(module, ast);
+        case ArrayIdxExpr: return InterpreterDoArrayIdx(module, ast);
+        case MemberAccessExpr: return InterpreterDoMemberAccess(module, ast);
+        case ReturnExpr: return InterpreterDoReturn(module, ast);
+        case MutExpr: return InterpreterDoMut(module, ast);
+        case ConstExpr: return InterpreterDoConst(module, ast);
 
-        case ForExpr: return InterpreterDoFor(llm, ast);
-        case WhileExpr: return InterpreterDoWhile(llm, ast);
-        case IfElseExpr: return InterpreterDoIfElse(llm, ast);
+        case ForExpr: return InterpreterDoFor(module, ast);
+        case WhileExpr: return InterpreterDoWhile(module, ast);
+        case IfElseExpr: return InterpreterDoIfElse(module, ast);
     }
     return &g_TheNilValue;
 }
