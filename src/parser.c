@@ -357,9 +357,7 @@ int ParseFor(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
     result = ParseAssign(&post, tokenStream);
 
-    //EXPECT(TokenLeftCurlyBrace, tokenStream);
     result = ParseStmtList(&body, tokenStream);
-    //EXPECT(TokenRightCurlyBrace, tokenStream);
 
     return AstMakeFor(out_ast, pre, cond, body, post, save->Token->SrcLoc);
 }
@@ -376,9 +374,7 @@ int ParseWhile(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
     result = ParseAssign(&cond, tokenStream);
 
-    //EXPECT(TokenLeftCurlyBrace, tokenStream);
     result = ParseStmtList(&body, tokenStream);
-    //EXPECT(TokenRightCurlyBrace, tokenStream);
 
     return AstMakeWhile(out_ast, cond, body, save->Token->SrcLoc);
 }
@@ -783,10 +779,8 @@ int ParseFunction(struct Ast **out_ast, struct TokenStream *tokenStream) {
     else {
         params = NULL; /* no params */
     }
-    //EXPECT(TokenLeftCurlyBrace, tokenStream);  /* { */
     result = ParseStmtList(&body, tokenStream); /* body */
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-    //EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
 
     if (params) {
         numArgs = params->NumChildren;
@@ -824,23 +818,19 @@ int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream) {
     result = ParseAssign(&cond, tokenStream); /* condition */
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
 
-    //EXPECT(TokenLeftCurlyBrace, tokenStream); /* { */
 
     result = ParseStmtList(&ifBody, tokenStream); /* body of if */
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
 
-    //EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
     while (opt_expect(TokenNewline, tokenStream)) {
         ;
     }
     if (!opt_expect(TokenElse, tokenStream)) { /* no else */
         return AstMakeIfElse(out_ast, cond, ifBody, NULL, save->Token->SrcLoc);
     }
-    //if (opt_expect(TokenLeftCurlyBrace, tokenStream)) { /* else { */
     if (check(TokenLeftCurlyBrace, tokenStream)) { /* else { */
         result = ParseStmtList(&elseBody, tokenStream);
         IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-        //EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
         return AstMakeIfElse(out_ast, cond, ifBody, elseBody, save->Token->SrcLoc);
     }
     EXPECT(TokenIf, tokenStream); /* else if */
