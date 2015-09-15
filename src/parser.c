@@ -246,7 +246,7 @@ int ParseFunction(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseWhile(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseFor(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseDeclStmt(struct Ast **out_ast, struct TokenStream *tokenStream);
-int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream);
+//int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseLiteral(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseIdentifier(struct Ast **out_ast, struct TokenStream *tokenStream);
@@ -830,6 +830,8 @@ int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream) {
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
 
     //EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
+    //while (opt_expect(TokenNewline, tokenStream))
+    //;
     if (!opt_expect(TokenElse, tokenStream)) { /* no else */
         return AstMakeIfElse(out_ast, cond, ifBody, NULL, save->Token->SrcLoc);
     }
@@ -837,7 +839,7 @@ int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream) {
     if (check(TokenLeftCurlyBrace, tokenStream)) { /* else { */
         result = ParseStmtList(&elseBody, tokenStream);
         IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
-        EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
+        //EXPECT(TokenRightCurlyBrace, tokenStream); /* } */
         return AstMakeIfElse(out_ast, cond, ifBody, elseBody, save->Token->SrcLoc);
     }
     EXPECT(TokenIf, tokenStream); /* else if */
@@ -886,14 +888,6 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     SAVE(tokenStream, save);
 
-    if (check(TokenEOS, tokenStream) || /* End of stream */
-        check(TokenSemicolon, tokenStream) || /* ; */
-        check(TokenNewline, tokenStream) || /* <newline> */
-        check(TokenRightCurlyBrace, tokenStream)) { /* { */
-        *out_ast = NULL;
-        return R_OK;
-    }
-
     result = ParseFunction(&ast, tokenStream);
     if (R_OK == result) {
         *out_ast = ast;
@@ -924,6 +918,13 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
         *out_ast = ast;
         return R_OK;
     }
+    if (check(TokenEOS, tokenStream) || /* End of stream */
+        check(TokenSemicolon, tokenStream) || /* ; */
+        check(TokenNewline, tokenStream) || /* <newline> */
+        check(TokenRightCurlyBrace, tokenStream)) { /* { */
+        *out_ast = NULL;
+        return R_OK;
+    }
     RESTORE(tokenStream, save);
     return R_UnexpectedToken;
 }
@@ -938,6 +939,9 @@ int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     struct Ast *tmp;
     struct Ast *ast;
+    while (opt_expect(TokenNewline, tokenStream)) {
+        ;
+    }
     EXPECT(TokenLeftCurlyBrace, tokenStream);
     result = AstMakeBlank(&ast);
     if (R_OK != result) {
@@ -955,6 +959,9 @@ int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream) {
         EXPECT_EITHER(TokenSemicolon, TokenNewline, tokenStream);
     }
     EXPECT(TokenRightCurlyBrace, tokenStream);
+    while (opt_expect(TokenNewline, tokenStream)) {
+        ;
+    }
     if (R_OK == result) {
         ast->Type = Body;
         *out_ast = ast;
@@ -1003,7 +1010,9 @@ int ParseTokenStream(struct ParsedTrees *parsedTrees, struct TokenStream *tokenS
         }
         RESTORE(tokenStream, tryImport);
         result = ParseStmt(&tmp, tokenStream);
-        EXPECT_EITHER(TokenSemicolon, TokenNewline, tokenStream);
+        if (!check(TokenEOS, tokenStream)) {
+            EXPECT_EITHER(TokenSemicolon, TokenNewline, tokenStream);
+        }
         /* Catch any top level function defintions; they need to be stored
            in the symbol table before anything is allowed to execute. */
         if (R_OK == result && tmp && FunctionNode == tmp->Type) {

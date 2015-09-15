@@ -3,6 +3,7 @@
 
 #include "ast.h"
 #include "lexer.h"
+#include "token_stream.h"
 
 struct ParsedTrees {
     struct Ast *Imports;
@@ -12,5 +13,7 @@ struct ParsedTrees {
 };
 
 int Parse(struct ParsedTrees *parsedTrees, struct Lexer *lexer);
+
+int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream);
 
 #endif
