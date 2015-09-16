@@ -961,6 +961,7 @@ int ParseStmtList(struct Ast **out_ast, struct TokenStream *tokenStream) {
     return result;
 }
 
+/* <import> := import <string-literal> as <identifier> */
 int ParseImport(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     struct Ast *modName, *as = NULL;
@@ -970,11 +971,10 @@ int ParseImport(struct Ast **out_ast, struct TokenStream *tokenStream) {
     EXPECT(TokenStringLiteral, tokenStream);
     TokenStreamRewind(tokenStream);
     result = ParseLiteral(&modName, tokenStream);
-    if (opt_expect(TokenAs, tokenStream)) {
-        EXPECT(TokenIdentifer, tokenStream);
-        TokenStreamRewind(tokenStream);
-        result = ParseIdentifier(&as, tokenStream);
-    }
+    EXPECT(TokenAs, tokenStream);
+    EXPECT(TokenIdentifer, tokenStream);
+    TokenStreamRewind(tokenStream);
+    result = ParseIdentifier(&as, tokenStream);
     return AstMakeImport(out_ast, modName, as, save->Token->SrcLoc);
 }
 
@@ -1025,6 +1025,16 @@ parse_error_cleanup:
 
 /************************ Public Functions **************************/
 
+int ParseThing(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    int result;
+    struct Ast *out;
+    result = ParseImport(&out, tokenStream);
+    if (R_OK == result) {
+        *out_ast = out;
+        return R_OK;
+    }
+    return ParseStmt(out_ast, tokenStream);
+}
 
 int Parse(struct ParsedTrees *parsedTrees, struct Lexer *lexer) {
     struct TokenStream *tokenStream;

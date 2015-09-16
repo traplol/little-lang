@@ -14,6 +14,6 @@ struct ParsedTrees {
 
 int Parse(struct ParsedTrees *parsedTrees, struct Lexer *lexer);
 
-int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseThing(struct Ast **out_ast, struct TokenStream *tokenStream);
 
 #endif

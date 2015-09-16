@@ -5,6 +5,7 @@
 #include "helpers/strings.h"
 #include "helpers/ast_pretty_printer.h"
 #include "value.h"
+#include "path_resolver.h"
 #include "result.h"
 
 #include <limits.h>
@@ -13,7 +14,7 @@
 #include <string.h>
 #include <time.h>
 
-char *SourceDirectory;
+char *CameFrom;
 
 int LittleLangMachineIsValid(struct LittleLangMachine *llm) {
     return llm && llm->Lexer && llm->AllImportedModules && llm->ThisModule;
@@ -41,39 +42,6 @@ char *ReadFile(char *filename) {
         fclose(file);
     }
     return code;
-}
-
-int FileExists(char *filename) {
-    FILE *file = fopen(filename, "r");
-    if (file) {
-        fclose(file);
-        return 1;
-    }
-    return 0;
-}
-
-char *AbsPath(char *path) {
-    char actualPath[PATH_MAX+1];
-    if (!FileExists(path)) {
-        return NULL;
-    }
-    if (!realpath(path, actualPath)) {
-        return NULL;
-    }
-    return strdup(actualPath);
-}
-
-char *GetPath(char *path) {
-    char *tmp;
-    if (!FileExists(path)) {
-        tmp = str_cat(SourceDirectory, "/");
-        path = str_cat(tmp, path);
-        free(tmp);
-        if (!FileExists(path)) {
-            return NULL;
-        }
-    }
-    return AbsPath(path);
 }
 
 void ShowHelpMsg(void) {
@@ -123,8 +91,6 @@ int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv
     if (filename) {
         llm->CmdOpts.code = ReadFile(filename);
         llm->CmdOpts.filename = filename;
-        SourceDirectory = strdup(filename);
-        dirname(SourceDirectory);
     }
     else {
         llm->CmdOpts.ReplMode = 1;
@@ -165,11 +131,14 @@ int LittleLangMachineMakeLexer(struct LittleLangMachine *llm) {
     return R_OK;
 }
 
+int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, struct Module **out_module);
 int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
     struct TokenStream *tokenStream;
     int result;
     struct Ast *stmt = NULL;
     struct Value *value;
+    struct Module *mod;
+    char *filename;
     llm->Lexer->REPL = llm->CmdOpts.ReplMode;
     tokenStream = calloc(sizeof *tokenStream, 1);
     while (1) {
@@ -178,7 +147,7 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
         TokenStreamMake(tokenStream, llm->Lexer);
         AstFree(stmt);
 
-        result = ParseStmt(&stmt, tokenStream);
+        result = ParseThing(&stmt, tokenStream);
         if (R_OK != result || !stmt) {
             continue;
         }
@@ -187,7 +156,11 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
             AstPrettyPrintNode(stmt);
             printf("\n\n");
         }
-        if (FunctionNode == stmt->Type) {
+        if (ImportExpr == stmt->Type) {
+            filename = stmt->Children[0]->u.Value->v.String->CString;
+            LittleLangMachineLoadModule(llm, filename, &mod);
+        }
+        else if (FunctionNode == stmt->Type) {
             DefineFunction(llm->ThisModule->ModuleScope, stmt);
         }
         else {
@@ -221,7 +194,6 @@ int ParseProgramTrees(char *absPath, struct ParsedTrees **out_programTrees) {
     return R_OK;
 }
 
-int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, struct Module **out_module);
 int ImportModules(struct LittleLangMachine *llm, struct Ast *imports, struct ModuleTable **out_imports) {
     int result;
     struct Ast *moduleName, *as, *import;
@@ -241,21 +213,21 @@ int ImportModules(struct LittleLangMachine *llm, struct Ast *imports, struct Mod
         import = imports->Children[i];
         moduleName = import->Children[0];
         filename = moduleName->u.Value->v.String->CString;
-        absPath = GetPath(filename);
-        as = import->Children[1];
+        absPath = ResolvePath(CameFrom, filename);
         ModuleTableFind(llm->AllImportedModules, absPath, &module);
         if (!module) {
-            result = LittleLangMachineLoadModule(llm, filename, &module);   
+            result = LittleLangMachineLoadModule(llm, absPath, &module);   
             ModuleTableInsert(llm->AllImportedModules, absPath, module);
-            if (R_OK != result) {
-                goto cleanup;
-            }
         }
-        if (as) {
-            ModuleTableInsert(moduleTable, as->u.SymbolName, module);
-        }
-        else {
-            /* TODO: Load into ThisModule */
+        as = import->Children[1];
+        result = ModuleTableInsert(moduleTable, as->u.SymbolName, module);
+        if (R_KeyAlreadyInTable == result) {
+            printf("A module has already been imported with the name '%s'!\n"
+                   "%s:%d:%d\n",
+                   as->u.SymbolName,
+                   import->SrcLoc.Filename,
+                   import->SrcLoc.LineNumber,
+                   import->SrcLoc.ColumnNumber);
         }
         free(absPath);
     }
@@ -278,7 +250,8 @@ int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, s
     if (!llm || !out_module || !filename) {
         return R_InvalidArgument;
     }
-    absPath = GetPath(filename);
+    absPath = AbsolutePath(filename);
+    CameFrom = GetDirectory(absPath);
     if (!absPath) {
         fprintf(stderr, "File not found: %s\n", filename);
         return R_FileNotFound;
