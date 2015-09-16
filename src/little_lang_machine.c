@@ -15,9 +15,10 @@
 #include <time.h>
 
 char *CameFrom;
+char *StdinString = "<stdin>";
 
 int LittleLangMachineIsValid(struct LittleLangMachine *llm) {
-    return llm && llm->Lexer && llm->AllImportedModules && llm->ThisModule;
+    return llm && llm->Lexer && llm->AllImportedModules;
 }
 
 int LittleLangMachineIsInvalid(struct LittleLangMachine *llm) {
@@ -94,7 +95,7 @@ int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv
     }
     else {
         llm->CmdOpts.ReplMode = 1;
-        llm->CmdOpts.filename = "<stdin>";
+        llm->CmdOpts.filename = StdinString;
     }
     return R_OK;
 }
@@ -251,30 +252,34 @@ int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, s
         return R_InvalidArgument;
     }
     absPath = AbsolutePath(filename);
+    free(CameFrom);
     CameFrom = GetDirectory(absPath);
     if (!absPath) {
-        fprintf(stderr, "File not found: %s\n", filename);
         return R_FileNotFound;
     }
     result = ParseProgramTrees(absPath, &programTrees);
     if (R_OK != result) {
-        return result;
+        goto cleanup;
     }
     result = ImportModules(llm, programTrees->Imports, &imports);
     if (R_OK != result) {
-        return result;
+        goto cleanup;
     }
     module = calloc(sizeof *module, 1);
     result = ModuleMake(module, programTrees->Program, imports);
     if (R_OK != result) {
         free(module);
-        return result;
+        goto cleanup;
     }
     DefineTopLevelFunctions(module->ModuleScope, programTrees->TopLevelFunctions);
     InterpreterRunProgram(module);
 
     *out_module = module;
     return R_OK;
+
+cleanup:
+    free(absPath);
+    return result;
 }
 
 int LittleLangMakeModuleLookupTable(struct LittleLangMachine *llm) {
@@ -293,6 +298,9 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
     if (!llm) {
         return R_InvalidArgument;
     }
+    llm->Lexer = NULL;
+    llm->AllImportedModules = NULL;
+    llm->ThisModule = NULL;
     result = LittleLangMachineDoOpts(llm, argc, argv);
     if (R_OK != result) {
         return result;
@@ -306,6 +314,10 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
         return result;
     }
     return result;
+}
+
+int LittleLangMachineDenit(struct LittleLangMachine *llm) {
+    return R_OK;
 }
 
 

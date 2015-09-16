@@ -21,5 +21,6 @@ struct LittleLangMachine {
 };
 int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv);
 int LittleLangMachineRun(struct LittleLangMachine *llm);
+int LittleLangMachineDenit(struct LittleLangMachine *llm);
 
 #endif
