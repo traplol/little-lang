@@ -165,32 +165,6 @@ int LittleLangMachineMakeLexer(struct LittleLangMachine *llm) {
     return R_OK;
 }
 
-//int LittleLangMachineMakeSymbolTables(struct LittleLangMachine *llm) {
-//    int result;
-//    llm->GlobalScope = malloc(sizeof(*llm->GlobalScope));
-//    llm->CurrentScope = llm->GlobalScope;
-//    result = SymbolTableMakeGlobalScope(llm->GlobalScope);
-//    if (R_OK != result) {
-//        free(llm->GlobalScope);
-//        llm->CurrentScope = NULL;
-//        llm->GlobalScope = NULL;
-//        return result;
-//    }
-//    return R_OK;
-//}
-//
-//int LittleLangMachineMakeTypeTable(struct LittleLangMachine *llm) {
-//    int result;
-//    llm->TypeTable = malloc(sizeof(*llm->TypeTable));
-//    result = TypeTableMake(llm->TypeTable, 0);
-//    if (R_OK != result) {
-//        free(llm->TypeTable);
-//        llm->TypeTable = NULL;
-//        return result;
-//    }
-//    return R_OK;
-//}
-
 int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
     struct TokenStream *tokenStream;
     int result;
