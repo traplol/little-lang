@@ -13,6 +13,10 @@
 
 #define TO_BOOLEAN(b) ((b) ? &g_TheTrueValue : &g_TheFalseValue)
 
+void at(struct SrcLoc srcLoc) {
+    printf(" at %s:%d:%d\n", srcLoc.Filename, srcLoc.LineNumber, srcLoc.ColumnNumber);
+}
+
 /* Forward declarations. */
 struct Value *InterpreterRunAst(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoBody(struct Module *module, struct Ast *ast);
@@ -563,19 +567,13 @@ struct Value *InterpreterDoAssign(struct Module *module, struct Ast *ast) {
     struct Value *value;
     char *symName = ast->Children[0]->u.SymbolName;
     if (!SymbolTableFindNearest(module->CurrentScope, symName, &symbol)) {
-        printf("Trying to assign to undefined symbol: '%s' at %s:%d:%d\n",
-               symbol->Key,
-               ast->SrcLoc.Filename,
-               ast->SrcLoc.LineNumber,
-               ast->SrcLoc.ColumnNumber);
+        printf("Trying to assign to undefined symbol: '%s'", symbol->Key);
+        at(ast->SrcLoc);
         return &g_TheNilValue;
     }
     if (!symbol->IsMutable) {
-        printf("Trying to assign to const symbol: '%s' at %s:%d:%d\n",
-               symbol->Key,
-               ast->SrcLoc.Filename,
-               ast->SrcLoc.LineNumber,
-               ast->SrcLoc.ColumnNumber);
+        printf("Trying to assign to const symbol: '%s'", symbol->Key);
+        at(ast->SrcLoc);
         return &g_TheNilValue;
     }
     value = InterpreterRunAst(module, ast->Children[1]);
@@ -602,51 +600,30 @@ struct Value *InterpreterDoSymbol(struct Module *module, struct Ast *ast){
     else if (SymbolTableFindLocal(&g_TheGlobalScope, ast->u.SymbolName, &sym)) {
         return sym->Value;
     }
-    printf("Undefined symbol '%s'.\n", ast->u.SymbolName);
-    return sym->Value;
+    printf("Undefined symbol: '%s'", ast->u.SymbolName);
+    at(ast->SrcLoc);
+    return &g_TheNilValue;
 }
 struct Value *InterpreterDoDefFunction(struct Module *module, struct Ast *ast){
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoCallBuiltinFn(struct Module *module, struct Value *function, struct Ast *args) {
-    unsigned int argc, i;
-    struct Value **argv;
-    if (args && args->NumChildren > 0) {
-        argc = args->NumChildren;
-        argv = malloc(sizeof(*argv) * argc);
-        for (i = 0; i < argc; ++i) {
-            argv[i] = InterpreterRunAst(module, args->Children[i]);
-        }
-    }
-    else {
-        argc = 0;
-        argv = NULL;
-    }
+struct Value *InterpreterDoCallBuiltinFn(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv) {
     return function->v.BuiltinFn->Fn(argc, argv);
 }
-struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *function, struct Ast *args, struct SrcLoc srcLoc) {
+struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
     unsigned int i;
     struct Value *returnValue, *arg;
     struct Ast *params, *body, *param;
     struct Function *fn = function->v.Function;
     params = fn->Params;
     body = fn->Body;
-    if (args->NumChildren < params->NumChildren) {
+    if (argc < params->NumChildren || (argc > params->NumChildren && !fn->IsVarArgs)) {
         /* TODO: Throw proper error. */
-        printf("Wrong number of args for call: '%s' at %s:%d:%d\n",
+        printf("Wrong number of args for call: '%s', expected '%d' got '%d'",
                fn->Name,
-               srcLoc.Filename,
-               srcLoc.LineNumber,
-               srcLoc.ColumnNumber);
-        return &g_TheNilValue;
-    }
-    else if (args->NumChildren > params->NumChildren && !fn->IsVarArgs) {
-        /* TODO: Throw proper error. */
-        printf("Wrong number of args for call: '%s' at %s:%d:%d\n",
-               fn->Name,
-               srcLoc.Filename,
-               srcLoc.LineNumber,
-               srcLoc.ColumnNumber);
+               params->NumChildren,
+               argc);
+        at(srcLoc);
         return &g_TheNilValue;
     }
     SymbolTablePushScope(&(module->CurrentScope));
@@ -654,7 +631,7 @@ struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *fun
     /* TODO: Handle varargs */
     if (params) {
         for (i = 0; i < params->NumChildren; ++i) {
-            arg = InterpreterRunAst(module, args->Children[i]);
+            arg = argv[i];
             param = params->Children[i];
             SymbolTableInsert(module->CurrentScope, arg, param->u.SymbolName, 1, param->SrcLoc);
         }
@@ -668,13 +645,30 @@ struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *fun
 }
 struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
     struct Value *func = InterpreterRunAst(module, ast->Children[0]);
+    unsigned int argc, i;
+    struct Value **argv, *arg, *argCopyOrRef;
+    struct Ast *args;
     if (&g_TheNilValue == func) {
         return &g_TheNilValue;
     }
-    if (func->IsBuiltInFn) {
-        return InterpreterDoCallBuiltinFn(module, func, ast->Children[1]);
+    args = ast->Children[1];
+    if (args && args->NumChildren > 0) {
+        argc = args->NumChildren;
+        argv = malloc(sizeof(*argv) * argc);
+        for (i = 0; i < argc; ++i) {
+            arg = InterpreterRunAst(module, args->Children[i]);
+            ValueDuplicate(&argCopyOrRef, arg);
+            argv[i] = argCopyOrRef;
+        }
     }
-    return InterpreterDoCallFunction(module, func, ast->Children[1], ast->SrcLoc);
+    else {
+        argc = 0;
+        argv = NULL;
+    }
+    if (func->IsBuiltInFn) {
+        return InterpreterDoCallBuiltinFn(module, func, argc, argv);
+    }
+    return InterpreterDoCallFunction(func->v.Function->OwnerModule, func, argc, argv, ast->SrcLoc);
 }
 struct Value *InterpreterDoArrayIdx(struct Module *module, struct Ast *ast) {
     return &g_TheNilValue;

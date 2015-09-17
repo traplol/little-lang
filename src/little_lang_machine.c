@@ -100,19 +100,20 @@ int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv
     return R_OK;
 }
 
-int DefineFunction(struct SymbolTable *symbolTable, struct Ast *function) {
+int DefineFunction(struct Module *module, struct Ast *function) {
     struct Value *fn = function->u.Value;
-    return SymbolTableInsert(symbolTable, fn, fn->v.Function->Name, 1, function->SrcLoc);
+    fn->v.Function->OwnerModule = module;
+    return SymbolTableInsert(module->ModuleScope, fn, fn->v.Function->Name, 1, function->SrcLoc);
 }
 
-int DefineTopLevelFunctions(struct SymbolTable *symbolTable, struct Ast *functionDefs) {
+int DefineTopLevelFunctions(struct Module *module, struct Ast *functionDefs) {
     unsigned int i;
     int result;
     if (!functionDefs) {
         return R_OK;
     }
     for (i = 0; i < functionDefs->NumChildren; ++i) {
-        result = DefineFunction(symbolTable, functionDefs->Children[i]);
+        result = DefineFunction(module, functionDefs->Children[i]);
         if (R_OK != result) {
             break;
         }
@@ -132,6 +133,16 @@ int LittleLangMachineMakeLexer(struct LittleLangMachine *llm) {
     return R_OK;
 }
 
+int LittleLangMachineMakeThisModule(struct LittleLangMachine *llm) {
+    struct ModuleTable *modTable;
+    if (!llm) {
+        return R_InvalidArgument;
+    }
+    llm->ThisModule = calloc(sizeof *llm->ThisModule, 1);
+    modTable = calloc(sizeof modTable, 1);
+    ModuleTableMake(modTable);
+    return ModuleMake(llm->ThisModule, NULL, modTable);
+}
 int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, struct Module **out_module);
 int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
     struct TokenStream *tokenStream;
@@ -139,9 +150,12 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
     struct Ast *stmt = NULL;
     struct Value *value;
     struct Module *mod;
-    char *filename;
+    char *filename, *as;
     llm->Lexer->REPL = llm->CmdOpts.ReplMode;
     tokenStream = calloc(sizeof *tokenStream, 1);
+    if (!llm->ThisModule) {
+        LittleLangMachineMakeThisModule(llm);
+    }
     while (1) {
         LexerThrowAwayCode(llm->Lexer);
         TokenStreamFree(tokenStream);
@@ -159,10 +173,12 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
         }
         if (ImportExpr == stmt->Type) {
             filename = stmt->Children[0]->u.Value->v.String->CString;
+            as = stmt->Children[1]->u.SymbolName;
             LittleLangMachineLoadModule(llm, filename, &mod);
+            ModuleTableInsert(llm->ThisModule->Imports, as, mod);
         }
         else if (FunctionNode == stmt->Type) {
-            DefineFunction(llm->ThisModule->ModuleScope, stmt);
+            DefineFunction(llm->ThisModule, stmt);
         }
         else {
             value = InterpreterRunAst(llm->ThisModule, stmt);
@@ -271,7 +287,7 @@ int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, s
         free(module);
         goto cleanup;
     }
-    DefineTopLevelFunctions(module->ModuleScope, programTrees->TopLevelFunctions);
+    DefineTopLevelFunctions(module, programTrees->TopLevelFunctions);
     InterpreterRunProgram(module);
 
     *out_module = module;
@@ -282,13 +298,14 @@ cleanup:
     return result;
 }
 
-int LittleLangMakeModuleLookupTable(struct LittleLangMachine *llm) {
+int LittleLangMachineMakeModuleLookupTable(struct LittleLangMachine *llm) {
     if (!llm) {
         return R_InvalidArgument;
     }
     llm->AllImportedModules = calloc(sizeof *llm->AllImportedModules, 1);
     return ModuleTableMake(llm->AllImportedModules);
 }
+
 
 /************************** Public Functions *****************************/
 
@@ -309,7 +326,7 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
     if (R_OK != result) {
         return result;
     }
-    result = LittleLangMakeModuleLookupTable(llm);
+    result = LittleLangMachineMakeModuleLookupTable(llm);
     if (R_OK != result) {
         return result;
     }

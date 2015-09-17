@@ -10,6 +10,7 @@ struct Function {
     char *Name;
     struct Ast *Params;
     struct Ast *Body;
+    struct Module *OwnerModule;
 };
 
 typedef struct Value *(*BuiltinFnProc_t)(unsigned int argc, struct Value **argv);
