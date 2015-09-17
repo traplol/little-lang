@@ -607,7 +607,17 @@ struct Value *InterpreterDoSymbol(struct Module *module, struct Ast *ast){
 struct Value *InterpreterDoDefFunction(struct Module *module, struct Ast *ast){
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoCallBuiltinFn(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv) {
+struct Value *InterpreterDoCallBuiltinFn(struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
+    struct BuiltinFn *fn = function->v.BuiltinFn;
+    if (argc < fn->NumArgs || (argc > fn->NumArgs && !fn->IsVarArgs)) {
+        /* TODO: Throw proper error. */
+        printf("Wrong number of args for call: '%s', expected '%d' got '%d'",
+               fn->Name,
+               fn->NumArgs,
+               argc);
+        at(srcLoc);
+        return &g_TheNilValue;
+    }
     return function->v.BuiltinFn->Fn(argc, argv);
 }
 struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
@@ -617,11 +627,11 @@ struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *fun
     struct Function *fn = function->v.Function;
     params = fn->Params;
     body = fn->Body;
-    if (argc < params->NumChildren || (argc > params->NumChildren && !fn->IsVarArgs)) {
+    if (argc < fn->NumArgs || (argc > fn->NumArgs && !fn->IsVarArgs)) {
         /* TODO: Throw proper error. */
         printf("Wrong number of args for call: '%s', expected '%d' got '%d'",
                fn->Name,
-               params->NumChildren,
+               fn->NumArgs,
                argc);
         at(srcLoc);
         return &g_TheNilValue;
@@ -666,7 +676,7 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
         argv = NULL;
     }
     if (func->IsBuiltInFn) {
-        return InterpreterDoCallBuiltinFn(module, func, argc, argv);
+        return InterpreterDoCallBuiltinFn(func, argc, argv, ast->SrcLoc);
     }
     return InterpreterDoCallFunction(func->v.Function->OwnerModule, func, argc, argv, ast->SrcLoc);
 }

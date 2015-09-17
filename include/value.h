@@ -5,7 +5,7 @@
 #include "ast.h"
 
 struct Function {
-    int NumArgs;
+    unsigned int NumArgs;
     int IsVarArgs;
     char *Name;
     struct Ast *Params;
@@ -16,7 +16,7 @@ struct Function {
 typedef struct Value *(*BuiltinFnProc_t)(unsigned int argc, struct Value **argv);
 struct BuiltinFn {
     char *Name;
-    int NumArgs;
+    unsigned int NumArgs;
     int IsVarArgs;
     BuiltinFnProc_t Fn;
 };
@@ -45,8 +45,8 @@ struct Value {
 struct Value *ValueAllocBlank(void);
 struct Value *ValueAlloc(void);
 
-int BuiltinFnMake(struct BuiltinFn **out_builtin_fn, char *name, int numArgs, int isVarArgs, BuiltinFnProc_t proc);
-int FunctionMake(struct Function **out_function, char *name, int numArgs, int isVarArgs, struct Ast *params, struct Ast *body);
+int BuiltinFnMake(struct BuiltinFn **out_builtin_fn, char *name, unsigned int numArgs, int isVarArgs, BuiltinFnProc_t proc);
+int FunctionMake(struct Function **out_function, char *name, unsigned int numArgs, int isVarArgs, struct Ast *params, struct Ast *body);
 
 int ValueDuplicate(struct Value **out_value, struct Value *toDup);
 

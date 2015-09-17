@@ -29,7 +29,7 @@ int ValueDuplicate(struct Value **out_value, struct Value *toDup) {
     return R_OK;
 }
 
-int BuiltinFnMake(struct BuiltinFn **out_builtin_fn, char *name, int numArgs, int isVarArgs, BuiltinFnProc_t fn) {
+int BuiltinFnMake(struct BuiltinFn **out_builtin_fn, char *name, unsigned int numArgs, int isVarArgs, BuiltinFnProc_t fn) {
     struct BuiltinFn *bifn;
     if (!out_builtin_fn || !name || !fn) {
         return R_InvalidArgument;
@@ -42,7 +42,7 @@ int BuiltinFnMake(struct BuiltinFn **out_builtin_fn, char *name, int numArgs, in
     *out_builtin_fn = bifn;
     return R_OK;
 }
-int FunctionMake(struct Function **out_function, char *name, int numArgs, int isVarArgs, struct Ast *params, struct Ast *body) {
+int FunctionMake(struct Function **out_function, char *name, unsigned int numArgs, int isVarArgs, struct Ast *params, struct Ast *body) {
     struct Function *function;
     if (!out_function || !name) {
         return R_InvalidArgument;
