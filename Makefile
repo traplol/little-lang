@@ -5,8 +5,8 @@ RUNTIME_DIR:= runtime
 OBJ_DIR:= obj
 BIN_DIR:= bin
 INCLUDES:= -Iinclude -I.
-#CFLAGS:= -O0 -D_GNU_SOURCE -Werror -Wall -pedantic -pedantic-errors -Wextra -g -std=c99 $(INCLUDES)
-CFLAGS:= -O0 -g -std=c99 -D_GNU_SOURCE $(INCLUDES)
+CFLAGS_STRICT:= -O0 -D_GNU_SOURCE -Werror -Wall -pedantic -pedantic-errors -Wextra -g -std=c99 $(INCLUDES)
+CFLAGS_LAX:= -O0 -g -std=c99 -D_GNU_SOURCE $(INCLUDES)
 LDFLAGS:= -lm
 SOURCES:= $(wildcard $(SRC_DIR)/*.c)
 SOURCES+= $(wildcard $(HELPERS_DIR)/*.c)
@@ -15,6 +15,12 @@ OBJECTS:= $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCES:.c=.o)))
 EXECUTABLE:= $(BIN_DIR)/little-lang
 
 .PHONY: exe clean echo-vars
+
+lax: CFLAGS:=$(CFLAGS_LAX)
+lax: exe
+
+strict: CFLAGS:=$(CFLAGS_STRICT)
+strict: exe
 
 exe: $(OBJ_DIR) $(BIN_DIR) $(EXECUTABLE)
 
