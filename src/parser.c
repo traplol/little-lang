@@ -811,7 +811,7 @@ int ParseFunction(struct Ast **out_ast, struct TokenStream *tokenStream) {
  */
 int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
-    struct Node *save;
+    struct Node *save, *beforeElse;
     struct Ast *cond, *ifBody, *elseBody;
     cond = ifBody = elseBody = NULL;
     SAVE(tokenStream, save);
@@ -824,10 +824,12 @@ int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream) {
     result = ParseStmtList(&ifBody, tokenStream); /* body of if */
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
 
+    SAVE(tokenStream, beforeElse);
     while (opt_expect(TokenNewline, tokenStream)) {
         ;
     }
     if (!opt_expect(TokenElse, tokenStream)) { /* no else */
+        RESTORE(tokenStream, beforeElse);
         return AstMakeIfElse(out_ast, cond, ifBody, NULL, save->Token->SrcLoc);
     }
     if (check(TokenLeftCurlyBrace, tokenStream)) { /* else { */
@@ -888,7 +890,6 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
     }
     RESTORE(tokenStream, save);
     result = ParseIfElse(&ast, tokenStream);
- 
     if (R_OK == result) {
         *out_ast = ast;
         return R_OK;
