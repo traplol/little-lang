@@ -1,12 +1,21 @@
 #include "value.h"
 #include "globals.h"
 #include "result.h"
+#include "symbol_table.h"
 
 #include "helpers/strings.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+void ValueDefaults(struct Value *value) {
+    value->IsBuiltInFn = 0;
+    value->IsPassByReference = 0;
+    value->IsSymbol = 0;
+}
+
+/********************* Public Functions *********************/
 
 struct Value *ValueAllocBlank(void) {
     struct Value *v = calloc(sizeof *v, 1);
@@ -17,15 +26,19 @@ struct Value *ValueAlloc(void) {
     return v;
 }
 
-/********************* Public Functions *********************/
-
 int ValueDuplicate(struct Value **out_value, struct Value *toDup) {
+    struct Value *out;
     if (!out_value || !toDup) {
         return R_InvalidArgument;
     }
-    struct Value *out = ValueAlloc();
-    memcpy(out, toDup, sizeof *out);
-    *out_value = out;
+    if (toDup->IsPassByReference) {
+        *out_value = toDup;
+    }
+    else {
+        out = ValueAlloc();
+        memcpy(out, toDup, sizeof *out);
+        *out_value = out;
+    }
     return R_OK;
 }
 
@@ -64,9 +77,8 @@ int ValueMakeInteger(struct Value *value, int integer) {
     if (!value) {
         return R_InvalidArgument;
     }
+    ValueDefaults(value);
     value->TypeInfo = &g_TheIntegerTypeInfo;
-    value->IsBuiltInFn = 0;
-    value->IsPassByReference = 0;
     value->v.Integer = integer;
     return R_OK;
 }
@@ -74,9 +86,8 @@ int ValueMakeReal(struct Value *value, double real) {
     if (!value) {
         return R_InvalidArgument;
     }
+    ValueDefaults(value);
     value->TypeInfo = &g_TheRealTypeInfo;
-    value->IsBuiltInFn = 0;
-    value->IsPassByReference = 0;
     value->v.Real = real;
     return R_OK;
 }
@@ -84,8 +95,8 @@ int ValueMakeObject(struct Value *value, struct TypeInfo *typeInfo, void *object
     if (!value || !typeInfo) {
         return R_InvalidArgument;
     }
+    ValueDefaults(value);
     value->TypeInfo = typeInfo;
-    value->IsBuiltInFn = 0;
     value->IsPassByReference = 1;
     if (object && objectSize) {
         memcpy(value->v.__ptrsize, object, objectSize);
@@ -96,8 +107,8 @@ int ValueMakeLLString(struct Value *value, char *cString) {
     if (!value || !cString) {
         return R_InvalidArgument;
     }
+    ValueDefaults(value);
     value->TypeInfo = &g_TheStringTypeInfo;
-    value->IsBuiltInFn = 0;
     value->IsPassByReference = 1;
     value->v.String = malloc(sizeof *(value->v.String));
     value->v.String->CString = strdup(cString);
@@ -108,9 +119,8 @@ int ValueMakeFunction(struct Value *value, struct Function *function) {
     if (!value || !function) {
         return R_InvalidArgument;
     }
+    ValueDefaults(value);
     value->TypeInfo = &g_TheFunctionTypeInfo;
-    value->IsBuiltInFn = 0;
-    value->IsPassByReference = 0;
     value->v.Function = function;
     return R_OK;
 }
@@ -119,9 +129,9 @@ int ValueMakeBuiltinFn(struct Value *value, struct BuiltinFn *builtinFn) {
     if (!value || !builtinFn) {
         return R_InvalidArgument;
     }
+    ValueDefaults(value);
     value->TypeInfo = &g_TheBuiltinFnTypeInfo;
     value->IsBuiltInFn = 1;
-    value->IsPassByReference = 0;
     value->v.BuiltinFn = builtinFn;
     return R_OK;
 }
@@ -129,7 +139,9 @@ int ValueMakeBuiltinFn(struct Value *value, struct BuiltinFn *builtinFn) {
 char *ValueToString(struct Value *value) {
     /* TODO: Find better way to do ToString. */
     char buf[80];
-
+    if (value->IsSymbol) {
+        return ValueToString(value->v.Symbol->Value);
+    }
     switch (value->TypeInfo->Type) {
         default:
             if (&g_TheNilValue == value) {

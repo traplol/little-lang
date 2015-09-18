@@ -31,10 +31,12 @@ struct Value {
     struct TypeInfo *TypeInfo;
     int IsBuiltInFn;
     int IsPassByReference;
+    int IsSymbol;
     union {
         int Integer;
         double Real;
         void *Object;
+        struct Symbol *Symbol;
         struct LLString *String;
         struct Function *Function;
         struct BuiltinFn *BuiltinFn;

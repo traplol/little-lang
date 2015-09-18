@@ -10,8 +10,11 @@
 #include <stdlib.h>
 #include <math.h>
 
-
 #define TO_BOOLEAN(b) ((b) ? &g_TheTrueValue : &g_TheFalseValue)
+
+#define DEREF_IF_SYMBOL(s) ((s) = (s)->IsSymbol ? (s)->v.Symbol->Value : s)
+
+#define IS_NUMERIC(v) ((v) == TypeReal || (v) == TypeInteger)
 
 void at(struct SrcLoc srcLoc) {
     printf(" at %s:%d:%d\n", srcLoc.Filename, srcLoc.LineNumber, srcLoc.ColumnNumber);
@@ -70,16 +73,19 @@ struct Value *InterpreterDoBody(struct Module *module, struct Ast *ast) {
 struct Value *InterpreterDoAdd(struct Module *module, struct Ast *ast) {
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    enum TypeInfoType lhsType = lhs->TypeInfo->Type;
-    enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     struct Value *value = ValueAlloc();
     int isReal;
     union {
         int Integer;
         double Real;
     } result;
-    if ((TypeReal == lhsType || TypeInteger == lhsType) &&
-        (TypeReal == rhsType || TypeInteger == rhsType)) {
+    enum TypeInfoType lhsType;
+    enum TypeInfoType rhsType;
+    DEREF_IF_SYMBOL(lhs);
+    DEREF_IF_SYMBOL(rhs);
+    lhsType = lhs->TypeInfo->Type;
+    rhsType = rhs->TypeInfo->Type;
+    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
         goto numeric_types;
     }
     else {
@@ -118,16 +124,19 @@ non_numeric_types:
 struct Value *InterpreterDoSub(struct Module *module, struct Ast *ast) {
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    enum TypeInfoType lhsType = lhs->TypeInfo->Type;
-    enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     struct Value *value = ValueAlloc();
     int isReal;
     union {
         int Integer;
         double Real;
     } result;
-    if ((TypeReal == lhsType || TypeInteger == lhsType) &&
-        (TypeReal == rhsType || TypeInteger == rhsType)) {
+    enum TypeInfoType lhsType;
+    enum TypeInfoType rhsType;
+    DEREF_IF_SYMBOL(lhs);
+    DEREF_IF_SYMBOL(rhs);
+    lhsType = lhs->TypeInfo->Type;
+    rhsType = rhs->TypeInfo->Type;
+    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
         goto numeric_types;
     }
     else {
@@ -166,16 +175,19 @@ non_numeric_types:
 struct Value *InterpreterDoMul(struct Module *module, struct Ast *ast) {
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    enum TypeInfoType lhsType = lhs->TypeInfo->Type;
-    enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     struct Value *value = ValueAlloc();
     int isReal;
     union {
         int Integer;
         double Real;
     } result;
-    if ((TypeReal == lhsType || TypeInteger == lhsType) &&
-        (TypeReal == rhsType || TypeInteger == rhsType)) {
+    enum TypeInfoType lhsType;
+    enum TypeInfoType rhsType;
+    DEREF_IF_SYMBOL(lhs);
+    DEREF_IF_SYMBOL(rhs);
+    lhsType = lhs->TypeInfo->Type;
+    rhsType = rhs->TypeInfo->Type;
+    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
         goto numeric_types;
     }
     else {
@@ -214,16 +226,19 @@ non_numeric_types:
 struct Value *InterpreterDoDiv(struct Module *module, struct Ast *ast) {
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    enum TypeInfoType lhsType = lhs->TypeInfo->Type;
-    enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     struct Value *value = ValueAlloc();
     int isReal;
     union {
         int Integer;
         double Real;
     } result;
-    if ((TypeReal == lhsType || TypeInteger == lhsType) &&
-        (TypeReal == rhsType || TypeInteger == rhsType)) {
+    enum TypeInfoType lhsType;
+    enum TypeInfoType rhsType;
+    DEREF_IF_SYMBOL(lhs);
+    DEREF_IF_SYMBOL(rhs);
+    lhsType = lhs->TypeInfo->Type;
+    rhsType = rhs->TypeInfo->Type;
+    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
         goto numeric_types;
     }
     else {
@@ -262,16 +277,19 @@ non_numeric_types:
 struct Value *InterpreterDoMod(struct Module *module, struct Ast *ast) {
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    enum TypeInfoType lhsType = lhs->TypeInfo->Type;
-    enum TypeInfoType rhsType = rhs->TypeInfo->Type;
     struct Value *value = ValueAlloc();
     int isReal;
     union {
         int Integer;
         double Real;
     } result;
-    if ((TypeReal == lhsType || TypeInteger == lhsType) &&
-        (TypeReal == rhsType || TypeInteger == rhsType)) {
+    enum TypeInfoType lhsType;
+    enum TypeInfoType rhsType;
+    DEREF_IF_SYMBOL(lhs);
+    DEREF_IF_SYMBOL(rhs);
+    lhsType = lhs->TypeInfo->Type;
+    rhsType = rhs->TypeInfo->Type;
+    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
         goto numeric_types;
     }
     else {
@@ -328,10 +346,12 @@ struct Value *InterpreterDoXorExpr(struct Module *module, struct Ast *ast) {
 struct Value *InterpreterDoLogicOr(struct Module *module, struct Ast *ast) {
     struct Value *lhs, *rhs;
     lhs = InterpreterRunAst(module, ast->Children[0]);
+    DEREF_IF_SYMBOL(lhs);
     if (&g_TheTrueValue == lhs) {
         return &g_TheTrueValue;
     }
     rhs = InterpreterRunAst(module, ast->Children[1]);
+    DEREF_IF_SYMBOL(rhs);
     if (&g_TheTrueValue == rhs) {
         return &g_TheTrueValue;
     }
@@ -344,10 +364,12 @@ struct Value *InterpreterDoLogicOr(struct Module *module, struct Ast *ast) {
 struct Value *InterpreterDoLogicAnd(struct Module *module, struct Ast *ast) {
     struct Value *lhs, *rhs;
     lhs = InterpreterRunAst(module, ast->Children[0]);
+    DEREF_IF_SYMBOL(lhs);
     if (&g_TheFalseValue == lhs) {
         return &g_TheFalseValue;
     }
     rhs = InterpreterRunAst(module, ast->Children[1]);
+    DEREF_IF_SYMBOL(rhs);
     if (&g_TheFalseValue == rhs) {
         return &g_TheFalseValue;
     }
@@ -362,11 +384,14 @@ struct Value *InterpreterDoLogicEq(struct Module *module, struct Ast *ast) {
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
     double epsilon = 1.11e-16; /* TODO: get rid of this magic number. */
-    enum TypeInfoType lhsType = lhs->TypeInfo->Type;
-    enum TypeInfoType rhsType = rhs->TypeInfo->Type;
+    enum TypeInfoType lhsType;
+    enum TypeInfoType rhsType;
+    DEREF_IF_SYMBOL(lhs);
+    DEREF_IF_SYMBOL(rhs);
+    lhsType = lhs->TypeInfo->Type;
+    rhsType = rhs->TypeInfo->Type;
     
-    if ((TypeReal == lhsType || TypeInteger == lhsType) &&
-        (TypeReal == rhsType || TypeInteger == rhsType)) {
+    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
         goto numeric_types;
     }
     else {
@@ -396,6 +421,7 @@ non_numeric_types:
 }
 struct Value *InterpreterDoLogicNotEq(struct Module *module, struct Ast *ast) {
     struct Value *value = InterpreterDoLogicEq(module, ast);
+    DEREF_IF_SYMBOL(value);
     if (&g_TheTrueValue == value) {
         return &g_TheFalseValue;
     }
@@ -408,10 +434,13 @@ struct Value *InterpreterDoLogicLt(struct Module *module, struct Ast *ast) {
     int result;
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    enum TypeInfoType lhsType = lhs->TypeInfo->Type;
-    enum TypeInfoType rhsType = rhs->TypeInfo->Type;
-    if ((TypeReal == lhsType || TypeInteger == lhsType) &&
-        (TypeReal == rhsType || TypeInteger == rhsType)) {
+    enum TypeInfoType lhsType;
+    enum TypeInfoType rhsType;
+    DEREF_IF_SYMBOL(lhs);
+    DEREF_IF_SYMBOL(rhs);
+    lhsType = lhs->TypeInfo->Type;
+    rhsType = rhs->TypeInfo->Type;
+    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
         goto numeric_types;
     }
     else {
@@ -443,10 +472,13 @@ struct Value *InterpreterDoLogicLtEq(struct Module *module, struct Ast *ast) {
     int result;
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    enum TypeInfoType lhsType = lhs->TypeInfo->Type;
-    enum TypeInfoType rhsType = rhs->TypeInfo->Type;
-    if ((TypeReal == lhsType || TypeInteger == lhsType) &&
-        (TypeReal == rhsType || TypeInteger == rhsType)) {
+    enum TypeInfoType lhsType;
+    enum TypeInfoType rhsType;
+    DEREF_IF_SYMBOL(lhs);
+    DEREF_IF_SYMBOL(rhs);
+    lhsType = lhs->TypeInfo->Type;
+    rhsType = rhs->TypeInfo->Type;
+    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
         goto numeric_types;
     }
     else {
@@ -475,10 +507,13 @@ struct Value *InterpreterDoLogicGt(struct Module *module, struct Ast *ast) {
     int result;
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    enum TypeInfoType lhsType = lhs->TypeInfo->Type;
-    enum TypeInfoType rhsType = rhs->TypeInfo->Type;
-    if ((TypeReal == lhsType || TypeInteger == lhsType) &&
-        (TypeReal == rhsType || TypeInteger == rhsType)) {
+    enum TypeInfoType lhsType;
+    enum TypeInfoType rhsType;
+    DEREF_IF_SYMBOL(lhs);
+    DEREF_IF_SYMBOL(rhs);
+    lhsType = lhs->TypeInfo->Type;
+    rhsType = rhs->TypeInfo->Type;
+    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
         goto numeric_types;
     }
     else {
@@ -507,10 +542,13 @@ struct Value *InterpreterDoLogicGtEq(struct Module *module, struct Ast *ast) {
     int result;
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    enum TypeInfoType lhsType = lhs->TypeInfo->Type;
-    enum TypeInfoType rhsType = rhs->TypeInfo->Type;
-    if ((TypeReal == lhsType || TypeInteger == lhsType) &&
-        (TypeReal == rhsType || TypeInteger == rhsType)) {
+    enum TypeInfoType lhsType;
+    enum TypeInfoType rhsType;
+    DEREF_IF_SYMBOL(lhs);
+    DEREF_IF_SYMBOL(rhs);
+    lhsType = lhs->TypeInfo->Type;
+    rhsType = rhs->TypeInfo->Type;
+    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
         goto numeric_types;
     }
     else {
@@ -538,6 +576,7 @@ non_numeric_types:
 struct Value *InterpreterDoNegate(struct Module *module, struct Ast *ast) {
     struct Value *rhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *value;
+    DEREF_IF_SYMBOL(rhs);
     if (TypeReal == rhs->TypeInfo->Type) {
         value = ValueAlloc();
         ValueMakeReal(value, rhs->v.Real * -1);
@@ -554,6 +593,7 @@ struct Value *InterpreterDoNegate(struct Module *module, struct Ast *ast) {
 }
 struct Value *InterpreterDoLogicNot(struct Module *module, struct Ast *ast) {
     struct Value *rhs = InterpreterRunAst(module, ast->Children[0]);
+    DEREF_IF_SYMBOL(rhs);
     if (&g_TheTrueValue == rhs) {
         return &g_TheFalseValue;
     }
@@ -564,21 +604,21 @@ struct Value *InterpreterDoLogicNot(struct Module *module, struct Ast *ast) {
 }
 struct Value *InterpreterDoAssign(struct Module *module, struct Ast *ast) {
     struct Symbol *symbol;
-    struct Value *value;
-    char *symName = ast->Children[0]->u.SymbolName;
-    if (!SymbolTableFindNearest(module->CurrentScope, symName, &symbol)) {
-        printf("Trying to assign to undefined symbol: '%s'", symbol->Key);
-        at(ast->SrcLoc);
-        return &g_TheNilValue;
+    struct Value *rvalue, *lvalue;
+    lvalue = InterpreterRunAst(module, ast->Children[0]);
+    rvalue = InterpreterRunAst(module, ast->Children[1]);
+    DEREF_IF_SYMBOL(rvalue);
+    if (lvalue->IsSymbol) {
+        symbol = lvalue->v.Symbol;
+        if (!symbol->IsMutable) {
+            printf("Trying to assign to const symbol: '%s'", symbol->Key);
+            at(ast->SrcLoc);
+            return &g_TheNilValue;
+        }
+        symbol->Value = rvalue;
+        return symbol->Value;
     }
-    if (!symbol->IsMutable) {
-        printf("Trying to assign to const symbol: '%s'", symbol->Key);
-        at(ast->SrcLoc);
-        return &g_TheNilValue;
-    }
-    value = InterpreterRunAst(module, ast->Children[1]);
-    symbol->Value = value;
-    return value;
+    return &g_TheNilValue;
 }
 struct Value *InterpreterDoBoolean(struct Ast *ast){
     return ast->u.Value;
@@ -594,14 +634,19 @@ struct Value *InterpreterDoString(struct Ast *ast){
 }
 struct Value *InterpreterDoSymbol(struct Module *module, struct Ast *ast){
     struct Symbol *sym;
+    struct Value *value = ValueAllocBlank();
+    value->IsSymbol = 1;
     if (SymbolTableFindNearest(module->CurrentScope, ast->u.SymbolName, &sym)) {
-        return sym->Value;
+        value->v.Symbol = sym;
+        return value;
     }
     else if (SymbolTableFindLocal(&g_TheGlobalScope, ast->u.SymbolName, &sym)) {
-        return sym->Value;
+        value->v.Symbol = sym;
+        return value;
     }
     printf("Undefined symbol: '%s'", ast->u.SymbolName);
     at(ast->SrcLoc);
+    free(value);
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoDefFunction(struct Module *module, struct Ast *ast){
@@ -649,6 +694,7 @@ struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *fun
     /* Execute body. */
     for (i = 0; i < body->NumChildren; ++i) {
         returnValue = InterpreterRunAst(module, body->Children[i]);
+        DEREF_IF_SYMBOL(returnValue);
     }
     SymbolTablePopScope(&(module->CurrentScope));
     return returnValue;
@@ -658,6 +704,7 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
     unsigned int argc, i;
     struct Value **argv, *arg, *argCopyOrRef;
     struct Ast *args;
+    DEREF_IF_SYMBOL(func);
     if (&g_TheNilValue == func) {
         return &g_TheNilValue;
     }
@@ -667,6 +714,7 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
         argv = malloc(sizeof(*argv) * argc);
         for (i = 0; i < argc; ++i) {
             arg = InterpreterRunAst(module, args->Children[i]);
+            DEREF_IF_SYMBOL(arg);
             ValueDuplicate(&argCopyOrRef, arg);
             argv[i] = argCopyOrRef;
         }
@@ -707,14 +755,12 @@ struct Value *InterpreterDoMut(struct Module *module, struct Ast *ast) {
     for (i = 0; i < names->NumChildren; ++i) {
         curName = names->Children[i];
         if (SymbolTableFindNearest(module->CurrentScope, curName->u.SymbolName, &symbol)) {
-            printf("Symbol already defined: '%s' at %s:%d:%d\n",
-                symbol->Key,
-                symbol->SrcLoc.Filename,
-                symbol->SrcLoc.LineNumber,
-                symbol->SrcLoc.ColumnNumber);
+            printf("Symbol already defined: '%s'", symbol->Key);
+            at(symbol->SrcLoc);
             return &g_TheNilValue;
         }
         value = InterpreterRunAst(module, values->Children[i]);
+        DEREF_IF_SYMBOL(value);
         SymbolTableInsert(module->CurrentScope, value, curName->u.SymbolName, 1, curName->SrcLoc);
     }
     return &g_TheNilValue;
@@ -726,14 +772,12 @@ struct Value *InterpreterDoConst(struct Module *module, struct Ast *ast) {
     name = ast->Children[0];
     valueAst = ast->Children[1];
     if (SymbolTableFindNearest(module->CurrentScope, name->u.SymbolName, &symbol)) {
-        printf("Symbol already defined: '%s' at %s:%d:%d\n",
-            symbol->Key,
-            symbol->SrcLoc.Filename,
-            symbol->SrcLoc.LineNumber,
-            symbol->SrcLoc.ColumnNumber);
+        printf("Symbol already defined: '%s'", symbol->Key);
+        at(symbol->SrcLoc);
         return &g_TheNilValue;
     }
     value = InterpreterRunAst(module, valueAst);
+    DEREF_IF_SYMBOL(value);
     SymbolTableInsert(module->CurrentScope, value, name->u.SymbolName, 0, name->SrcLoc);
     return &g_TheNilValue;
 }
@@ -747,7 +791,9 @@ struct Value *InterpreterDoFor(struct Module *module, struct Ast *ast) {
     SymbolTablePushScope(&(module->CurrentScope));
     InterpreterRunAst(module, pre);
     while (1) {
-        if (&g_TheTrueValue != InterpreterRunAst(module, cond)) {
+        value = InterpreterRunAst(module, cond);
+        DEREF_IF_SYMBOL(value);
+        if (&g_TheTrueValue != value) {
             break;
         }
         value = InterpreterRunAst(module, body);
@@ -763,7 +809,9 @@ struct Value *InterpreterDoWhile(struct Module *module, struct Ast *ast) {
     body = ast->Children[1];
     SymbolTablePushScope(&(module->CurrentScope));
     while (1) {
-        if (&g_TheTrueValue != InterpreterRunAst(module, cond)) {
+        value = InterpreterRunAst(module, cond);
+        DEREF_IF_SYMBOL(value);
+        if (&g_TheTrueValue != value) {
             break;
         }
         value = InterpreterRunAst(module, body);
@@ -778,7 +826,9 @@ struct Value *InterpreterDoIfElse(struct Module *module, struct Ast *ast) {
     body = ast->Children[1];
     ifelse = ast->Children[2];
     SymbolTablePushScope(&(module->CurrentScope));
-    if (&g_TheTrueValue == InterpreterRunAst(module, cond)) {
+    value = InterpreterRunAst(module, cond);
+    DEREF_IF_SYMBOL(value);
+    if (&g_TheTrueValue == value) {
         value = InterpreterRunAst(module, body);
     }
     else if (ifelse && IfElseExpr == ifelse->Type){

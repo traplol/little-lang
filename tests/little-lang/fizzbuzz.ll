@@ -15,4 +15,4 @@ def fizzbuzz(n) {
     }
 }
 
-#fizzbuzz(100)
+fizzbuzz(100)
