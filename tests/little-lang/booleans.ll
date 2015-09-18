@@ -1,21 +1,21 @@
-def test(expected, actual) {
-    mut passed = "Passed"
-    if actual != expected {
-        passed = "Failed"
-    }
-    println("Got:", actual,"Expected:", expected, passed)
-}
+import "assert.ll" as t
 
-test(true, true || true && false)
-test(true, true || false || true)
-test(true, false || true && true)
-test(false, false || false && false)
+# logical not
+t.assert(true, true, "true")
+t.assert(false, !true, "!true")
+t.assert(true, !!true, "!!true")
+t.assert(false, false, "false")
+t.assert(true, !false, "!false")
+t.assert(false, !!false, "!!false")
 
-test(false, true && false)
-test(false, false && true)
-test(false, false && false)
-test(true, true && true || true)
-test(true, true && false || true)
-test(true, false && true || true)
-test(true, false && false || true)
+# logical or
+t.assert(true, true || true, "true || true")
+t.assert(true, true || false, "true || false")
+t.assert(true, false || true, "false || true")
+t.assert(false, false || false, "false || false")
 
+# logical and
+t.assert(true, true && true, "true && true")
+t.assert(false, true && false, "true && false")
+t.assert(false, false && true, "false && true")
+t.assert(false, false && false, "false && false")

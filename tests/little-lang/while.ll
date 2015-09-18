@@ -1,6 +1,17 @@
-mut x, y = 0, 100
-while x < y {
-    print("hello")
-    print(" world")
-    y = y - 1
+import "assert.ll" as t
+
+mut x, i = 1, 1
+
+while i <= 10 {
+    x = x * i
+    i = i + 1
 }
+t.assert(3628800, x, "10!")
+
+x = 1
+i = 10
+while i > 0 {
+    x = x * i
+    i = i - 1
+}
+t.assert(3628800, x, "10!")
