@@ -24,7 +24,6 @@ struct Node *NodeMake(struct Token *token) {
 
 void NodeFree(struct Node *node) {
     TokenFree(node->Token);
-    free(node);
 }
 
 int TokenStreamREPLNextToken(struct TokenStream *tokenStream) {
@@ -74,15 +73,16 @@ int TokenStreamMake(struct TokenStream *tokenStream, struct Lexer *lexer) {
 }
 
 int TokenStreamFree(struct TokenStream *tokenStream) {
-    struct Node *head, *next;
+    struct Node *node, *next;
     if (TokenStreamIsInvalid(tokenStream)) {
         return R_InvalidArgument;
     }
-    head = tokenStream->Head;
-    while (head) {
-        next = head->Next;
-        NodeFree(head);
-        head = next;
+    node = tokenStream->Head;
+    while (node) {
+        next = node->Next;
+        NodeFree(node);
+        free(node);
+        node = next;
     }
     tokenStream->Head = NULL;
     tokenStream->Current = NULL;

@@ -66,10 +66,17 @@ int ModuleFree(struct Module *module) {
         return R_InvalidArgument;
     }
 
+    AstFree(module->Program);
+    free(module->Program);
+
     SymbolTableFree(module->ModuleScope);
-    TypeTableFree(module->TypeTable);
     free(module->ModuleScope);
+
+    TypeTableFree(module->TypeTable);
     free(module->TypeTable);
+
+    ModuleTableFree(module->Imports);
+    free(module->Imports);
 
     module->ModuleScope = NULL;
     module->CurrentScope = NULL;

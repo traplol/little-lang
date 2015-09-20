@@ -1057,6 +1057,7 @@ int Parse(struct ParsedTrees *parsedTrees, struct Lexer *lexer) {
         TokenStreamFree(tokenStream);
         return result;
     }
-
-    return TokenStreamFree(tokenStream);
+    result = TokenStreamFree(tokenStream);
+    free(tokenStream);
+    return result;
 }

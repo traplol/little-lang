@@ -199,6 +199,7 @@ int ParseProgramTrees(char *absPath, struct ParsedTrees **out_programTrees) {
     code = ReadFile(absPath);
     lexer = calloc(sizeof *lexer, 1);
     result = LexerMake(lexer, absPath, code);
+    free(code);
     if (R_OK != result) {
         return result;
     }
@@ -207,6 +208,8 @@ int ParseProgramTrees(char *absPath, struct ParsedTrees **out_programTrees) {
     if (R_OK != result) {
         return result;
     }
+    LexerFree(lexer);
+    free(lexer);
     *out_programTrees = programTrees;
     return R_OK;
 }
@@ -291,8 +294,8 @@ int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, s
     InterpreterRunProgram(module);
 
     *out_module = module;
-    return R_OK;
-
+    result = R_OK;
+    free(programTrees);
 cleanup:
     free(absPath);
     return result;
@@ -334,6 +337,20 @@ int LittleLangMachineInit(struct LittleLangMachine *llm, int argc, char **argv) 
 }
 
 int LittleLangMachineDenit(struct LittleLangMachine *llm) {
+    free(llm->CmdOpts.code);
+
+    ModuleTableFree(llm->AllImportedModules);
+    free(llm->AllImportedModules);
+
+    ModuleFree(llm->ThisModule);
+    free(llm->ThisModule);
+
+    LexerFree(llm->Lexer);
+    free(llm->Lexer);
+
+    SymbolTableFree(&g_TheGlobalScope);
+    free(CameFrom);
+
     return R_OK;
 }
 

@@ -15,7 +15,7 @@ struct Symbol **SymbolTableAllocSymbols(unsigned int len) {
 struct Symbol *SymbolAlloc(char *key, struct Value *value, int isMutable, struct SrcLoc srcLoc) {
     struct Symbol *symbol = malloc(sizeof *symbol);
     symbol->IsMutable = isMutable;
-    symbol->Key = key;
+    symbol->Key = strdup(key);
     symbol->Value = value;
     symbol->SrcLoc = srcLoc;
     symbol->Next = NULL;
@@ -23,7 +23,7 @@ struct Symbol *SymbolAlloc(char *key, struct Value *value, int isMutable, struct
 }
 
 void SymbolFree(struct Symbol *symbol) {
-    free(symbol);
+    free(symbol->Key);
 }
 
 int SymbolTableIsValid(struct SymbolTable *table) {
@@ -61,6 +61,7 @@ int SymbolTableFree(struct SymbolTable *table) {
         symbol = table->Symbols[i];
         if (symbol) {
             SymbolFree(symbol);
+            free(symbol);
         }
     }
     table->Parent = NULL;
