@@ -7,7 +7,7 @@ BIN_DIR:= bin
 INCLUDES:= -Iinclude -I.
 CFLAGS_STRICT:= -O0 -D_GNU_SOURCE -Werror -Wall -pedantic -pedantic-errors -Wextra -g -std=c99 $(INCLUDES)
 CFLAGS_LAX:= -O0 -g -std=c99 -D_GNU_SOURCE $(INCLUDES)
-CFLAGS_FAST:= -Os -std=c99 -D_GNU_SOURCE $(INCLUDES)
+CFLAGS_FAST:= -Os -std=c99 -DNDEBUG -D_GNU_SOURCE $(INCLUDES)
 LDFLAGS:= -lm
 SOURCES:= $(wildcard $(SRC_DIR)/*.c)
 SOURCES+= $(wildcard $(HELPERS_DIR)/*.c)
