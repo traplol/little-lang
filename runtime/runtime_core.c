@@ -21,6 +21,7 @@ struct Value *_rt_print(unsigned int argc, struct Value **argv) {
     for (i = 0; i < argc; ++i) {
         s = ValueToString(argv[i]);
         printf("%s", s);
+        free(s);
         if (i + 1 < argc) {
             printf(" ");
         }
@@ -36,17 +37,15 @@ struct Value *_rt_println(unsigned int argc, struct Value **argv) {
 
 struct Value *_rt_string(unsigned int argc, struct Value **argv) {
     struct Value *value;
-    char *string = strdup(ValueToString(argv[0]));
-    value = ValueAlloc();
-    ValueMakeLLString(value, string);
+    char *string = ValueToString(argv[0]);
+    ValueMakeLLString(&value, string);
     return value;
 }
 
 struct Value *_rt_type(unsigned int argc, struct Value **argv) {
     struct Value *value;
-    char *type = strdup(argv[0]->TypeInfo->TypeName);
-    value = ValueAlloc();
-    ValueMakeLLString(value, type);
+    char *type = argv[0]->TypeInfo->TypeName;
+    ValueMakeLLString(&value, type);
     return value;
 }
 

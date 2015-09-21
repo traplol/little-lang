@@ -1,5 +1,8 @@
 #include "symbol_table.h"
+
+#include "runtime/gc.h"
 #include "helpers/strings.h"
+
 #include "result.h"
 
 #include <stdlib.h>
@@ -23,6 +26,7 @@ struct Symbol *SymbolAlloc(char *key, struct Value *value, int isMutable, struct
 }
 
 void SymbolFree(struct Symbol *symbol) {
+    symbol->Value->Count--;
     free(symbol->Key);
 }
 
@@ -33,7 +37,6 @@ int SymbolTableIsValid(struct SymbolTable *table) {
 int SymbolTableIsInvalid(struct SymbolTable *table) {
     return !SymbolTableIsValid(table);
 }
-
 
 unsigned int SymbolTableGetIdx(struct SymbolTable *table, char *key) {
     return string_hash(key) % table->TableLength;
@@ -66,7 +69,7 @@ int SymbolTableFree(struct SymbolTable *table) {
     }
     table->Parent = NULL;
     free(table->Symbols);
-    return R_OK;
+    return GC_Collect();
 }
 
 int SymbolTablePushScope(struct SymbolTable **table) {

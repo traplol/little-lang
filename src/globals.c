@@ -87,3 +87,27 @@ int GlobalsInit(void) {
     __globalValuesInitialized = 1;
     return R_OK;
 }
+
+int GlobalsDenit(void) {
+    int result;
+    if (!__globalValuesInitialized) {
+        return R_OperationFailed;
+    }
+    result = SymbolTableFree(&g_TheGlobalScope);
+    RETURN_ON_FAIL(result);
+
+    result = TypeInfoFree(&g_TheBaseObjectTypeInfo);
+    RETURN_ON_FAIL(result);
+    result = TypeInfoFree(&g_TheFunctionTypeInfo);
+    RETURN_ON_FAIL(result);
+    result = TypeInfoFree(&g_TheBuiltinFnTypeInfo);
+    RETURN_ON_FAIL(result);
+    result = TypeInfoFree(&g_TheIntegerTypeInfo);
+    RETURN_ON_FAIL(result);
+    result = TypeInfoFree(&g_TheRealTypeInfo);
+    RETURN_ON_FAIL(result);
+    result = TypeInfoFree(&g_TheStringTypeInfo);
+    RETURN_ON_FAIL(result);
+    result = TypeInfoFree(&g_TheBooleanTypeInfo);
+    return result;
+}

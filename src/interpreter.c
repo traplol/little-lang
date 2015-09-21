@@ -3,6 +3,7 @@
 #include "module_table.h"
 #include "globals.h"
 #include "runtime/registrar.h"
+#include "runtime/gc.h"
 #include "value.h"
 #include "result.h"
 
@@ -73,7 +74,7 @@ struct Value *InterpreterDoBody(struct Module *module, struct Ast *ast) {
 struct Value *InterpreterDoAdd(struct Module *module, struct Ast *ast) {
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    struct Value *value = ValueAlloc();
+    struct Value *value;
     int isReal;
     union {
         int Integer;
@@ -111,10 +112,10 @@ numeric_types:
     }
 
     if (isReal) {
-        ValueMakeReal(value, result.Real);
+        ValueMakeReal(&value, result.Real);
     }
     else {
-        ValueMakeInteger(value, result.Integer);
+        ValueMakeInteger(&value, result.Integer);
     }
     return value;
 
@@ -124,7 +125,7 @@ non_numeric_types:
 struct Value *InterpreterDoSub(struct Module *module, struct Ast *ast) {
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    struct Value *value = ValueAlloc();
+    struct Value *value;
     int isReal;
     union {
         int Integer;
@@ -162,10 +163,10 @@ numeric_types:
     }
 
     if (isReal) {
-        ValueMakeReal(value, result.Real);
+        ValueMakeReal(&value, result.Real);
     }
     else {
-        ValueMakeInteger(value, result.Integer);
+        ValueMakeInteger(&value, result.Integer);
     }
     return value;
 
@@ -175,7 +176,7 @@ non_numeric_types:
 struct Value *InterpreterDoMul(struct Module *module, struct Ast *ast) {
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    struct Value *value = ValueAlloc();
+    struct Value *value;
     int isReal;
     union {
         int Integer;
@@ -213,10 +214,10 @@ numeric_types:
     }
 
     if (isReal) {
-        ValueMakeReal(value, result.Real);
+        ValueMakeReal(&value, result.Real);
     }
     else {
-        ValueMakeInteger(value, result.Integer);
+        ValueMakeInteger(&value, result.Integer);
     }
     return value;
 
@@ -226,7 +227,7 @@ non_numeric_types:
 struct Value *InterpreterDoDiv(struct Module *module, struct Ast *ast) {
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    struct Value *value = ValueAlloc();
+    struct Value *value;
     int isReal;
     union {
         int Integer;
@@ -264,10 +265,10 @@ numeric_types:
     }
 
     if (isReal) {
-        ValueMakeReal(value, result.Real);
+        ValueMakeReal(&value, result.Real);
     }
     else {
-        ValueMakeInteger(value, result.Integer);
+        ValueMakeInteger(&value, result.Integer);
     }
     return value;
 
@@ -277,7 +278,7 @@ non_numeric_types:
 struct Value *InterpreterDoMod(struct Module *module, struct Ast *ast) {
     struct Value *lhs = InterpreterRunAst(module, ast->Children[0]);
     struct Value *rhs = InterpreterRunAst(module, ast->Children[1]);
-    struct Value *value = ValueAlloc();
+    struct Value *value;
     int isReal;
     union {
         int Integer;
@@ -315,10 +316,10 @@ numeric_types:
     }
 
     if (isReal) {
-        ValueMakeReal(value, result.Real);
+        ValueMakeReal(&value, result.Real);
     }
     else {
-        ValueMakeInteger(value, result.Integer);
+        ValueMakeInteger(&value, result.Integer);
     }
     return value;
 
@@ -578,13 +579,11 @@ struct Value *InterpreterDoNegate(struct Module *module, struct Ast *ast) {
     struct Value *value;
     DEREF_IF_SYMBOL(rhs);
     if (TypeReal == rhs->TypeInfo->Type) {
-        value = ValueAlloc();
-        ValueMakeReal(value, rhs->v.Real * -1);
+        ValueMakeReal(&value, rhs->v.Real * -1);
         return value;
     }
     else if (TypeInteger == rhs->TypeInfo->Type){
-        value = ValueAlloc();
-        ValueMakeInteger(value, rhs->v.Integer * -1);
+        ValueMakeInteger(&value, rhs->v.Integer * -1);
         return value;
     }
     /* TODO: Runtime Error */
@@ -653,6 +652,8 @@ struct Value *InterpreterDoDefFunction(struct Module *module, struct Ast *ast){
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoCallBuiltinFn(struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
+    struct Value *value;
+    unsigned int i;
     struct BuiltinFn *fn = function->v.BuiltinFn;
     if (argc < fn->NumArgs || (argc > fn->NumArgs && !fn->IsVarArgs)) {
         /* TODO: Throw proper error. */
@@ -663,7 +664,12 @@ struct Value *InterpreterDoCallBuiltinFn(struct Value *function, unsigned int ar
         at(srcLoc);
         return &g_TheNilValue;
     }
-    return function->v.BuiltinFn->Fn(argc, argv);
+    value = function->v.BuiltinFn->Fn(argc, argv);
+    for (i = 0; i < argc; ++i) {
+        argv[i]->Count--;
+    }
+    GC_Collect();
+    return value;
 }
 struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
     unsigned int i;
@@ -696,6 +702,7 @@ struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *fun
         returnValue = InterpreterRunAst(module, body->Children[i]);
         DEREF_IF_SYMBOL(returnValue);
     }
+    ValueDuplicate(&returnValue, returnValue);
     SymbolTablePopScope(&(module->CurrentScope));
     return returnValue;
 }

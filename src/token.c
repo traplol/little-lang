@@ -84,6 +84,9 @@ int TokenFree(struct Token *token) {
     if (!token) {
         return R_InvalidArgument;
     }
+    if (TokenStringLiteral == token->Type) {
+        free(token->v.String);
+    }
     free(token->TokenStr);
     return R_OK;
 }

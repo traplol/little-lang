@@ -244,19 +244,21 @@ int LexerParseThing(struct Lexer *lexer, enum TokenType *out_type, char **out_st
 }
 
 struct Token *LexerGetNextToken(struct Lexer *lexer, int consumeToken) {
-    struct Token *token = malloc(sizeof *token);
+    struct Token *token;
     int line, column;
     char *out_str, *oldPos;
     unsigned int oldCurrentLineNumber, oldCurrentColumnNumber;
     enum TokenType out_type;
+non_recursive_call:
     while (*lexer->Pos && IsWhitespace(*lexer->Pos)) 
         LEX_ADV(lexer);
     if (*lexer->Pos == '#') {
         while (*lexer->Pos && '\n' != *lexer->Pos) {
             LEX_ADV(lexer);
         }
-        return LexerGetNextToken(lexer, consumeToken);
+        goto non_recursive_call;
     }
+    token = malloc(sizeof *token);
     oldPos = lexer->Pos;
     oldCurrentLineNumber = line = lexer->CurrentLineNumber;
     oldCurrentColumnNumber = column = lexer->CurrentColumnNumber;

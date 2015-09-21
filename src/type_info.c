@@ -1,4 +1,5 @@
 #include "type_info.h"
+#include "helpers/strings.h"
 #include "result.h"
 
 #include <stdlib.h>
@@ -46,7 +47,7 @@ int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeI
     }
     typeInfo->Type = type;
     typeInfo->DerivedFrom = derivedFrom;
-    typeInfo->TypeName = typeName;
+    typeInfo->TypeName = strdup(typeName);
     switch (type) {
         case TypeFunction: 
         case TypeBaseObject: 

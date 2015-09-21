@@ -503,26 +503,26 @@ int ParsePostfix(struct Ast **out_ast, struct TokenStream *tokenStream) {
 int ParseLiteral(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     struct Node *save;
-    struct Value *value = malloc(sizeof *value); /* freed on global variable. */
+    struct Value *value;
     struct Token *token = tokenStream->Current->Token;
     SAVE(tokenStream, save);
     switch (token->Type) {
         default:
             goto fail_cleanup;
         case TokenIntegerConstant:
-            if (R_OK != ValueMakeInteger(value, token->v.Integer)) {
+            if (R_OK != ValueMakeInteger(&value, token->v.Integer)) {
                 goto fail_cleanup;
             }
             result = AstMakeInteger(out_ast, value, save->Token->SrcLoc);
             goto success;
         case TokenRealConstant:
-            if (R_OK != ValueMakeReal(value, token->v.Real)) {
+            if (R_OK != ValueMakeReal(&value, token->v.Real)) {
                 goto fail_cleanup;
             }
             result = AstMakeReal(out_ast, value, save->Token->SrcLoc);
             goto success;
         case TokenStringLiteral:
-            if (R_OK != ValueMakeLLString(value, token->v.String)) {
+            if (R_OK != ValueMakeLLString(&value, token->v.String)) {
                 goto fail_cleanup;
             }
             result = AstMakeString(out_ast, value, save->Token->SrcLoc);
@@ -539,15 +539,11 @@ int ParseLiteral(struct Ast **out_ast, struct TokenStream *tokenStream) {
     }
 
 success:
-    if (TokenTrue == token->Type || TokenFalse == token->Type || TokenNil == token->Type) {
-        free(value);
-    }
     TokenStreamAdvance(tokenStream);
     return result;
 
 fail_cleanup:
     RESTORE(tokenStream, save);
-    free(value);
     return R_UnexpectedToken;
 }
 
@@ -559,7 +555,6 @@ int ParseIdentifier(struct Ast **out_ast, struct TokenStream *tokenStream) {
     char *identifier = tokenStream->Current->Token->TokenStr;
     SAVE(tokenStream, save);
     EXPECT_NO_MSG(TokenIdentifer, tokenStream);
-    identifier = strdup(identifier);
     return AstMakeSymbol(out_ast, identifier, save->Token->SrcLoc);
 }
 
@@ -791,7 +786,7 @@ int ParseFunction(struct Ast **out_ast, struct TokenStream *tokenStream) {
         numArgs = 0;
     }
 
-    FunctionMake(&fn, strdup(funcName), numArgs, isVarArgs, params, body);
+    FunctionMake(&fn, funcName, numArgs, isVarArgs, params, body);
     function = malloc(sizeof *function);
     result = ValueMakeFunction(function, fn);
     if (R_OK != result) {

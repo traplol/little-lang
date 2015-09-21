@@ -47,12 +47,13 @@ int AstFree(struct Ast *ast) {
         return R_InvalidArgument;
     }
     for (i = 0; i < ast->NumChildren; ++i) {
+        if (SymbolNode == ast->Children[i]->Type) {
+            free(ast->Children[i]->u.SymbolName);
+        }
         AstFree(ast->Children[i]);
+        free(ast->Children[i]);
     }
-    if (ast->NumChildren > 0) {
-        free(ast->Children);
-    }
-    free(ast);
+    free(ast->Children);
     return R_OK;
 }
 

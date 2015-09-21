@@ -348,9 +348,7 @@ int LittleLangMachineDenit(struct LittleLangMachine *llm) {
     LexerFree(llm->Lexer);
     free(llm->Lexer);
 
-    SymbolTableFree(&g_TheGlobalScope);
-    free(CameFrom);
-
+    GlobalsDenit();
     return R_OK;
 }
 

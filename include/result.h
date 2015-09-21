@@ -15,6 +15,7 @@
 #define R_GlobalsAlreadyInitted 7
 #define R_EndOfTokenStream      8
 #define R_FileNotFound          9
+#define R_OutOfMemory           10
 
 
 #endif

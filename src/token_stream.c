@@ -87,6 +87,7 @@ int TokenStreamFree(struct TokenStream *tokenStream) {
     tokenStream->Head = NULL;
     tokenStream->Current = NULL;
     tokenStream->Tail = NULL;
+    tokenStream->Lexer = NULL;
     return R_OK;
 }
 

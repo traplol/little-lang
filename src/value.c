@@ -3,6 +3,8 @@
 #include "result.h"
 #include "symbol_table.h"
 
+#include "runtime/gc.h"
+
 #include "helpers/strings.h"
 
 #include <string.h>
@@ -15,15 +17,69 @@ void ValueDefaults(struct Value *value) {
     value->IsSymbol = 0;
 }
 
+int BuiltinFnFree(struct BuiltinFn *bifn) {
+    if (!bifn) {
+        return R_InvalidArgument;
+    }
+    free(bifn->Name);
+    return R_OK;
+}
+int FunctionFree(struct Function *function) {
+    if (!function) {
+        return R_InvalidArgument;
+    }
+    free(function->Name);
+    AstFree(function->Params);
+    free(function->Params);
+    AstFree(function->Body);
+    free(function->Body);
+    return R_OK;
+}
+int LLStringFree(struct LLString *llString) {
+    if (!llString) {
+        return R_InvalidArgument;
+    }
+    free(llString->CString);
+    return R_OK;
+}
+
 /********************* Public Functions *********************/
 
 struct Value *ValueAllocBlank(void) {
-    struct Value *v = calloc(sizeof *v, 1);
+    struct Value *v;
+    GC_AllocValue(&v);
     return v;
 }
 struct Value *ValueAlloc(void) {
-    struct Value *v = malloc(sizeof *v);
-    return v;
+    return ValueAllocBlank();
+}
+int ValueFree(struct Value *value) {
+    int result;
+    if (!value) {
+        return R_InvalidArgument;
+    }
+    if (value->IsSymbol) {
+        return R_OK;
+    }
+    else if (value->IsBuiltInFn) {
+        result = BuiltinFnFree(value->v.BuiltinFn);
+        free(value->v.BuiltinFn);
+    }
+    else {
+        switch (value->TypeInfo->Type) {
+            case TypeBaseObject:
+            case TypeBoolean:
+            case TypeInteger:
+            case TypeReal:
+            case TypeUserObject:
+                return R_OK;
+            case TypeString:
+                return LLStringFree(value->v.String);
+            case TypeFunction:
+                return FunctionFree(value->v.Function);
+        }
+    }
+    return R_OperationFailed;
 }
 
 int ValueDuplicate(struct Value **out_value, struct Value *toDup) {
@@ -33,6 +89,7 @@ int ValueDuplicate(struct Value **out_value, struct Value *toDup) {
     }
     if (toDup->IsPassByReference) {
         *out_value = toDup;
+        toDup->Count++;
     }
     else {
         out = ValueAlloc();
@@ -48,7 +105,7 @@ int BuiltinFnMake(struct BuiltinFn **out_builtin_fn, char *name, unsigned int nu
         return R_InvalidArgument;
     }
     bifn = malloc(sizeof *bifn);
-    bifn->Name = name;
+    bifn->Name = strdup(name);
     bifn->NumArgs = numArgs;
     bifn->IsVarArgs = isVarArgs;
     bifn->Fn = fn;
@@ -64,7 +121,7 @@ int FunctionMake(struct Function **out_function, char *name, unsigned int numArg
         params = calloc(sizeof *params, 1);
     }
     function = malloc(sizeof *function);
-    function->Name = name;
+    function->Name = strdup(name);
     function->NumArgs = numArgs;
     function->IsVarArgs = isVarArgs;
     function->Params = params;
@@ -73,22 +130,26 @@ int FunctionMake(struct Function **out_function, char *name, unsigned int numArg
     return R_OK;
 }
 
-int ValueMakeInteger(struct Value *value, int integer) {
-    if (!value) {
+int ValueMakeInteger(struct Value **out_value, int integer) {
+    struct Value *value;
+    if (!out_value) {
         return R_InvalidArgument;
     }
-    ValueDefaults(value);
+    value = ValueAlloc();
     value->TypeInfo = &g_TheIntegerTypeInfo;
     value->v.Integer = integer;
+    *out_value = value;
     return R_OK;
 }
-int ValueMakeReal(struct Value *value, double real) {
-    if (!value) {
+int ValueMakeReal(struct Value **out_value, double real) {
+    struct Value *value;
+    if (!out_value) {
         return R_InvalidArgument;
     }
-    ValueDefaults(value);
+    value = ValueAlloc();
     value->TypeInfo = &g_TheRealTypeInfo;
     value->v.Real = real;
+    *out_value = value;
     return R_OK;
 }
 int ValueMakeObject(struct Value *value, struct TypeInfo *typeInfo, void *object, unsigned int objectSize) {
@@ -103,16 +164,18 @@ int ValueMakeObject(struct Value *value, struct TypeInfo *typeInfo, void *object
     }
     return R_OK;
 }
-int ValueMakeLLString(struct Value *value, char *cString) {
-    if (!value || !cString) {
+int ValueMakeLLString(struct Value **out_value, char *cString) {
+    struct Value *value;
+    if (!out_value || !cString) {
         return R_InvalidArgument;
     }
-    ValueDefaults(value);
+    value = ValueAlloc();
     value->TypeInfo = &g_TheStringTypeInfo;
     value->IsPassByReference = 1;
     value->v.String = malloc(sizeof *(value->v.String));
     value->v.String->CString = strdup(cString);
     value->v.String->Length = strlen(value->v.String->CString);
+    *out_value = value;
     return R_OK;
 }
 int ValueMakeFunction(struct Value *value, struct Function *function) {
@@ -147,9 +210,9 @@ char *ValueToString(struct Value *value) {
             if (&g_TheNilValue == value) {
                 return strdup("nil");
             }
-            return value->TypeInfo->TypeName;
+            return strdup(value->TypeInfo->TypeName);
         case TypeString:
-            return value->v.String->CString;
+            return strdup(value->v.String->CString);
         case TypeBoolean:
             if (&g_TheTrueValue == value) {
                 return strdup("true");

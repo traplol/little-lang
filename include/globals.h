@@ -16,5 +16,6 @@ extern struct TypeInfo g_TheBooleanTypeInfo;
 extern struct SymbolTable g_TheGlobalScope;
 
 int GlobalsInit(void);
+int GlobalsDenit(void);
 
 #endif
