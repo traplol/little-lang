@@ -1,4 +1,4 @@
-#include "../helpers/strings.h"
+#include "../helpers/strings.c"
 #include "../src/lexer.c"
 #include "../src/token.c"
 #include "../src/token_stream.c"

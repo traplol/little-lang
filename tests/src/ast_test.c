@@ -1,3 +1,5 @@
+#include "../runtime/gc.c"
+#include "../src/symbol_table.c"
 #include "../src/globals.c"
 #include "../src/type_info.c"
 #include "../src/value.c"

@@ -1,5 +1,7 @@
-#include "../src/globals.c"
 #include "../helpers/strings.c"
+#include "../runtime/gc.c"
+#include "../src/ast.c"
+#include "../src/globals.c"
 #include "../src/type_info.c"
 #include "../src/value.c"
 #include "../src/symbol_table.c"

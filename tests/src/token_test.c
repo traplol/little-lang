@@ -1,3 +1,4 @@
+#include "../helpers/strings.c"
 #include "../src/token.c"
 
 #include "c_test.h"

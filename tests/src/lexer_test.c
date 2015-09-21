@@ -1,7 +1,7 @@
+#include "../helpers/strings.c"
 #include "../src/token.c"
 #include "../src/lexer.c"
 
-#include "strings.h"
 #include "c_test.h"
 #include "test_helpers.h"
 

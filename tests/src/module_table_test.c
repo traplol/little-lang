@@ -1,3 +1,4 @@
+#include "../runtime/gc.c"
 #include "../src/globals.c"
 #include "../helpers/strings.c"
 #include "../src/type_info.c"
@@ -22,8 +23,8 @@ void alloc_things(void) {
     module = calloc(sizeof *module, 1);
 }
 void free_things(void) {
-    free(program);
-    free(imports);
+    //free(program);
+    //free(imports);
     free(module);
 }
 
