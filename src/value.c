@@ -64,6 +64,7 @@ int ValueFree(struct Value *value) {
     else if (value->IsBuiltInFn) {
         result = BuiltinFnFree(value->v.BuiltinFn);
         free(value->v.BuiltinFn);
+        return result;
     }
     else {
         switch (value->TypeInfo->Type) {

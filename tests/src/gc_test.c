@@ -13,8 +13,8 @@
    and do not need to reallocate resources between tests, however, this
    does mean that the order in which they are executed does matter. */
 
-const unsigned int MaxNumValuesAllocated = 10000;
-static unsigned int allocated = 100;
+const unsigned int MaxNumValuesAllocated = GC_CollectThreshold * 2;
+static unsigned int allocated = GC_CollectThreshold + 100;
 static struct Value **ValuesAllocated;
 
 void setup(void) {

@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 struct GC_Object {
     struct GC_Object *Prev, *Next;
@@ -12,9 +13,8 @@ struct GC_Object {
 static struct GC_Object *GC_Head;
 static struct GC_Object *GC_Tail;
 static unsigned int GC_Allocated;
-
-#define ONE_MEGABYTE (1024 * 1024)
-const unsigned int GC_CollectThreshold = 0;
+/* TODO: Proper size of memory allocated rather than number of objects. */
+const unsigned int GC_CollectThreshold = 50;
 
 int GC_Append(struct GC_Object *object) {
     if (!object) {
@@ -70,15 +70,15 @@ int GC_AllocValue(struct Value **out_value) {
     value->Count = 1;
     object->Value = value;
     result = GC_Append(object);
-    if (R_OK == result) {
-        *out_value = value;
-        return R_OK;
+    if (R_OK != result) {
+        *out_value = NULL;
+        free(value);
+        free(object);
+        return result;
     }
-    *out_value = NULL;
-    free(value);
-    free(object);
     GC_Allocated++;
-    return result;
+    *out_value = value;
+    return R_OK;
 }
 
 int GC_Collect(void) {
@@ -99,4 +99,16 @@ int GC_Collect(void) {
         object = next;
     }
     return R_OK;
+}
+
+#include "runtime/runtime_core.h"
+void GC_Dump(void) {
+    struct GC_Object *object = GC_Head;
+    struct Value *argv[1];
+    while (object) {
+        argv[0] = object->Value;
+        RT_print(1, argv);
+        printf(": Count=%d\n", object->Value->Count);
+        object = object->Next;
+    }
 }

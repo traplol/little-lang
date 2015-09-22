@@ -614,6 +614,7 @@ struct Value *InterpreterDoAssign(struct Module *module, struct Ast *ast) {
             at(ast->SrcLoc);
             return &g_TheNilValue;
         }
+        symbol->Value->Count--;
         symbol->Value = rvalue;
         return symbol->Value;
     }
