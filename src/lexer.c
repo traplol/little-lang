@@ -330,7 +330,7 @@ int LexerMake(struct Lexer *lexer, char *filename, char *code) {
         return R_InvalidArgument;
     }
     lexer->Filename = strdup(filename);
-    lexer->Code = strdup(code);
+    lexer->Code = code ? strdup(code) : NULL;
     lexer->Pos = lexer->Code;
     lexer->Length = !lexer->Code ? 0 : strlen(lexer->Code);
     lexer->CurrentLineNumber = 1;

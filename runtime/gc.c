@@ -13,6 +13,7 @@ struct GC_Object {
 static struct GC_Object *GC_Head;
 static struct GC_Object *GC_Tail;
 static unsigned int GC_Allocated;
+static int GC_Disabled;
 /* TODO: Proper size of memory allocated rather than number of objects. */
 const unsigned int GC_CollectThreshold = 50;
 
@@ -63,6 +64,10 @@ int GC_Free(struct GC_Object *object) {
 
 /************************ Public Functions *************************/
 
+void GC_Disable(void) {
+    GC_Disabled = 1;
+}
+
 int GC_AllocValue(struct Value **out_value) {
     int result;
     struct GC_Object *object = calloc(sizeof *object, 1);
@@ -83,6 +88,9 @@ int GC_AllocValue(struct Value **out_value) {
 
 int GC_Collect(void) {
     struct GC_Object *object, *next;
+    if (GC_Disabled) {
+        return R_OK;
+    }
     if (GC_Allocated < GC_CollectThreshold) {
         return R_OK;
     }

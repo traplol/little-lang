@@ -4,6 +4,7 @@
 #include "interpreter.h"
 #include "helpers/strings.h"
 #include "helpers/ast_pretty_printer.h"
+#include "runtime/gc.h"
 #include "value.h"
 #include "path_resolver.h"
 #include "result.h"
@@ -151,6 +152,7 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
     struct Value *value;
     struct Module *mod;
     char *filename, *as;
+    GC_Disable();
     llm->Lexer->REPL = llm->CmdOpts.ReplMode;
     tokenStream = calloc(sizeof *tokenStream, 1);
     if (!llm->ThisModule) {
