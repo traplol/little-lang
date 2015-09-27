@@ -24,7 +24,7 @@ Hello world!
 The little-lang REPL can also be preloaded with a program.
 
 ```
-$ cat tests/little-lang/fib.ll 
+$ cat examples/fib.ll 
 def fib(n) {
     if n < 2 {
         n
@@ -36,7 +36,7 @@ def fib(n) {
 
 println(fib(30))
 
-$ little-lang tests/little-lang/fib.ll -i
+$ little-lang examples/fib.ll -i
 832040
 011 > fib(26)
  => 121393
@@ -74,7 +74,7 @@ So far, testing has only been done with clang version 3.6.0 on Ubuntu 15.04 x86_
 $ git clone git@github.com:traplol/little-lang.git
 $ cd little-lang
 $ make
-$ ./bin/little-lang tests/little-lang/fizzbuzz.ll
+$ ./bin/little-lang examples/fizzbuzz.ll
 ```
 
 ### Builtins
