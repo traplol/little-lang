@@ -62,6 +62,7 @@ solo ```if``` expressions should be "closed" with a semicolon like:
 003 > }; # Notice this semicolon!
 yes! => nil
 ```
+*NOTE:* This is only necessary within the REPL.
 
 Expressions are separated by either a semicolon or a newline. The only type of comments
 are ```# until end of line``` comments.
