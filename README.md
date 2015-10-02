@@ -144,10 +144,10 @@ Standard ```if/else/else if``` construct.
 
 ```
 if x < y {
-	println("x is greater!")
+	println("y is greater!")
 }
 else if x > y {
-	println("y is greater!")
+	println("x is greater!")
 }
 else if x == y {
 	println("x and y are the same!")
