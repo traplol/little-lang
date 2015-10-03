@@ -62,6 +62,7 @@ solo ```if``` expressions should be "closed" with a semicolon like:
 003 > }; # Notice this semicolon!
 yes! => nil
 ```
+*NOTE:* This is only necessary within the REPL.
 
 Expressions are separated by either a semicolon or a newline. The only type of comments
 are ```# until end of line``` comments.
@@ -143,10 +144,10 @@ Standard ```if/else/else if``` construct.
 
 ```
 if x < y {
-	println("x is greater!")
+	println("y is greater!")
 }
 else if x > y {
-	println("y is greater!")
+	println("x is greater!")
 }
 else if x == y {
 	println("x and y are the same!")
