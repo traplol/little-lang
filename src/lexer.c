@@ -344,7 +344,7 @@ int LexerFree(struct Lexer *lexer) {
     if (LexerIsInvalid(lexer)) {
         return R_InvalidArgument;
     }
-    free(lexer->Filename);
+    //free(lexer->Filename); /* TODO: Handle freeing the filenames better */
     free(lexer->Code);
     return R_OK;
 }
