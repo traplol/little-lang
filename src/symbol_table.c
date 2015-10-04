@@ -71,8 +71,11 @@ int SymbolTableFree(struct SymbolTable *table) {
     return R_OK;
 }
 
+#include <stdio.h>
+static int scopeDepth = 0;
 int SymbolTablePushScope(struct SymbolTable **table) {
     struct SymbolTable *newScope;
+    printf("Push: %d\n", scopeDepth++);
     if (SymbolTableIsInvalid(*table)) {
         return R_InvalidArgument;
     }
@@ -89,6 +92,7 @@ int SymbolTablePushScope(struct SymbolTable **table) {
 
 int SymbolTablePopScope(struct SymbolTable **table) {
     struct SymbolTable *oldScope;
+    printf("Pop: %d\n", --scopeDepth);
     if (SymbolTableIsInvalid(*table)) {
         return R_InvalidArgument;
     }
@@ -115,7 +119,7 @@ int SymbolTableInsert(struct SymbolTable *table, struct Value *value, char *key,
         table->Symbols[tableIdx] = symbol;
         return R_OK;
     }
-    while (tmp) {
+    while (tmp->Next) {
         if (0 == strcmp(tmp->Key, key)) {
             return R_KeyAlreadyInTable;
         }
