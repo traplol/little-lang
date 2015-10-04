@@ -3,6 +3,8 @@
 #include "symbol_table.h"
 #include "result.h"
 
+#include <stdlib.h>
+
 #define RETURN_ON_FAIL(r)                       \
     do {                                        \
         if (R_OK != (r)) {                      \
@@ -22,7 +24,8 @@ struct TypeInfo g_TheRealTypeInfo;
 struct TypeInfo g_TheStringTypeInfo;
 struct TypeInfo g_TheBooleanTypeInfo;
 
-struct SymbolTable g_TheGlobalScope;
+struct SymbolTable *g_TheGlobalScope;
+struct SymbolTable g_TheUberScope;
 
 int GlobalsInitTypeInfos(void) {
     int result;
@@ -66,7 +69,11 @@ int GlobalsInitSingletonValues(void) {
 }
 
 int GlobalsInitGlobalScope(void) {
-    return SymbolTableMakeGlobalScope(&g_TheGlobalScope);
+    int result;
+    result = SymbolTableMakeGlobalScope(g_TheGlobalScope);
+    g_TheUberScope.Child = g_TheGlobalScope;
+    g_TheGlobalScope->Parent = &g_TheUberScope;
+    return result;
 }
 
 static int __globalValuesInitialized = 0;
@@ -93,7 +100,9 @@ int GlobalsDenit(void) {
     if (!__globalValuesInitialized) {
         return R_OperationFailed;
     }
-    result = SymbolTableFree(&g_TheGlobalScope);
+    g_TheUberScope.Child = NULL;
+    
+    result = SymbolTableFree(g_TheGlobalScope);
     RETURN_ON_FAIL(result);
 
     result = TypeInfoFree(&g_TheBaseObjectTypeInfo);

@@ -15,6 +15,7 @@ struct SymbolTable {
     struct Symbol **Symbols;
     unsigned int TableLength;
     struct SymbolTable *Parent;
+    struct SymbolTable *Child;
 };
 
 int SymbolTableMakeGlobalScope(struct SymbolTable *table);

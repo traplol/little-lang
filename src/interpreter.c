@@ -640,7 +640,7 @@ struct Value *InterpreterDoSymbol(struct Module *module, struct Ast *ast){
         value->v.Symbol = sym;
         return value;
     }
-    else if (SymbolTableFindLocal(&g_TheGlobalScope, ast->u.SymbolName, &sym)) {
+    else if (SymbolTableFindLocal(g_TheGlobalScope, ast->u.SymbolName, &sym)) {
         value->v.Symbol = sym;
         return value;
     }

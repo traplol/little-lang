@@ -1,6 +1,5 @@
 #include "symbol_table.h"
 
-#include "runtime/gc.h"
 #include "helpers/strings.h"
 
 #include "result.h"
@@ -26,7 +25,6 @@ struct Symbol *SymbolAlloc(char *key, struct Value *value, int isMutable, struct
 }
 
 void SymbolFree(struct Symbol *symbol) {
-    symbol->Value->Count--;
     free(symbol->Key);
 }
 
@@ -68,8 +66,9 @@ int SymbolTableFree(struct SymbolTable *table) {
         }
     }
     table->Parent = NULL;
+    table->Child = NULL;
     free(table->Symbols);
-    return GC_Collect();
+    return R_OK;
 }
 
 int SymbolTablePushScope(struct SymbolTable **table) {
@@ -82,8 +81,9 @@ int SymbolTablePushScope(struct SymbolTable **table) {
     newScope->TableLength = LOCAL_SCOPE_SYMBOL_TABLE_LENGTH;
     newScope->Symbols = SymbolTableAllocSymbols(newScope->TableLength);
     newScope->Parent = *table;
+    newScope->Child = NULL;
+    (*table)->Child = newScope;
     *table = newScope;
-    
     return R_OK;
 }
 
@@ -95,6 +95,7 @@ int SymbolTablePopScope(struct SymbolTable **table) {
 
     oldScope = *table;
     *table = (*table)->Parent;
+    (*table)->Child = NULL;
     SymbolTableFree(oldScope);
     free(oldScope);
     return R_OK;
