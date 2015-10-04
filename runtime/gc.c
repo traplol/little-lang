@@ -1,4 +1,5 @@
 #include "gc.h"
+#include "symbol_table.h"
 #include "result.h"
 
 #include <stdlib.h>
@@ -62,6 +63,24 @@ int GC_Free(struct GC_Object *object) {
     return result;
 }
 
+void GC_PrintObject(struct GC_Object *object) {
+    char *s;
+    if (object->Value->IsSymbol) {
+        printf("%s -> ", object->Value->v.Symbol->Key);
+    }
+    s = ValueToString(object->Value);
+    printf(": Count=%d\n", object->Value->Count);
+    free(s);
+}
+
+void GC_Dump(void) {
+    struct GC_Object *object = GC_Head;
+    while (object) {
+        GC_PrintObject(object);
+        object = object->Next;
+    }
+}
+
 /************************ Public Functions *************************/
 
 void GC_Disable(void) {
@@ -109,14 +128,3 @@ int GC_Collect(void) {
     return R_OK;
 }
 
-#include "runtime/runtime_core.h"
-void GC_Dump(void) {
-    struct GC_Object *object = GC_Head;
-    struct Value *argv[1];
-    while (object) {
-        argv[0] = object->Value;
-        RT_print(1, argv);
-        printf(": Count=%d\n", object->Value->Count);
-        object = object->Next;
-    }
-}
