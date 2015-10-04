@@ -70,6 +70,7 @@ int GlobalsInitSingletonValues(void) {
 
 int GlobalsInitGlobalScope(void) {
     int result;
+    g_TheGlobalScope = calloc(sizeof *g_TheGlobalScope, 1);
     result = SymbolTableMakeGlobalScope(g_TheGlobalScope);
     g_TheUberScope.Child = g_TheGlobalScope;
     g_TheGlobalScope->Parent = &g_TheUberScope;
