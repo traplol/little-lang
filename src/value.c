@@ -192,6 +192,7 @@ int ValueAllocLLString(struct Value **out_value, char *cString, ValueAllocator a
     value->v.String->CString = strdup(cString);
     value->v.String->Length = strlen(value->v.String->CString);
     *out_value = value;
+    return R_OK;
 }
 int ValueMakeLLStringLiteral(struct Value **out_value, char *cString) {
     return ValueAllocLLString(out_value, cString, ValueAllocNoGC);
