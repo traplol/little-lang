@@ -104,7 +104,7 @@ int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv
 int DefineFunction(struct Module *module, struct Ast *function) {
     struct Value *fn = function->u.Value;
     fn->v.Function->OwnerModule = module;
-    return SymbolTableInsert(module->ModuleScope, fn, fn->v.Function->Name, 1, function->SrcLoc);
+    return SymbolTableInsert(module->ModuleScope, fn, fn->v.Function->Name, 0, function->SrcLoc);
 }
 
 int DefineTopLevelFunctions(struct Module *module, struct Ast *functionDefs) {

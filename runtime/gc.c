@@ -1,5 +1,5 @@
 #include "gc.h"
-#include "symbol_table.h"
+#include "globals.h"
 #include "result.h"
 
 #include <stdlib.h>
@@ -16,7 +16,14 @@ static struct GC_Object *GC_Tail;
 static unsigned int GC_Allocated;
 static int GC_Disabled;
 /* TODO: Proper size of memory allocated rather than number of objects. */
-const unsigned int GC_CollectThreshold = 50;
+const unsigned int GC_CollectThreshold = 0;
+
+struct ScopeHolder {
+    struct SymbolTable *ST;
+    struct ScopeHolder *Next;
+};
+const unsigned int ScopesSize = 53;
+static struct ScopeHolder *Scopes[ScopesSize];
 
 int GC_Append(struct GC_Object *object) {
     if (!object) {
@@ -42,6 +49,10 @@ int GC_Free(struct GC_Object *object) {
     }
     prev = object->Prev;
     next = object->Next;
+    result = ValueFree(object->Value);
+    if (R_OK != result) {
+        return result;
+    }
     if (prev) {
         prev->Next = next;
     }
@@ -54,7 +65,6 @@ int GC_Free(struct GC_Object *object) {
     if (GC_Tail == object) {
         GC_Tail = prev;
     }
-    result = ValueFree(object->Value);
 #ifndef NDEBUG
     memset(object->Value, 0xff, sizeof *object->Value);
 #endif
@@ -65,11 +75,13 @@ int GC_Free(struct GC_Object *object) {
 
 void GC_PrintObject(struct GC_Object *object) {
     char *s;
-    if (object->Value->IsSymbol) {
-        printf("%s -> ", object->Value->v.Symbol->Key);
+    struct Value *v = object->Value;
+    if (v->IsSymbol) {
+        printf("%s -> ", v->v.Symbol->Key);
+        v = v->v.Symbol->Value;
     }
-    s = ValueToString(object->Value);
-    printf(": Count=%d\n", object->Value->Count);
+    s = ValueToString(v);
+    printf("%s(%s) : Visited=%d\n", v->TypeInfo->TypeName, s, object->Value->Visited);
     free(s);
 }
 
@@ -81,17 +93,93 @@ void GC_Dump(void) {
     }
 }
 
+void GC_MarkSymbols(struct Symbol *s) {
+    while (s) {
+        s->Value->Visited = 1;
+        s = s->Next;
+    }
+}
+void GC_MarkSymbolTable(struct SymbolTable *st) {
+    unsigned int i;
+    while (st) {
+        for (i = 0; i < st->TableLength; ++i) {
+            if (st->Symbols[i]) {
+                GC_MarkSymbols(st->Symbols[i]);
+            }
+        }
+        st = st->Child;
+    }
+}
+void GC_MarkScopeHolders(struct ScopeHolder *sh) {
+    while (sh) {
+        GC_MarkSymbolTable(sh->ST);
+        sh = sh->Next;
+    }
+}
+void GC_Mark(void) {
+    unsigned int i;
+    GC_MarkSymbolTable(&g_TheUberScope);
+    for (i = 0; i < ScopesSize; ++i) {
+        if (Scopes[i]) {
+            GC_MarkScopeHolders(Scopes[i]);
+        }
+    }
+}
+
+void GC_Sweep(void) {
+    struct GC_Object *object = GC_Head;
+    struct GC_Object *next;
+    while (object) {
+        next = object->Next;
+        if (!object->Value->Visited) {
+            GC_Free(object);
+            object->Prev = NULL;
+            object->Next = NULL;
+            object->Value = NULL;
+            free(object);
+        }
+        else {
+            object->Value->Visited = 0;
+        }
+        object = next;
+    }
+}
+
+struct ScopeHolder *ScopeHolderMake(struct SymbolTable *st) {
+    struct ScopeHolder *sh = calloc(sizeof *sh, 1);
+    sh->ST = st;
+    return sh;
+}
+
 /************************ Public Functions *************************/
 
 void GC_Disable(void) {
     GC_Disabled = 1;
 }
 
+int GC_RegisterSymbolTable(struct SymbolTable *st) {
+    unsigned int idx = (size_t)st % ScopesSize;
+    struct ScopeHolder *sh = Scopes[idx];
+    if (!sh) {
+        sh = ScopeHolderMake(st);
+        Scopes[idx] = sh;
+        return R_OK;;
+    }
+    while (sh->Next) {
+        if (st == sh->ST) {
+            return R_KeyAlreadyInTable;
+        }
+        sh = sh->Next;
+    }
+    sh->Next = ScopeHolderMake(st);
+    return R_OK;
+}
+
 int GC_AllocValue(struct Value **out_value) {
     int result;
     struct GC_Object *object = calloc(sizeof *object, 1);
     struct Value *value = calloc(sizeof *value, 1);
-    value->Count = 1;
+    value->Visited = 0;
     object->Value = value;
     result = GC_Append(object);
     if (R_OK != result) {
@@ -106,25 +194,14 @@ int GC_AllocValue(struct Value **out_value) {
 }
 
 int GC_Collect(void) {
-    struct GC_Object *object, *next;
     if (GC_Disabled) {
         return R_OK;
     }
     if (GC_Allocated < GC_CollectThreshold) {
         return R_OK;
     }
-    object = GC_Head;
-    while (object) {
-        next = object->Next;
-        if (0 == object->Value->Count) {
-            GC_Free(object);
-            object->Prev = NULL;
-            object->Next = NULL;
-            object->Value = NULL;
-            free(object);
-        }
-        object = next;
-    }
+    GC_Mark();
+    GC_Sweep();
     return R_OK;
 }
 

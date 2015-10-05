@@ -72,10 +72,10 @@ int SymbolTableFree(struct SymbolTable *table) {
 }
 
 #include <stdio.h>
-static int scopeDepth = 0;
+static int depth;
 int SymbolTablePushScope(struct SymbolTable **table) {
     struct SymbolTable *newScope;
-    printf("Push: %d\n", scopeDepth++);
+    printf("Push: %d\n", depth++);
     if (SymbolTableIsInvalid(*table)) {
         return R_InvalidArgument;
     }
@@ -92,7 +92,7 @@ int SymbolTablePushScope(struct SymbolTable **table) {
 
 int SymbolTablePopScope(struct SymbolTable **table) {
     struct SymbolTable *oldScope;
-    printf("Pop: %d\n", --scopeDepth);
+    printf("Pop: %d\n", --depth);
     if (SymbolTableIsInvalid(*table)) {
         return R_InvalidArgument;
     }

@@ -32,7 +32,7 @@ struct Value {
     int IsBuiltInFn;
     int IsPassByReference;
     int IsSymbol;
-    int Count;
+    int Visited;
     union {
         int Integer;
         double Real;
@@ -45,14 +45,18 @@ struct Value {
     } v;
 };
 
-struct Value *ValueAllocBlank(void);
 struct Value *ValueAlloc(void);
+struct Value *ValueAllocNoGC(void);
 int ValueFree(struct Value *value);
 
 int BuiltinFnMake(struct BuiltinFn **out_builtin_fn, char *name, unsigned int numArgs, int isVarArgs, BuiltinFnProc_t proc);
 int FunctionMake(struct Function **out_function, char *name, unsigned int numArgs, int isVarArgs, struct Ast *params, struct Ast *body);
 
 int ValueDuplicate(struct Value **out_value, struct Value *toDup);
+
+int ValueMakeIntegerLiteral(struct Value **out_value, int integer);
+int ValueMakeRealLiteral(struct Value **out_value, double real);
+int ValueMakeLLStringLiteral(struct Value **out_value, char *cString);
 
 int ValueMakeInteger(struct Value **out_value, int integer);
 int ValueMakeReal(struct Value **out_value, double real);

@@ -510,19 +510,19 @@ int ParseLiteral(struct Ast **out_ast, struct TokenStream *tokenStream) {
         default:
             goto fail_cleanup;
         case TokenIntegerConstant:
-            if (R_OK != ValueMakeInteger(&value, token->v.Integer)) {
+            if (R_OK != ValueMakeIntegerLiteral(&value, token->v.Integer)) {
                 goto fail_cleanup;
             }
             result = AstMakeInteger(out_ast, value, save->Token->SrcLoc);
             goto success;
         case TokenRealConstant:
-            if (R_OK != ValueMakeReal(&value, token->v.Real)) {
+            if (R_OK != ValueMakeRealLiteral(&value, token->v.Real)) {
                 goto fail_cleanup;
             }
             result = AstMakeReal(out_ast, value, save->Token->SrcLoc);
             goto success;
         case TokenStringLiteral:
-            if (R_OK != ValueMakeLLString(&value, token->v.String)) {
+            if (R_OK != ValueMakeLLStringLiteral(&value, token->v.String)) {
                 goto fail_cleanup;
             }
             result = AstMakeString(out_ast, value, save->Token->SrcLoc);

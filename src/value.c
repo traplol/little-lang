@@ -45,13 +45,16 @@ int LLStringFree(struct LLString *llString) {
 
 /********************* Public Functions *********************/
 
-struct Value *ValueAllocBlank(void) {
+typedef struct Value *(*ValueAllocator)(void);
+
+struct Value *ValueAlloc(void) {
     struct Value *v;
     GC_AllocValue(&v);
     return v;
 }
-struct Value *ValueAlloc(void) {
-    return ValueAllocBlank();
+struct Value *ValueAllocNoGC(void) {
+    struct Value *v = calloc(sizeof *v, 1);
+    return v;
 }
 int ValueFree(struct Value *value) {
     int result;
@@ -90,7 +93,6 @@ int ValueDuplicate(struct Value **out_value, struct Value *toDup) {
     }
     if (toDup->IsPassByReference) {
         *out_value = toDup;
-        toDup->Count++;
     }
     else {
         out = ValueAlloc();
@@ -131,27 +133,40 @@ int FunctionMake(struct Function **out_function, char *name, unsigned int numArg
     return R_OK;
 }
 
-int ValueMakeInteger(struct Value **out_value, int integer) {
+int ValueAllocInteger(struct Value **out_value, int integer, ValueAllocator allocator) {
     struct Value *value;
     if (!out_value) {
         return R_InvalidArgument;
     }
-    value = ValueAlloc();
+    value = allocator();
     value->TypeInfo = &g_TheIntegerTypeInfo;
     value->v.Integer = integer;
     *out_value = value;
     return R_OK;
 }
-int ValueMakeReal(struct Value **out_value, double real) {
+int ValueMakeIntegerLiteral(struct Value **out_value, int integer) {
+    return ValueAllocInteger(out_value, integer, ValueAllocNoGC);
+}
+int ValueMakeInteger(struct Value **out_value, int integer) {
+    return ValueAllocInteger(out_value, integer, ValueAlloc);
+}
+
+int ValueAllocReal(struct Value **out_value, double real, ValueAllocator allocator) {
     struct Value *value;
     if (!out_value) {
         return R_InvalidArgument;
     }
-    value = ValueAlloc();
+    value = allocator();
     value->TypeInfo = &g_TheRealTypeInfo;
     value->v.Real = real;
     *out_value = value;
     return R_OK;
+}
+int ValueMakeRealLiteral(struct Value **out_value, double real) {
+    return ValueAllocReal(out_value, real, ValueAllocNoGC);
+}
+int ValueMakeReal(struct Value **out_value, double real) {
+    return ValueAllocReal(out_value, real, ValueAlloc);
 }
 int ValueMakeObject(struct Value *value, struct TypeInfo *typeInfo, void *object, unsigned int objectSize) {
     if (!value || !typeInfo) {
@@ -165,19 +180,24 @@ int ValueMakeObject(struct Value *value, struct TypeInfo *typeInfo, void *object
     }
     return R_OK;
 }
-int ValueMakeLLString(struct Value **out_value, char *cString) {
+int ValueAllocLLString(struct Value **out_value, char *cString, ValueAllocator allocator) {
     struct Value *value;
     if (!out_value || !cString) {
         return R_InvalidArgument;
     }
-    value = ValueAlloc();
+    value = allocator();
     value->TypeInfo = &g_TheStringTypeInfo;
     value->IsPassByReference = 1;
     value->v.String = malloc(sizeof *(value->v.String));
     value->v.String->CString = strdup(cString);
     value->v.String->Length = strlen(value->v.String->CString);
     *out_value = value;
-    return R_OK;
+}
+int ValueMakeLLStringLiteral(struct Value **out_value, char *cString) {
+    return ValueAllocLLString(out_value, cString, ValueAllocNoGC);
+}
+int ValueMakeLLString(struct Value **out_value, char *cString) {
+    return ValueAllocLLString(out_value, cString, ValueAlloc);
 }
 int ValueMakeFunction(struct Value *value, struct Function *function) {
     if (!value || !function) {

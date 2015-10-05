@@ -614,7 +614,6 @@ struct Value *InterpreterDoAssign(struct Module *module, struct Ast *ast) {
             at(ast->SrcLoc);
             return &g_TheNilValue;
         }
-        symbol->Value->Count--;
         symbol->Value = rvalue;
         return symbol->Value;
     }
@@ -634,7 +633,7 @@ struct Value *InterpreterDoString(struct Ast *ast){
 }
 struct Value *InterpreterDoSymbol(struct Module *module, struct Ast *ast){
     struct Symbol *sym;
-    struct Value *value = ValueAllocBlank();
+    struct Value *value = ValueAlloc();
     value->IsSymbol = 1;
     if (SymbolTableFindNearest(module->CurrentScope, ast->u.SymbolName, &sym)) {
         value->v.Symbol = sym;
@@ -654,7 +653,6 @@ struct Value *InterpreterDoDefFunction(struct Module *module, struct Ast *ast){
 }
 struct Value *InterpreterDoCallBuiltinFn(struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
     struct Value *value;
-    unsigned int i;
     struct BuiltinFn *fn = function->v.BuiltinFn;
     if (argc < fn->NumArgs || (argc > fn->NumArgs && !fn->IsVarArgs)) {
         /* TODO: Throw proper error. */
@@ -666,9 +664,6 @@ struct Value *InterpreterDoCallBuiltinFn(struct Value *function, unsigned int ar
         return &g_TheNilValue;
     }
     value = function->v.BuiltinFn->Fn(argc, argv);
-    for (i = 0; i < argc; ++i) {
-        argv[i]->Count--;
-    }
     GC_Collect();
     return value;
 }
@@ -704,7 +699,9 @@ struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *fun
         DEREF_IF_SYMBOL(returnValue);
     }
     ValueDuplicate(&returnValue, returnValue);
+    returnValue->Visited = 1;
     SymbolTablePopScope(&(module->CurrentScope));
+    GC_Collect();
     return returnValue;
 }
 struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
@@ -719,7 +716,7 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
     args = ast->Children[1];
     if (args && args->NumChildren > 0) {
         argc = args->NumChildren;
-        argv = malloc(sizeof(*argv) * argc);
+        argv = malloc(sizeof(*argv) * argc); /* TODO: Free me */
         for (i = 0; i < argc; ++i) {
             arg = InterpreterRunAst(module, args->Children[i]);
             DEREF_IF_SYMBOL(arg);
@@ -864,6 +861,7 @@ int InterpreterRunProgram(struct Module *module) {
     if (!module->Program) {
         return R_OK;
     }
+    GC_RegisterSymbolTable(module->ModuleScope); /* TODO: Handle return */
     for (i = 0; i < module->Program->NumChildren; ++i) {
         InterpreterRunAst(module, module->Program->Children[i]);
     }
