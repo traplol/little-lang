@@ -16,7 +16,7 @@ static struct GC_Object *GC_Tail;
 static unsigned int GC_Allocated;
 static int GC_Disabled;
 /* TODO: Proper size of memory allocated rather than number of objects. */
-const unsigned int GC_CollectThreshold = 0;
+const unsigned int GC_CollectThreshold = 1000;
 
 struct ScopeHolder {
     struct SymbolTable *ST;
@@ -200,8 +200,10 @@ int GC_Collect(void) {
     if (GC_Allocated < GC_CollectThreshold) {
         return R_OK;
     }
+    printf("%d -> ", GC_Allocated);
     GC_Mark();
     GC_Sweep();
+    printf("%d\n", GC_Allocated);
     return R_OK;
 }
 
