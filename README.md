@@ -116,18 +116,24 @@ to the end.
 ### Constructs
 
 #### Defining variables
-All variables must be defined as either ```mut``` or ```const``` and have an initial value assigned to them. 
+All variables must be defined as either ```mut``` or ```const```.
 ```mut``` variables are mutable and can have their values and even types changed. ```const``` variables, on the 
 other hand, cannot change value or be modified.
 
-```mut``` can take a comma separated list of names and values for assignment and will fail to parse if there is
-a mismatched number of values/names.
+```mut``` takes a comma separated list of names and optionally a variable number of comma separated expressions.
 
 ```
-mut x, y, z = 1, 2, 3
+mut x, y, z = 1+1, 2+2, 3+3
+print(x, y, z)        # prints "2 4 6"
+
+mut x, y, z = 1, x+1, y+1
 print(x, y, z)        # prints "1 2 3"
 
-mut a, b, c = 4, 5    # throws an error before program execution.
+mut x, y, z = 1, 2
+print(x, y, z)        # prints "1 2 nil"
+
+mut x, y, z
+print(x, y, z)        # prints "nil nil nil"
 
 mut x, x, z = 1, 2, 3 # throws an error at runtime for trying to redeclare an existing variable.
 ```
