@@ -187,6 +187,12 @@ void printFunction(struct Ast *node) {
     body = node->u.Value->v.Function->Body;
     printNode(body);
 }
+void printClass(struct Ast *node) {
+    struct Ast *name = node->Children[0];
+    struct Ast *body = node->Children[1];
+    printf("class %s", fmtNode(name));
+    printBody(body);
+}
 void printCall(struct Ast *node) {
     struct Ast *primary = node->Children[0];
     struct Ast *args = node->Children[1];
@@ -221,10 +227,27 @@ void printReturn(struct Ast *node) {
     printf("return %s", fmtNode(node));
 }
 void printMut(struct Ast *node) {
+    unsigned int i;
+    struct Ast *symbols = node->Children[0];
+    struct Ast *values = node->Children[1];
     printf("mut ");
-    printCommaSeparated(node->Children[0]);
+    printCommaSeparated(symbols);
     printf(" = ");
-    printCommaSeparated(node->Children[1]);
+    if (!values) {
+        for (i = 0; i < symbols->NumChildren; ++i) {
+            printNil();
+            if (i + 1 < symbols->NumChildren) {
+                printf(", ");
+            }
+        }
+    }
+    else {
+        printCommaSeparated(values);
+        for (i = 0; i < symbols->NumChildren - values->NumChildren; ++i) {
+            printf(", ");
+            printNil();
+        }
+    }
 }
 void printConst(struct Ast *node) {
     printf("const ");
@@ -331,6 +354,9 @@ void printNode(struct Ast *node) {
             break;
         case ImportExpr:
             printImport(node);
+            break;
+        case ClassNode:
+            printClass(node);
             break;
         case FunctionNode:
             printFunction(node);

@@ -1,5 +1,7 @@
 class MyClass {
-    mut name, age = "Default", -1
+    mut name, age
+    mut language = "English"
+    const theAnswer = 42
 
     def New(name, age) {
         name = name
@@ -10,3 +12,4 @@ class MyClass {
         println("Hello,", name)
     }
 }
+

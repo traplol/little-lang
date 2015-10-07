@@ -26,6 +26,11 @@ struct LLString {
     char *CString;
 };
 
+struct LLVector {
+    unsigned int Length;
+    unsigned int Capacity;
+    struct Value **Values;
+};
 
 struct Value {
     struct TypeInfo *TypeInfo;

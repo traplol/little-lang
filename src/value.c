@@ -250,5 +250,4 @@ char *ValueToString(struct Value *value) {
             snprintf(buf, 80, "%f", value->v.Real);
             return strdup(buf);
     }
-    
 }

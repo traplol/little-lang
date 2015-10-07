@@ -85,6 +85,13 @@ const char *tokenStrings[Token_NUM_TOKENS] = {
         }                                                           \
     } while(0)
 
+#define EAT_TERMINATORS(ts)                                             \
+    do {                                                                \
+        while (opt_expect(TokenNewline, ts) || opt_expect(TokenSemicolon, ts)) { \
+            ;                                                           \
+        }                                                               \
+    } while (0)
+
 int opt_expect(enum TokenType type, struct TokenStream *ts) {
     int result = ts->Current->Token && ts->Current->Token->Type == type;
     if (result) {
@@ -985,20 +992,89 @@ int ParseImport(struct Ast **out_ast, struct TokenStream *tokenStream) {
  *              := <function>
  */
 int ParseClassExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    
+    int result;
+    struct Ast *expr;
+    struct Node *save;
+    SAVE(tokenStream, save);
+    result = ParseMut(&expr, tokenStream);
+    if (R_OK == result) {
+        *out_ast = expr;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    result = ParseConst(&expr, tokenStream);
+    if (R_OK == result) {
+        *out_ast = expr;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    result = ParseFunction(&expr, tokenStream);
+    if (R_OK == result) {
+        *out_ast = expr;
+        return R_OK;
+    }
+    if (check(TokenEOS, tokenStream) || /* End of stream */
+        check(TokenSemicolon, tokenStream) || /* ; */
+        check(TokenNewline, tokenStream) || /* <newline> */
+        check(TokenRightCurlyBrace, tokenStream)) { /* { */
+        *out_ast = NULL;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    return R_UnexpectedToken;
 }
 
 /* <class-body> := <class-expr>
  *              := <class-expr> <class-body>
  */
 int ParseClassBody(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    
+    int result;
+    struct Ast *body, *tmp;
+    EAT_TERMINATORS(tokenStream);
+    EXPECT(TokenLeftCurlyBrace, tokenStream);
+    EAT_TERMINATORS(tokenStream);
+    result = AstMakeBlank(&body);
+    if (R_OK != result) {
+        out_ast = NULL;
+        return result;
+    }
+    while (R_OK == (result = ParseClassExpr(&tmp, tokenStream))) {
+        AstAppendChild(body, tmp);
+        if (check(TokenRightCurlyBrace, tokenStream)) {
+            break;
+        }
+        if (check(TokenEOS, tokenStream)) {
+            break;
+        }
+        EXPECT_EITHER(TokenSemicolon, TokenNewline, tokenStream);
+    }
+    EXPECT(TokenRightCurlyBrace, tokenStream);
+    *out_ast = body;
+    return R_OK;
 }
 
 /* <class> := class <identifier> { <class-body> } */
 int ParseClass(struct Ast **out_ast, struct TokenStream *tokenStream) {
-    struct Ast *class;
+    int result;
+    struct Ast *class, *body;
+    char *className;
+    struct Node *save;
+    SAVE(tokenStream, save);
     EXPECT_NO_MSG(TokenClass, tokenStream);
+    className = tokenStream->Current->Token->TokenStr;
+    EXPECT(TokenIdentifer, tokenStream);
+    result = ParseClassBody(&body, tokenStream);
+    if (R_OK != result) {
+        *out_ast = NULL;
+        return result;
+    }
+    result = AstMakeClass(&class, className, body, save->Token->SrcLoc);
+    if (R_OK != result) {
+        *out_ast = NULL;
+        return result;
+    }
+    *out_ast = class;
+    return R_OK;
 }
 
 /*
@@ -1022,12 +1098,12 @@ int ParseTokenStream(struct ParsedTrees *parsedTrees, struct TokenStream *tokenS
             continue;
         }
         RESTORE(tokenStream, tryImport);
-        //result = ParseClass(&tmp, tokenStream);
-        //if (R_OK == result) {
-        //AstAppendChild(classes, tmp);
-        //continue;
-        //}
-        //RESTORE(tokenStream, tryImport);
+        result = ParseClass(&tmp, tokenStream);
+        if (R_OK == result) {
+            AstAppendChild(classes, tmp);
+            continue;
+        }
+        RESTORE(tokenStream, tryImport);
         result = ParseStmt(&tmp, tokenStream);
         if (!check(TokenEOS, tokenStream)) {
             EXPECT_EITHER(TokenSemicolon, TokenNewline, tokenStream);
@@ -1060,6 +1136,11 @@ int ParseThing(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     struct Ast *out;
     result = ParseImport(&out, tokenStream);
+    if (R_OK == result) {
+        *out_ast = out;
+        return R_OK;
+    }
+    result = ParseClass(&out, tokenStream);
     if (R_OK == result) {
         *out_ast = out;
         return R_OK;

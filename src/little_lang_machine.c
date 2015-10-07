@@ -279,6 +279,17 @@ int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, s
         return R_FileNotFound;
     }
     result = ParseProgramTrees(absPath, &programTrees);
+    if (llm->CmdOpts.PrettyPrintAst) {
+        printf("Imports:\n");
+        AstPrettyPrint(programTrees->Imports);
+        printf("\nClass definitions:\n");
+        AstPrettyPrint(programTrees->Classes);
+        printf("\nFunction definitions:\n");
+        AstPrettyPrint(programTrees->TopLevelFunctions);
+        printf("\nProgram:\n");
+        AstPrettyPrint(programTrees->Program);
+        printf("\n\n");
+    }
     if (R_OK != result) {
         goto cleanup;
     }
@@ -376,15 +387,6 @@ int LittleLangMachineRun(struct LittleLangMachine *llm) {
     }
     if (llm->CmdOpts.ReplMode) {
         LittleLangMachineREPLMode(llm);
-    }
-    if (llm->CmdOpts.PrettyPrintAst) {
-        // printf("Imports:\n");
-        // AstPrettyPrint(parsedTrees->Imports);
-        // printf("\nFunction definitions:\n");
-        // AstPrettyPrint(parsedTrees->TopLevelFunctions);
-        printf("\nProgram:\n");
-        AstPrettyPrint(llm->ThisModule->Program);
-        printf("\n\n");
     }
     return result;
 }
