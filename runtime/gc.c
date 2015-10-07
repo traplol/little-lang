@@ -22,8 +22,9 @@ struct ScopeHolder {
     struct SymbolTable *ST;
     struct ScopeHolder *Next;
 };
-const unsigned int ScopesSize = 53;
-static struct ScopeHolder *Scopes[ScopesSize];
+#define SCOPE_SIZE 53U
+const unsigned int ScopesSize = SCOPE_SIZE;
+static struct ScopeHolder *Scopes[SCOPE_SIZE];
 
 int GC_Append(struct GC_Object *object) {
     if (!object) {
