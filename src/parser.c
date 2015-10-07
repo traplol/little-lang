@@ -324,7 +324,9 @@ int ParseCommaSeparatedExprs(struct Ast **out_ast, struct TokenStream *tokenStre
     
 }
 
-/* <mut-expr> := mut <comma-separated-identifiers> = <comma-separated-exprs> */
+/* <mut-expr> := mut <comma-separated-identifiers> = <comma-separated-exprs>
+ *            := mut <comma-separated-identifiers>
+ */
 int ParseMut(struct Ast **out_ast, struct TokenStream *tokenStream) {
     /* TODO: Validate 'mut-expr' */
     int result;
@@ -333,9 +335,12 @@ int ParseMut(struct Ast **out_ast, struct TokenStream *tokenStream) {
     SAVE(tokenStream, save);
     EXPECT_NO_MSG(TokenMut, tokenStream);
     result = ParseCommaSeparatedIdentifiers(&names, tokenStream);
-    EXPECT(TokenEquals, tokenStream);
-    result = ParseCommaSeparatedExprs(&exprs, tokenStream);
-    return AstMakeMut(out_ast, names, exprs, save->Token->SrcLoc);
+    if (check(TokenEquals, tokenStream)) {
+        EXPECT(TokenEquals, tokenStream);
+        result = ParseCommaSeparatedExprs(&exprs, tokenStream);
+        return AstMakeMut(out_ast, names, exprs, save->Token->SrcLoc);
+    }
+    return AstMakeMut(out_ast, names, NULL, save->Token->SrcLoc);
 }
 
 /* <for> := for <expr> ; <expr> ; <expr> { <stmt-list> } */
@@ -496,7 +501,6 @@ int ParsePostfix(struct Ast **out_ast, struct TokenStream *tokenStream) {
     *out_ast = tmp;
     return R_OK;
 }
-
 /*
  * <literal>
  */
@@ -976,6 +980,27 @@ int ParseImport(struct Ast **out_ast, struct TokenStream *tokenStream) {
     return AstMakeImport(out_ast, modName, as, save->Token->SrcLoc);
 }
 
+/* <class-expr> := <mut-expr>
+ *              := <const-expr>
+ *              := <function>
+ */
+int ParseClassExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    
+}
+
+/* <class-body> := <class-expr>
+ *              := <class-expr> <class-body>
+ */
+int ParseClassBody(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    
+}
+
+/* <class> := class <identifier> { <class-body> } */
+int ParseClass(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    struct Ast *class;
+    EXPECT_NO_MSG(TokenClass, tokenStream);
+}
+
 /*
  * <program> := <stmt-list>
  *           := <import>
@@ -983,8 +1008,9 @@ int ParseImport(struct Ast **out_ast, struct TokenStream *tokenStream) {
 int ParseTokenStream(struct ParsedTrees *parsedTrees, struct TokenStream *tokenStream) {
     int result;
     struct Node *save, *tryImport;
-    struct Ast *imports, *functionDefs, *program, *tmp;
+    struct Ast *imports, *classes, *functionDefs, *program, *tmp;
     AstMakeBlank(&imports);
+    AstMakeBlank(&classes);
     AstMakeBlank(&functionDefs);
     AstMakeBlank(&program);
     SAVE(tokenStream, save);
@@ -996,6 +1022,12 @@ int ParseTokenStream(struct ParsedTrees *parsedTrees, struct TokenStream *tokenS
             continue;
         }
         RESTORE(tokenStream, tryImport);
+        //result = ParseClass(&tmp, tokenStream);
+        //if (R_OK == result) {
+        //AstAppendChild(classes, tmp);
+        //continue;
+        //}
+        //RESTORE(tokenStream, tryImport);
         result = ParseStmt(&tmp, tokenStream);
         if (!check(TokenEOS, tokenStream)) {
             EXPECT_EITHER(TokenSemicolon, TokenNewline, tokenStream);
@@ -1013,6 +1045,7 @@ int ParseTokenStream(struct ParsedTrees *parsedTrees, struct TokenStream *tokenS
         }
     }
     parsedTrees->Imports = imports;
+    parsedTrees->Classes = classes;
     parsedTrees->TopLevelFunctions = functionDefs;
     parsedTrees->Program = program;
     return R_OK;

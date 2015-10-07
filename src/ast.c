@@ -256,13 +256,10 @@ int AstMakeReturn(struct Ast **out_ast, struct Ast *value, struct SrcLoc srcLoc)
 }
 int AstMakeMut(struct Ast **out_ast, struct Ast *names, struct Ast *values, struct SrcLoc srcLoc) {
     struct Ast *ast;
-    if (!out_ast || !names || !values) {
+    if (!out_ast || !names) {
         return R_InvalidArgument;
     }
-    if (0 == names->NumChildren || 0 == values->NumChildren) {
-        return R_InvalidArgument;
-    }
-    if (names->NumChildren != values->NumChildren) {
+    if (0 == names->NumChildren) {
         return R_InvalidArgument;
     }
     ast = AstAlloc(2);

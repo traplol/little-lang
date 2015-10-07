@@ -777,6 +777,13 @@ struct Value *InterpreterDoMut(struct Module *module, struct Ast *ast) {
     struct Value *value;
     names = ast->Children[0];
     values = ast->Children[1];
+
+    if (values && values->NumChildren > names->NumChildren) {
+        printf("Too many values in 'mut' statement");
+        at(ast->SrcLoc);
+        return &g_TheNilValue;
+    }
+
     for (i = 0; i < names->NumChildren; ++i) {
         curName = names->Children[i];
         if (SymbolTableFindNearest(module->CurrentScope, curName->u.SymbolName, &symbol)) {
@@ -784,8 +791,13 @@ struct Value *InterpreterDoMut(struct Module *module, struct Ast *ast) {
             at(symbol->SrcLoc);
             return &g_TheNilValue;
         }
-        value = InterpreterRunAst(module, values->Children[i]);
-        DEREF_IF_SYMBOL(value);
+        if (!values || i >= values->NumChildren) {
+            value = &g_TheNilValue;
+        }
+        else {
+            value = InterpreterRunAst(module, values->Children[i]);
+            DEREF_IF_SYMBOL(value);
+        }
         SymbolTableInsert(module->CurrentScope, value, curName->u.SymbolName, 1, curName->SrcLoc);
     }
     return &g_TheNilValue;
