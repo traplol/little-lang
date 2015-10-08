@@ -6,6 +6,8 @@
 
 #include "result.h"
 
+#include <string.h>
+
 static struct SrcLoc srcLoc = {"string.c", -1, -1};
 
 static struct Value *rt_String__add__(unsigned int argc, struct Value **argv) {
@@ -27,12 +29,10 @@ static struct Value *rt_String__eq__(unsigned int argc, struct Value **argv) {
     }
     l = self->v.String->CString;
     r = other->v.String->CString;
-    for (; *l && *r; ++l, ++r) {
-        if (*l != *r) {
-            return &g_TheFalseValue;
-        }
+    if (0 == strcmp(l, r)) {
+        return &g_TheTrueValue;
     }
-    return &g_TheTrueValue;
+    return &g_TheFalseValue;
 }
 static struct Value *rt_String__str__(unsigned int argc, struct Value **argv) {
     struct Value *out, *self = argv[0];
