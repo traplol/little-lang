@@ -19,6 +19,7 @@ struct SymbolTable {
 };
 
 int SymbolTableMakeGlobalScope(struct SymbolTable *table);
+int SymbolTableMake(struct SymbolTable *table);
 int SymbolTableFree(struct SymbolTable *table);
 
 int SymbolTablePushScope(struct SymbolTable **table);

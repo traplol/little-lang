@@ -1,4 +1,5 @@
 #include "type_info.h"
+#include "value.h"
 #include "helpers/strings.h"
 #include "result.h"
 
@@ -42,6 +43,7 @@ int TypeInfoMemberFree(struct Member *member) {
 
 int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeInfo *derivedFrom, char *typeName) {
     unsigned int size;
+    struct SymbolTable *methodTable;
     if (!typeInfo || !typeName || typeInfo == derivedFrom) {
         return R_InvalidArgument;
     }
@@ -62,6 +64,9 @@ int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeI
     if (!typeInfo->Members) {
         return R_AllocFailed;
     }
+    methodTable = calloc(sizeof *methodTable, 1);
+    SymbolTableMake(methodTable);
+    typeInfo->MethodTable = methodTable;
     typeInfo->MembersLen = MEMBERS_BASE_LENGTH;
     typeInfo->CurrentMemberIdx = 0;
     return R_OK;
@@ -81,6 +86,23 @@ int TypeInfoFree(struct TypeInfo *typeInfo) {
     return R_OK;
 }
 
+int TypeInfoInsertMethod(struct TypeInfo *typeInfo, struct Value *method, struct SrcLoc srcLoc) {
+    char *name;
+    if (!typeInfo || !method) {
+        return R_InvalidArgument;
+    }
+    if (TypeFunction != method->TypeInfo->Type) {
+        return R_InvalidArgument;
+    }
+    if (method->IsBuiltInFn) {
+        name = method->v.BuiltinFn->Name;
+    }
+    else {
+        name = method->v.Function->Name;
+    }
+    /* TODO: Maybe this shouldn't be mutable */
+    return SymbolTableAssign(typeInfo->MethodTable, method, name, 1, srcLoc);
+}
 int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo *memberTypeInfo) {
     struct Member *member;
     int result;
@@ -126,4 +148,18 @@ int TypeInfoLookupMember(struct TypeInfo *typeInfo, char *name, struct Member **
         *out_member = temp;
     }
     return R_True;
+}
+
+int TypeInfoLookupMethod(struct TypeInfo *typeInfo, char *methodName, struct Value **out_method) {
+    struct Symbol *out;
+    if (!typeInfo || !methodName || !out_method) {
+        return R_InvalidArgument;
+    }
+    SymbolTableFindLocal(typeInfo->MethodTable, methodName, &out);
+    if (!out) {
+        *out_method = NULL;
+        return R_MethodNotFound;
+    }
+    *out_method = out->Value;
+    return R_OK;
 }

@@ -138,7 +138,7 @@ TEST(AstMakeMut) {
     assert_eq(R_OK, AstMakeMut(&ast, tmp1, tmp2, srcLoc), "AstMakeMut failed.");
     free(ast->Children); free(ast);
 
-    assert_eq(R_InvalidArgument, AstMakeMut(&ast, tmp1, ast2, srcLoc), "AstMakeMut should fail when either arg has no children");
+    assert_eq(R_InvalidArgument, AstMakeMut(&ast, tmp1, ast2, srcLoc), "AstMakeMut should fail when names has no children");
     assert_eq(R_InvalidArgument, AstMakeMut(&ast, ast1, tmp2, srcLoc), "AstMakeMut should fail when either arg has no children");
 
     AstAppendChild(tmp2, ast2);

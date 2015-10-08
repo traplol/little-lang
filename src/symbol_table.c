@@ -8,7 +8,7 @@
 #include <string.h>
 
 #define GLOBAL_SCOPE_SYMBOL_TABLE_LENGTH 769U  /* ~0.13% collision rate */
-#define LOCAL_SCOPE_SYMBOL_TABLE_LENGTH 53U    /* ~10.4% collision rate */
+#define DEFAULT_SYMBOL_TABLE_LENGTH 53U    /* ~10.4% collision rate */
 
 /****************** Helpers *******************/
 struct Symbol **SymbolTableAllocSymbols(unsigned int len) {
@@ -42,6 +42,10 @@ unsigned int SymbolTableGetIdx(struct SymbolTable *table, char *key) {
 
 /****************** Public Functions *******************/
 
+/* TODO: At some point we should make a structure called ScopeTable that holds
+   on to the `Parent' and `Child' scopes, rather than having them a part of 
+   the `SymbolTable' structure. */
+
 int SymbolTableMakeGlobalScope(struct SymbolTable *table) {
     if (!table) {
         return R_InvalidArgument;
@@ -49,6 +53,18 @@ int SymbolTableMakeGlobalScope(struct SymbolTable *table) {
     table->TableLength = GLOBAL_SCOPE_SYMBOL_TABLE_LENGTH;
     table->Symbols = SymbolTableAllocSymbols(table->TableLength);
     table->Parent = NULL;
+    table->Child = NULL;
+    return R_OK;
+}
+
+int SymbolTableMake(struct SymbolTable *table) {
+    if (!table) {
+        return R_InvalidArgument;
+    }
+    table->TableLength = DEFAULT_SYMBOL_TABLE_LENGTH;
+    table->Symbols = SymbolTableAllocSymbols(table->TableLength);
+    table->Parent = NULL;
+    table->Child = NULL;
     return R_OK;
 }
 
@@ -78,10 +94,8 @@ int SymbolTablePushScope(struct SymbolTable **table) {
     }
 
     newScope = malloc(sizeof *newScope);
-    newScope->TableLength = LOCAL_SCOPE_SYMBOL_TABLE_LENGTH;
-    newScope->Symbols = SymbolTableAllocSymbols(newScope->TableLength);
+    SymbolTableMake(newScope);
     newScope->Parent = *table;
-    newScope->Child = NULL;
     (*table)->Child = newScope;
     *table = newScope;
     return R_OK;
@@ -147,6 +161,7 @@ int SymbolTableFindLocal(struct SymbolTable *table, char *key, struct Symbol **o
     tableIdx = SymbolTableGetIdx(table, key);
     symbol = table->Symbols[tableIdx];
     if (!symbol) {
+        *out_symbol = NULL;
         return R_False;
     }
 
@@ -175,6 +190,7 @@ int SymbolTableFindNearest(struct SymbolTable *table, char *key, struct Symbol *
         table = table->Parent;
     }
     if (!symbol) {
+        *out_symbol = NULL;
         return R_False;
     }
     if (out_symbol) {

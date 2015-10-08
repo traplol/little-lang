@@ -16,6 +16,7 @@
 #define R_EndOfTokenStream      8
 #define R_FileNotFound          9
 #define R_OutOfMemory           10
+#define R_MethodNotFound        11
 
 
 #endif

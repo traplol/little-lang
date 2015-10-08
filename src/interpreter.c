@@ -61,6 +61,49 @@ struct Value *InterpreterDoBoolean(struct Ast *ast);
 struct Value *InterpreterDoReal(struct Ast *ast);
 struct Value *InterpreterDoInteger(struct Ast *ast);
 struct Value *InterpreterDoString(struct Ast *ast);
+struct Value *InterpreterDoCallBuiltinFn(struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc);
+struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc);
+
+static inline struct Value *DispatchBinaryOperationMethod(struct Module *module, struct Ast *ast, char *methodName) {
+    struct Value *lhs, *rhs, *method;
+    struct Value *argv[2];
+    lhs = InterpreterRunAst(module, ast->Children[0]);
+    DEREF_IF_SYMBOL(lhs);
+    rhs = InterpreterRunAst(module, ast->Children[1]);
+    DEREF_IF_SYMBOL(rhs);
+    TypeInfoLookupMethod(lhs->TypeInfo, methodName, &method);
+    if (!method) {
+        printf("Method '%s' not implemented for type of '%s'\n",
+               methodName,
+               lhs->TypeInfo->TypeName);
+        return &g_TheNilValue;
+    }
+    argv[0] = lhs;
+    argv[1] = rhs;
+    if (method->IsBuiltInFn) {
+        return InterpreterDoCallBuiltinFn(method, 2, argv, ast->SrcLoc);
+    }
+    return InterpreterDoCallFunction(module, method, 2, argv, ast->SrcLoc);
+}
+
+static inline struct Value *DispatchPrefixUnaryOperationMethod(struct Module *module, struct Ast *ast, char *methodName) {
+    struct Value *rhs, *method;
+    struct Value *argv[1];
+    rhs = InterpreterRunAst(module, ast->Children[0]);
+    DEREF_IF_SYMBOL(rhs);
+    TypeInfoLookupMethod(rhs->TypeInfo, methodName, &method);
+    if (!method) {
+        printf("Method '%s' not implemented for type of '%s'\n",
+               methodName,
+               rhs->TypeInfo->TypeName);
+        return &g_TheNilValue;
+    }
+    argv[0] = rhs;
+    if (method->IsBuiltInFn) {
+        return InterpreterDoCallBuiltinFn(method, 1, argv, ast->SrcLoc);
+    }
+    return InterpreterDoCallFunction(module, method, 1, argv, ast->SrcLoc);
+}
 
 /* Function definitions */
 struct Value *InterpreterDoBody(struct Module *module, struct Ast *ast) {
@@ -72,287 +115,37 @@ struct Value *InterpreterDoBody(struct Module *module, struct Ast *ast) {
     return value;
 }
 struct Value *InterpreterDoAdd(struct Module *module, struct Ast *ast) {
-    struct Value *lhs;
-    struct Value *rhs;
-    struct Value *value;
-    int isReal;
-    union {
-        int Integer;
-        double Real;
-    } result;
-    enum TypeInfoType lhsType;
-    enum TypeInfoType rhsType;
-    lhs = InterpreterRunAst(module, ast->Children[0]);
-    DEREF_IF_SYMBOL(lhs);
-    rhs = InterpreterRunAst(module, ast->Children[1]);
-    DEREF_IF_SYMBOL(rhs);
-    lhsType = lhs->TypeInfo->Type;
-    rhsType = rhs->TypeInfo->Type;
-    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
-        goto numeric_types;
-    }
-    else {
-        goto non_numeric_types;
-    }
-
-numeric_types:
-    if (TypeReal == lhsType && lhsType == rhsType) {
-        isReal = 1;
-        result.Real = lhs->v.Real + rhs->v.Real;
-    }
-    else if (TypeInteger == lhsType && lhsType == rhsType) {
-        isReal = 0;
-        result.Integer = lhs->v.Integer + rhs->v.Integer;
-    }
-    else if (TypeInteger == lhsType && TypeReal == rhsType){
-        isReal = 1;
-        result.Real = lhs->v.Integer + rhs->v.Real;
-    }
-    else { /* TypeReal == lhsType && TypeInteger == rhsType */
-        isReal = 1;
-        result.Real = lhs->v.Real + rhs->v.Integer;
-    }
-
-    if (isReal) {
-        ValueMakeReal(&value, result.Real);
-    }
-    else {
-        ValueMakeInteger(&value, result.Integer);
-    }
-    return value;
-
-non_numeric_types:
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__add__");
 }
 struct Value *InterpreterDoSub(struct Module *module, struct Ast *ast) {
-    struct Value *lhs;
-    struct Value *rhs;
-    struct Value *value;
-    int isReal;
-    union {
-        int Integer;
-        double Real;
-    } result;
-    enum TypeInfoType lhsType;
-    enum TypeInfoType rhsType;
-    lhs = InterpreterRunAst(module, ast->Children[0]);
-    DEREF_IF_SYMBOL(lhs);
-    rhs = InterpreterRunAst(module, ast->Children[1]);
-    DEREF_IF_SYMBOL(rhs);
-    lhsType = lhs->TypeInfo->Type;
-    rhsType = rhs->TypeInfo->Type;
-    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
-        goto numeric_types;
-    }
-    else {
-        goto non_numeric_types;
-    }
-
-numeric_types:
-    if (TypeReal == lhsType && lhsType == rhsType) {
-        isReal = 1;
-        result.Real = lhs->v.Real - rhs->v.Real;
-    }
-    else if (TypeInteger == lhsType && lhsType == rhsType) {
-        isReal = 0;
-        result.Integer = lhs->v.Integer - rhs->v.Integer;
-    }
-    else if (TypeInteger == lhsType && TypeReal == rhsType){
-        isReal = 1;
-        result.Real = lhs->v.Integer - rhs->v.Real;
-    }
-    else { /* TypeReal == lhsType && TypeInteger == rhsType */
-        isReal = 1;
-        result.Real = lhs->v.Real - rhs->v.Integer;
-    }
-
-    if (isReal) {
-        ValueMakeReal(&value, result.Real);
-    }
-    else {
-        ValueMakeInteger(&value, result.Integer);
-    }
-    return value;
-
-non_numeric_types:
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__sub__");
 }
 struct Value *InterpreterDoMul(struct Module *module, struct Ast *ast) {
-    struct Value *lhs;
-    struct Value *rhs;
-    struct Value *value;
-    int isReal;
-    union {
-        int Integer;
-        double Real;
-    } result;
-    enum TypeInfoType lhsType;
-    enum TypeInfoType rhsType;
-    lhs = InterpreterRunAst(module, ast->Children[0]);
-    DEREF_IF_SYMBOL(lhs);
-    rhs = InterpreterRunAst(module, ast->Children[1]);
-    DEREF_IF_SYMBOL(rhs);
-    lhsType = lhs->TypeInfo->Type;
-    rhsType = rhs->TypeInfo->Type;
-    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
-        goto numeric_types;
-    }
-    else {
-        goto non_numeric_types;
-    }
-
-numeric_types:
-    if (TypeReal == lhsType && lhsType == rhsType) {
-        isReal = 1;
-        result.Real = lhs->v.Real * rhs->v.Real;
-    }
-    else if (TypeInteger == lhsType && lhsType == rhsType) {
-        isReal = 0;
-        result.Integer = lhs->v.Integer * rhs->v.Integer;
-    }
-    else if (TypeInteger == lhsType && TypeReal == rhsType){
-        isReal = 1;
-        result.Real = lhs->v.Integer * rhs->v.Real;
-    }
-    else { /* TypeReal == lhsType && TypeInteger == rhsType */
-        isReal = 1;
-        result.Real = lhs->v.Real * rhs->v.Integer;
-    }
-
-    if (isReal) {
-        ValueMakeReal(&value, result.Real);
-    }
-    else {
-        ValueMakeInteger(&value, result.Integer);
-    }
-    return value;
-
-non_numeric_types:
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__mul__");
 }
 struct Value *InterpreterDoDiv(struct Module *module, struct Ast *ast) {
-    struct Value *lhs;
-    struct Value *rhs;
-    struct Value *value;
-    int isReal;
-    union {
-        int Integer;
-        double Real;
-    } result;
-    enum TypeInfoType lhsType;
-    enum TypeInfoType rhsType;
-    lhs = InterpreterRunAst(module, ast->Children[0]);
-    DEREF_IF_SYMBOL(lhs);
-    rhs = InterpreterRunAst(module, ast->Children[1]);
-    DEREF_IF_SYMBOL(rhs);
-    lhsType = lhs->TypeInfo->Type;
-    rhsType = rhs->TypeInfo->Type;
-    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
-        goto numeric_types;
-    }
-    else {
-        goto non_numeric_types;
-    }
-
-numeric_types:
-    if (TypeReal == lhsType && lhsType == rhsType) {
-        isReal = 1;
-        result.Real = lhs->v.Real / rhs->v.Real;
-    }
-    else if (TypeInteger == lhsType && lhsType == rhsType) {
-        isReal = 0;
-        result.Integer = lhs->v.Integer / rhs->v.Integer;
-    }
-    else if (TypeInteger == lhsType && TypeReal == rhsType){
-        isReal = 1;
-        result.Real = lhs->v.Integer / rhs->v.Real;
-    }
-    else { /* TypeReal == lhsType && TypeInteger == rhsType */
-        isReal = 1;
-        result.Real = lhs->v.Real / rhs->v.Integer;
-    }
-
-    if (isReal) {
-        ValueMakeReal(&value, result.Real);
-    }
-    else {
-        ValueMakeInteger(&value, result.Integer);
-    }
-    return value;
-
-non_numeric_types:
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__div__");
 }
 struct Value *InterpreterDoMod(struct Module *module, struct Ast *ast) {
-    struct Value *lhs;
-    struct Value *rhs;
-    struct Value *value;
-    int isReal;
-    union {
-        int Integer;
-        double Real;
-    } result;
-    enum TypeInfoType lhsType;
-    enum TypeInfoType rhsType;
-    lhs = InterpreterRunAst(module, ast->Children[0]);
-    DEREF_IF_SYMBOL(lhs);
-    rhs = InterpreterRunAst(module, ast->Children[1]);
-    DEREF_IF_SYMBOL(rhs);
-    lhsType = lhs->TypeInfo->Type;
-    rhsType = rhs->TypeInfo->Type;
-    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
-        goto numeric_types;
-    }
-    else {
-        goto non_numeric_types;
-    }
-
-numeric_types:
-    if (TypeReal == lhsType && lhsType == rhsType) {
-        isReal = 1;
-        result.Real = fmod(lhs->v.Real, rhs->v.Real);
-    }
-    else if (TypeInteger == lhsType && lhsType == rhsType) {
-        isReal = 0;
-        result.Integer = lhs->v.Integer % rhs->v.Integer;
-    }
-    else if (TypeInteger == lhsType && TypeReal == rhsType){
-        isReal = 1;
-        result.Real = fmod(lhs->v.Integer, rhs->v.Real);
-    }
-    else { /* TypeReal == lhsType && TypeInteger == rhsType */
-        isReal = 1;
-        result.Real = fmod(lhs->v.Real, rhs->v.Integer);
-    }
-
-    if (isReal) {
-        ValueMakeReal(&value, result.Real);
-    }
-    else {
-        ValueMakeInteger(&value, result.Integer);
-    }
-    return value;
-
-non_numeric_types:
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__mod__");
 }
 struct Value *InterpreterDoPow(struct Module *module, struct Ast *ast) {
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__pow__");
 }
 struct Value *InterpreterDoLShift(struct Module *module, struct Ast *ast) {
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__lshift__");
 }
 struct Value *InterpreterDoRShift(struct Module *module, struct Ast *ast) {
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__rshift__");
 }
 struct Value *InterpreterDoArithOr(struct Module *module, struct Ast *ast) {
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__or__");
 }
 struct Value *InterpreterDoArithAnd(struct Module *module, struct Ast *ast) {
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__and__");
 }
 struct Value *InterpreterDoXorExpr(struct Module *module, struct Ast *ast) {
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__xor__");
 }
 struct Value *InterpreterDoLogicOr(struct Module *module, struct Ast *ast) {
     struct Value *lhs, *rhs;
@@ -391,46 +184,7 @@ struct Value *InterpreterDoLogicAnd(struct Module *module, struct Ast *ast) {
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoLogicEq(struct Module *module, struct Ast *ast) {
-    int result;
-    struct Value *lhs;
-    struct Value *rhs;
-    double epsilon = 1.11e-16; /* TODO: get rid of this magic number. */
-    enum TypeInfoType lhsType;
-    enum TypeInfoType rhsType;
-    lhs = InterpreterRunAst(module, ast->Children[0]);
-    DEREF_IF_SYMBOL(lhs);
-    rhs = InterpreterRunAst(module, ast->Children[1]);
-    DEREF_IF_SYMBOL(rhs);
-    lhsType = lhs->TypeInfo->Type;
-    rhsType = rhs->TypeInfo->Type;
-    
-    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
-        goto numeric_types;
-    }
-    else {
-        goto non_numeric_types;
-    }
-
-numeric_types:
-    if (TypeReal == lhsType && lhsType == rhsType) {
-        result = fabs(lhs->v.Real - rhs->v.Real) < epsilon;
-    }
-    else if (TypeInteger == lhsType && lhsType == rhsType) {
-        result = lhs->v.Integer == rhs->v.Integer;
-    }
-    else if (TypeInteger == lhsType && TypeReal == rhsType){
-        result = fabs(lhs->v.Integer - rhs->v.Real) < epsilon;
-    }
-    else { /* TypeReal == lhsType && TypeInteger == rhsType */
-        result = fabs(lhs->v.Real - rhs->v.Integer) < epsilon;
-    }
-    return TO_BOOLEAN(result);
-
-non_numeric_types:
-    if (lhs == rhs) {
-        return &g_TheTrueValue;
-    }
-    return &g_TheFalseValue;
+    return DispatchBinaryOperationMethod(module, ast, "__eq__");
 }
 struct Value *InterpreterDoLogicNotEq(struct Module *module, struct Ast *ast) {
     struct Value *value = InterpreterDoLogicEq(module, ast);
@@ -444,182 +198,38 @@ struct Value *InterpreterDoLogicNotEq(struct Module *module, struct Ast *ast) {
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoLogicLt(struct Module *module, struct Ast *ast) {
-    int result;
-    struct Value *lhs;
-    struct Value *rhs;
-    enum TypeInfoType lhsType;
-    enum TypeInfoType rhsType;
-    lhs = InterpreterRunAst(module, ast->Children[0]);
-    DEREF_IF_SYMBOL(lhs);
-    rhs = InterpreterRunAst(module, ast->Children[1]);
-    DEREF_IF_SYMBOL(rhs);
-    lhsType = lhs->TypeInfo->Type;
-    rhsType = rhs->TypeInfo->Type;
-    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
-        goto numeric_types;
+    return DispatchBinaryOperationMethod(module, ast, "__lt__");
+}
+struct Value *InterpreterDoLogicLtEq(struct Module *module, struct Ast *ast) {
+    struct Value *eq, *lt = InterpreterDoLogicLt(module, ast);
+    if (&g_TheTrueValue == lt) {
+        return &g_TheTrueValue;
     }
-    else {
-        goto non_numeric_types;
-    }
-
-numeric_types:
-    if (TypeReal == lhsType && lhsType == rhsType) {
-        result = lhs->v.Real < rhs->v.Real;
-    }
-    else if (TypeInteger == lhsType && lhsType == rhsType) {
-        result = lhs->v.Integer < rhs->v.Integer;
-    }
-    else if (TypeInteger == lhsType && TypeReal == rhsType){
-        result = lhs->v.Integer < rhs->v.Real;
-    }
-    else { /* TypeReal == lhsType && TypeInteger == rhsType */
-        result = lhs->v.Real < rhs->v.Integer;
-    }
-    return TO_BOOLEAN(result);
-
-non_numeric_types:
-    if (lhs != rhs) {
+    eq = InterpreterDoLogicLt(module, ast);
+    if (&g_TheTrueValue == eq) {
         return &g_TheTrueValue;
     }
     return &g_TheFalseValue;
 }
-struct Value *InterpreterDoLogicLtEq(struct Module *module, struct Ast *ast) {
-    int result;
-    struct Value *lhs;
-    struct Value *rhs;
-    enum TypeInfoType lhsType;
-    enum TypeInfoType rhsType;
-    lhs = InterpreterRunAst(module, ast->Children[0]);
-    DEREF_IF_SYMBOL(lhs);
-    rhs = InterpreterRunAst(module, ast->Children[1]);
-    DEREF_IF_SYMBOL(rhs);
-    lhsType = lhs->TypeInfo->Type;
-    rhsType = rhs->TypeInfo->Type;
-    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
-        goto numeric_types;
-    }
-    else {
-        goto non_numeric_types;
-    }
-
-numeric_types:
-    if (TypeReal == lhsType && lhsType == rhsType) {
-        result = lhs->v.Real <= rhs->v.Real;
-    }
-    else if (TypeInteger == lhsType && lhsType == rhsType) {
-        result = lhs->v.Integer <= rhs->v.Integer;
-    }
-    else if (TypeInteger == lhsType && TypeReal == rhsType){
-        result = lhs->v.Integer <= rhs->v.Real;
-    }
-    else { /* TypeReal == lhsType && TypeInteger == rhsType */
-        result = lhs->v.Real <= rhs->v.Integer;
-    }
-    return TO_BOOLEAN(result);
-
-non_numeric_types:
-    return &g_TheNilValue;
-}
 struct Value *InterpreterDoLogicGt(struct Module *module, struct Ast *ast) {
-    int result;
-    struct Value *lhs;
-    struct Value *rhs;
-    enum TypeInfoType lhsType;
-    enum TypeInfoType rhsType;
-    lhs = InterpreterRunAst(module, ast->Children[0]);
-    DEREF_IF_SYMBOL(lhs);
-    rhs = InterpreterRunAst(module, ast->Children[1]);
-    DEREF_IF_SYMBOL(rhs);
-    lhsType = lhs->TypeInfo->Type;
-    rhsType = rhs->TypeInfo->Type;
-    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
-        goto numeric_types;
-    }
-    else {
-        goto non_numeric_types;
-    }
-
-numeric_types:
-    if (TypeReal == lhsType && lhsType == rhsType) {
-        result = lhs->v.Real > rhs->v.Real;
-    }
-    else if (TypeInteger == lhsType && lhsType == rhsType) {
-        result = lhs->v.Integer > rhs->v.Integer;
-    }
-    else if (TypeInteger == lhsType && TypeReal == rhsType){
-        result = lhs->v.Integer > rhs->v.Real;
-    }
-    else { /* TypeReal == lhsType && TypeInteger == rhsType */
-        result = lhs->v.Real > rhs->v.Integer;
-    }
-    return TO_BOOLEAN(result);
-
-non_numeric_types:
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__gt__");
 }
 struct Value *InterpreterDoLogicGtEq(struct Module *module, struct Ast *ast) {
-    int result;
-    struct Value *lhs;
-    struct Value *rhs;
-    enum TypeInfoType lhsType;
-    enum TypeInfoType rhsType;
-    lhs = InterpreterRunAst(module, ast->Children[0]);
-    DEREF_IF_SYMBOL(lhs);
-    rhs = InterpreterRunAst(module, ast->Children[1]);
-    DEREF_IF_SYMBOL(rhs);
-    lhsType = lhs->TypeInfo->Type;
-    rhsType = rhs->TypeInfo->Type;
-    if (IS_NUMERIC(lhsType) && IS_NUMERIC(rhsType)) {
-        goto numeric_types;
-    }
-    else {
-        goto non_numeric_types;
-    }
-
-numeric_types:
-    if (TypeReal == lhsType && lhsType == rhsType) {
-        result = lhs->v.Real >= rhs->v.Real;
-    }
-    else if (TypeInteger == lhsType && lhsType == rhsType) {
-        result = lhs->v.Integer >= rhs->v.Integer;
-    }
-    else if (TypeInteger == lhsType && TypeReal == rhsType){
-        result = lhs->v.Integer >= rhs->v.Real;
-    }
-    else { /* TypeReal == lhsType && TypeInteger == rhsType */
-        result = lhs->v.Real >= rhs->v.Integer;
-    }
-    return TO_BOOLEAN(result);
-
-non_numeric_types:
-    return &g_TheNilValue;
-}
-struct Value *InterpreterDoNegate(struct Module *module, struct Ast *ast) {
-    struct Value *rhs = InterpreterRunAst(module, ast->Children[0]);
-    struct Value *value;
-    DEREF_IF_SYMBOL(rhs);
-    if (TypeReal == rhs->TypeInfo->Type) {
-        ValueMakeReal(&value, rhs->v.Real * -1);
-        return value;
-    }
-    else if (TypeInteger == rhs->TypeInfo->Type){
-        ValueMakeInteger(&value, rhs->v.Integer * -1);
-        return value;
-    }
-    /* TODO: Runtime Error */
-    return &g_TheNilValue;
-
-}
-struct Value *InterpreterDoLogicNot(struct Module *module, struct Ast *ast) {
-    struct Value *rhs = InterpreterRunAst(module, ast->Children[0]);
-    DEREF_IF_SYMBOL(rhs);
-    if (&g_TheTrueValue == rhs) {
-        return &g_TheFalseValue;
-    }
-    if (&g_TheFalseValue == rhs) {
+    struct Value *eq, *gt = InterpreterDoLogicGt(module, ast);
+    if (&g_TheTrueValue == gt) {
         return &g_TheTrueValue;
     }
-    return &g_TheNilValue;
+    eq = InterpreterDoLogicLt(module, ast);
+    if (&g_TheTrueValue == eq) {
+        return &g_TheTrueValue;
+    }
+    return &g_TheFalseValue;
+}
+struct Value *InterpreterDoNegate(struct Module *module, struct Ast *ast) {
+    return DispatchPrefixUnaryOperationMethod(module, ast, "__neg__");
+}
+struct Value *InterpreterDoLogicNot(struct Module *module, struct Ast *ast) {
+    return DispatchPrefixUnaryOperationMethod(module, ast, "__not__");
 }
 struct Value *InterpreterDoAssign(struct Module *module, struct Ast *ast) {
     struct Symbol *symbol;

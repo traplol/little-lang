@@ -1,19 +1,10 @@
 #ifndef _LITTLE_LANG_TYPE_INFO_H
 #define _LITTLE_LANG_TYPE_INFO_H
 
-enum TypeInfoType {
-    TypeBaseObject,           /* The base object every object is derived from. */
-    TypeBoolean,              /* true or false object */
-    TypeString,               /* A string object */
-    TypeInteger,              /* Integer object */
-    TypeReal,                 /* Floating point object*/
-    TypeUserObject,           /* A user defined object */
+#include "symbol_table.h"
 
-    TypeFunction,             /* Functions are first class objects */
-};
 
 /* Every type implements at least the default version of the following methods:
- *
  * Arithmetic/math
  * __add__(self, other)         alias => self + other
  * __sub__(self, other)         alias => self - other
@@ -54,11 +45,23 @@ enum TypeInfoType {
  * Note: __dbg__ is expected to return a String object
  */
 
+enum TypeInfoType {
+    TypeBaseObject,           /* The base object every object is derived from. */
+    TypeBoolean,              /* true or false object */
+    TypeString,               /* A string object */
+    TypeInteger,              /* Integer object */
+    TypeReal,                 /* Floating point object*/
+    TypeUserObject,           /* A user defined object */
+
+    TypeFunction,             /* Functions are first class objects */
+};
+
 struct TypeInfo {
     enum TypeInfoType Type;
     struct TypeInfo *DerivedFrom; /* All objects are derived from at least the BaseObject including the BaseObject */
     char *TypeName;
     unsigned int Size;
+    struct SymbolTable *MethodTable;
     struct Member {
         char *Name;
         struct TypeInfo *TypeInfo;
@@ -72,10 +75,13 @@ struct TypeInfo {
 int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeInfo *derivedFrom, char *typeName);
 /* Frees the type info's data. */
 int TypeInfoFree(struct TypeInfo *typeInfo);
+/* Inserts a method into the method table */
+int TypeInfoInsertMethod(struct TypeInfo *typeInfo, struct Value *method, struct SrcLoc srcLoc);
 /* Inserts a new member into the type info. */
 int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo *memberTypeInfo);
 /* Lookup a member, returns a non-zero integer if the member was found and sets
  * out_member to the found member. */
 int TypeInfoLookupMember(struct TypeInfo *typeInfo, char *name, struct Member **out_member);
-
+/* Searches for a method */
+int TypeInfoLookupMethod(struct TypeInfo *typeInfo, char *methodName, struct Value **out_method);
 #endif

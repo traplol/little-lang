@@ -33,10 +33,10 @@ int GlobalsInitTypeInfos(void) {
     RETURN_ON_FAIL(result);
     g_TheBaseObjectTypeInfo.DerivedFrom = &g_TheBaseObjectTypeInfo;
 
-    result = TypeInfoMake(&g_TheFunctionTypeInfo, TypeBaseObject, &g_TheBaseObjectTypeInfo, "Function");
+    result = TypeInfoMake(&g_TheFunctionTypeInfo, TypeFunction, &g_TheBaseObjectTypeInfo, "Function");
     RETURN_ON_FAIL(result);
 
-    result = TypeInfoMake(&g_TheBuiltinFnTypeInfo, TypeBaseObject, &g_TheBaseObjectTypeInfo, "BuiltinFn");
+    result = TypeInfoMake(&g_TheBuiltinFnTypeInfo, TypeFunction, &g_TheBaseObjectTypeInfo, "BuiltinFn");
     RETURN_ON_FAIL(result);
 
     result = TypeInfoMake(&g_TheIntegerTypeInfo, TypeInteger, &g_TheBaseObjectTypeInfo, "Integer");
