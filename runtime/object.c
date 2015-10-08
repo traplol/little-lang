@@ -8,49 +8,49 @@
 
 static struct SrcLoc srcLoc = {"object.c", -1, -1};
 
-static struct Value *rt_Object__add__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___add__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__sub__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___sub__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__mul__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___mul__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__div__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___div__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__mod__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___mod__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__and__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___and__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__or__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___or__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__xor__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___xor__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__pow__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___pow__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__neg__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___neg__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__pos__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___pos__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__lshift__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___lshift__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__rshift__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___rshift__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__not__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___not__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__eq__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___eq__(unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     if (self == other) {
@@ -58,33 +58,33 @@ static struct Value *rt_Object__eq__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheFalseValue;
 }
-static struct Value *rt_Object__lt__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___lt__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__gt__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___gt__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__index__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___index__(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
-static struct Value *rt_Object__str__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___str__(unsigned int argc, struct Value **argv) {
     struct Value *result, *self = argv[0];
     ValueMakeLLString(&result, self->TypeInfo->TypeName);
     return result;
 }
-static struct Value *rt_Object__hash__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Object___hash__(unsigned int argc, struct Value **argv) {
     struct Value *result, *self = argv[0];
     ValueMakeInteger(&result, (int)self);
     return result;
 }
-static struct Value *rt_Object__dbg__(unsigned int argc, struct Value **argv) {
-    return rt_Object__str__(argc, argv);
+static struct Value *rt_Object___dbg__(unsigned int argc, struct Value **argv) {
+    return rt_Object___str__(argc, argv);
 }
 
 #define OBJECT_METHOD_INSERT(name, numArgs, isVarArgs)                  \
     do {                                                                \
         struct Value *method;                                           \
-        int result = FunctionMaker(&method, XSTR(name), numArgs, isVarArgs, GLUE2(rt_Object, name)); \
+        int result = FunctionMaker(&method, XSTR(name), numArgs, isVarArgs, GLUE2(rt_Object_, name)); \
         if (R_OK != result) {                                           \
             return result;                                              \
         }                                                               \
