@@ -352,8 +352,9 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
     }
     argc += NumToInjectIntoNextCall;
     argv = malloc(sizeof(*argv) * argc);
+    argvIdx = 0;
     if (NumToInjectIntoNextCall > 0) {
-        for (argvIdx = 0; argvIdx < NumToInjectIntoNextCall; ++argvIdx) {
+        for (; argvIdx < NumToInjectIntoNextCall; ++argvIdx) {
             argv[argvIdx] = InjectIntoNextCall[argvIdx];
         }
     }

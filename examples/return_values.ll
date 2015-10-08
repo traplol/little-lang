@@ -7,12 +7,15 @@ def returns_x {
     while x < 10 {
         x = x + 1
     }
+    x
 }
 
 def for_loop_return {
+    mut outside
     for mut x = 0; x < 42; x = x + 1 {
-        type(x * 1.0)
+        outside = type(x * 1.0)
     }
+    outside
 }
 
 def max(x, y) {
