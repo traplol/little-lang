@@ -77,9 +77,10 @@ static inline struct Value *DispatchBinaryOperationMethod(struct Module *module,
     DEREF_IF_SYMBOL(rhs);
     TypeInfoLookupMethod(lhs->TypeInfo, methodName, &method);
     if (!method) {
-        printf("Method '%s' not implemented for type of '%s'\n",
+        printf("Binary method '%s' not implemented for type of '%s'\n",
                methodName,
                lhs->TypeInfo->TypeName);
+        at(ast->SrcLoc);
         return &g_TheNilValue;
     }
     argv[0] = lhs;
@@ -97,9 +98,10 @@ static inline struct Value *DispatchPrefixUnaryOperationMethod(struct Module *mo
     DEREF_IF_SYMBOL(rhs);
     TypeInfoLookupMethod(rhs->TypeInfo, methodName, &method);
     if (!method) {
-        printf("Method '%s' not implemented for type of '%s'\n",
+        printf("Prefix unary method '%s' not implemented for type of '%s'\n",
                methodName,
                rhs->TypeInfo->TypeName);
+        at(ast->SrcLoc);
         return &g_TheNilValue;
     }
     argv[0] = rhs;
@@ -399,6 +401,10 @@ struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) 
         return member;
     }
 
+    printf("Type '%s' does not implement '%s'",
+           value->TypeInfo->TypeName,
+           memberAst->u.SymbolName);
+    at(ast->SrcLoc);
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoReturn(struct Module *module, struct Ast *ast) {
