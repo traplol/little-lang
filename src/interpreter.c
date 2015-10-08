@@ -67,6 +67,7 @@ struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *fun
 static inline struct Value *DispatchBinaryOperationMethod(struct Module *module, struct Ast *ast, char *methodName) {
     struct Value *lhs, *rhs, *method;
     struct Value *argv[2];
+    /* TODO: maybe these values need preservation */
     lhs = InterpreterRunAst(module, ast->Children[0]);
     DEREF_IF_SYMBOL(lhs);
     rhs = InterpreterRunAst(module, ast->Children[1]);
@@ -294,7 +295,6 @@ struct Value *InterpreterDoCallBuiltinFn(struct Value *function, unsigned int ar
         return &g_TheNilValue;
     }
     value = function->v.BuiltinFn->Fn(argc, argv);
-    GC_Collect();
     return value;
 }
 struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
@@ -331,13 +331,12 @@ struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *fun
     ValueDuplicate(&returnValue, returnValue);
     SymbolTablePopScope(&(module->CurrentScope));
     SymbolTableAssign(module->CurrentScope, returnValue, "#_return_#", 1, srcLoc);
-    GC_Collect();
     return returnValue;
 }
 struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
     struct Value *func = InterpreterRunAst(module, ast->Children[0]);
     unsigned int argc, i;
-    struct Value **argv, *arg, *argCopyOrRef;
+    struct Value **argv, *arg, *argCopyOrRef, *ret;
     struct Ast *args;
     DEREF_IF_SYMBOL(func);
     if (&g_TheNilValue == func) {
@@ -359,22 +358,35 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
         argv = NULL;
     }
     if (func->IsBuiltInFn) {
-        return InterpreterDoCallBuiltinFn(func, argc, argv, ast->SrcLoc);
+        ret = InterpreterDoCallBuiltinFn(func, argc, argv, ast->SrcLoc);
     }
-    return InterpreterDoCallFunction(func->v.Function->OwnerModule, func, argc, argv, ast->SrcLoc);
+    else {
+        ret = InterpreterDoCallFunction(func->v.Function->OwnerModule, func, argc, argv, ast->SrcLoc);
+    }
+    GC_Collect();
+    return ret;
 }
 struct Value *InterpreterDoArrayIdx(struct Module *module, struct Ast *ast) {
     return DispatchBinaryOperationMethod(module, ast, "__index__");
 }
 struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) {
     struct Ast *symbol = ast->Children[0];
-    struct Ast *member = ast->Children[1];
+    struct Ast *memberAst = ast->Children[1];
+    struct Value *value, *member;
     struct Module *import;
 
     ModuleTableFind(module->Imports, symbol->u.SymbolName, &import);
     if (import) {
-        return InterpreterRunAst(import, member);
+        return InterpreterRunAst(import, memberAst);
     }
+    value = InterpreterRunAst(module, symbol);
+    DEREF_IF_SYMBOL(value);
+    TypeInfoLookupMethod(value->TypeInfo, memberAst->u.SymbolName, &member);
+    if (member) {
+        return member;
+    }
+
+
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoReturn(struct Module *module, struct Ast *ast) {

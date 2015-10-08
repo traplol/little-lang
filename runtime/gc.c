@@ -201,10 +201,10 @@ int GC_Collect(void) {
     if (GC_Allocated < GC_CollectThreshold) {
         return R_OK;
     }
-    printf("%d -> ", GC_Allocated);
+//    printf("%d -> ", GC_Allocated);
     GC_Mark();
     GC_Sweep();
-    printf("%d\n", GC_Allocated);
+//    printf("%d\n", GC_Allocated);
     return R_OK;
 }
 
