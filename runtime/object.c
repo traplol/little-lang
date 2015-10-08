@@ -106,10 +106,10 @@ int RT_Object_RegisterBuiltins(void) {
     OBJECT_METHOD_INSERT(__eq__, 2, 0);
     OBJECT_METHOD_INSERT(__lt__, 2, 0);
     OBJECT_METHOD_INSERT(__gt__, 2, 0);
+    OBJECT_METHOD_INSERT(__index__, 2, 0);
     OBJECT_METHOD_INSERT(__neg__, 1, 0);
     OBJECT_METHOD_INSERT(__not__, 1, 0);
     OBJECT_METHOD_INSERT(__pos__, 1, 0);
-    OBJECT_METHOD_INSERT(__index__, 1, 0);
     OBJECT_METHOD_INSERT(__str__, 1, 0);
     OBJECT_METHOD_INSERT(__hash__, 1, 0);
     OBJECT_METHOD_INSERT(__dbg__, 1, 0);

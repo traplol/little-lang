@@ -364,7 +364,7 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
     return InterpreterDoCallFunction(func->v.Function->OwnerModule, func, argc, argv, ast->SrcLoc);
 }
 struct Value *InterpreterDoArrayIdx(struct Module *module, struct Ast *ast) {
-    return &g_TheNilValue;
+    return DispatchBinaryOperationMethod(module, ast, "__index__");
 }
 struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) {
     struct Ast *symbol = ast->Children[0];
