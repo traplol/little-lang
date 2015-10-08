@@ -1,6 +1,7 @@
 #include "type_info.h"
 #include "value.h"
 #include "helpers/strings.h"
+#include "globals.h"
 #include "result.h"
 
 #include <stdlib.h>
@@ -155,13 +156,16 @@ int TypeInfoLookupMethod(struct TypeInfo *typeInfo, char *methodName, struct Val
     if (!typeInfo || !methodName || !out_method) {
         return R_InvalidArgument;
     }
-    while (typeInfo) {
+    while (1) {
         SymbolTableFindLocal(typeInfo->MethodTable, methodName, &out);
         if (out) {
             *out_method = out->Value;
             return R_OK;
         }
         typeInfo = typeInfo->DerivedFrom;
+        if (&g_TheBaseObjectTypeInfo == typeInfo) {
+            break;
+        }
     }
     *out_method = NULL;
     return R_MethodNotFound;
