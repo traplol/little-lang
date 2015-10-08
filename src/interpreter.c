@@ -21,6 +21,9 @@ void at(struct SrcLoc srcLoc) {
     printf(" at %s:%d:%d\n", srcLoc.Filename, srcLoc.LineNumber, srcLoc.ColumnNumber);
 }
 
+static unsigned int NumToInjectIntoNextCall;
+static struct Value *InjectIntoNextCall[4];
+
 /* Forward declarations. */
 struct Value *InterpreterRunAst(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoBody(struct Module *module, struct Ast *ast);
@@ -335,7 +338,7 @@ struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *fun
 }
 struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
     struct Value *func = InterpreterRunAst(module, ast->Children[0]);
-    unsigned int argc, i;
+    unsigned int argc, i, argvIdx;
     struct Value **argv, *arg, *argCopyOrRef, *ret;
     struct Ast *args;
     DEREF_IF_SYMBOL(func);
@@ -343,20 +346,26 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
         return &g_TheNilValue;
     }
     args = ast->Children[1];
-    if (args && args->NumChildren > 0) {
-        argc = args->NumChildren;
-        argv = malloc(sizeof(*argv) * argc); /* TODO: Free me */
-        for (i = 0; i < argc; ++i) {
+    argc = 0;
+    if (args) {
+        argc += args->NumChildren;
+    }
+    argc += NumToInjectIntoNextCall;
+    argv = malloc(sizeof(*argv) * argc);
+    if (NumToInjectIntoNextCall > 0) {
+        for (argvIdx = 0; argvIdx < NumToInjectIntoNextCall; ++argvIdx) {
+            argv[argvIdx] = InjectIntoNextCall[argvIdx];
+        }
+    }
+    if (args) {
+        for (i = 0; i < args->NumChildren; ++i, ++argvIdx) {
             arg = InterpreterRunAst(module, args->Children[i]);
             DEREF_IF_SYMBOL(arg);
             ValueDuplicate(&argCopyOrRef, arg);
-            argv[i] = argCopyOrRef;
+            argv[argvIdx] = argCopyOrRef;
         }
     }
-    else {
-        argc = 0;
-        argv = NULL;
-    }
+    NumToInjectIntoNextCall = 0;
     if (func->IsBuiltInFn) {
         ret = InterpreterDoCallBuiltinFn(func, argc, argv, ast->SrcLoc);
     }
@@ -364,6 +373,7 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
         ret = InterpreterDoCallFunction(func->v.Function->OwnerModule, func, argc, argv, ast->SrcLoc);
     }
     GC_Collect();
+    free(argv);
     return ret;
 }
 struct Value *InterpreterDoArrayIdx(struct Module *module, struct Ast *ast) {
@@ -383,9 +393,10 @@ struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) 
     DEREF_IF_SYMBOL(value);
     TypeInfoLookupMethod(value->TypeInfo, memberAst->u.SymbolName, &member);
     if (member) {
+        NumToInjectIntoNextCall = 1;
+        InjectIntoNextCall[0] = value;
         return member;
     }
-
 
     return &g_TheNilValue;
 }
