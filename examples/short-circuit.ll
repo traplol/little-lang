@@ -4,6 +4,7 @@ if true && println("test1-cond") == nil {
 }
 
 # test2 should not assert the println in the condition
+# nor should it print the body
 if false && println("test2-cond") == nil {
     println("test2-body")
 }
