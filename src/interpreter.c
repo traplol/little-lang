@@ -453,7 +453,7 @@ struct Value *InterpreterDoConst(struct Module *module, struct Ast *ast) {
 }
 struct Value *InterpreterDoFor(struct Module *module, struct Ast *ast) {
     struct Ast *pre, *cond, *body, *post;
-    struct Value *value = &g_TheNilValue;
+    struct Value *c;
     pre = ast->Children[0];
     cond = ast->Children[1];
     body = ast->Children[2];
@@ -461,33 +461,33 @@ struct Value *InterpreterDoFor(struct Module *module, struct Ast *ast) {
     SymbolTablePushScope(&(module->CurrentScope));
     InterpreterRunAst(module, pre);
     while (1) {
-        value = InterpreterRunAst(module, cond);
-        DEREF_IF_SYMBOL(value);
-        if (&g_TheTrueValue != value) {
+        c = InterpreterRunAst(module, cond);
+        DEREF_IF_SYMBOL(c);
+        if (&g_TheTrueValue != c) {
             break;
         }
-        value = InterpreterRunAst(module, body);
+        InterpreterRunAst(module, body);
         InterpreterRunAst(module, post);
     }
     SymbolTablePopScope(&(module->CurrentScope));
-    return value;
+    return &g_TheNilValue;
 }
 struct Value *InterpreterDoWhile(struct Module *module, struct Ast *ast) {
     struct Ast *cond, *body;
-    struct Value *value = &g_TheNilValue;
+    struct Value *c;
     cond = ast->Children[0];
     body = ast->Children[1];
     SymbolTablePushScope(&(module->CurrentScope));
     while (1) {
-        value = InterpreterRunAst(module, cond);
-        DEREF_IF_SYMBOL(value);
-        if (&g_TheTrueValue != value) {
+        c = InterpreterRunAst(module, cond);
+        DEREF_IF_SYMBOL(c);
+        if (&g_TheTrueValue != c) {
             break;
         }
-        value = InterpreterRunAst(module, body);
+        InterpreterRunAst(module, body);
     }
     SymbolTablePopScope(&(module->CurrentScope));
-    return value;
+    return &g_TheNilValue;
 }
 struct Value *InterpreterDoIfElse(struct Module *module, struct Ast *ast) {
     struct Ast *cond, *body, *ifelse;
