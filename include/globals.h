@@ -13,6 +13,8 @@ extern struct TypeInfo g_TheRealTypeInfo;
 extern struct TypeInfo g_TheStringTypeInfo;
 extern struct TypeInfo g_TheBooleanTypeInfo;
 
+extern struct TypeTable g_TheGlobalTypeTable;
+
 extern struct SymbolTable *g_TheGlobalScope;
 extern struct SymbolTable g_TheUberScope;
 

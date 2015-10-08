@@ -1,5 +1,6 @@
 #include "globals.h"
 #include "value.h"
+#include "type_table.h"
 #include "symbol_table.h"
 #include "result.h"
 
@@ -24,10 +25,12 @@ struct TypeInfo g_TheRealTypeInfo;
 struct TypeInfo g_TheStringTypeInfo;
 struct TypeInfo g_TheBooleanTypeInfo;
 
+struct TypeTable g_TheGlobalTypeTable;
+
 struct SymbolTable *g_TheGlobalScope;
 struct SymbolTable g_TheUberScope;
 
-int GlobalsInitTypeInfos(void) {
+static int GlobalsInitTypeInfos(void) {
     int result;
     result = TypeInfoMake(&g_TheBaseObjectTypeInfo, TypeBaseObject, 0, "Object");
     RETURN_ON_FAIL(result);
@@ -54,7 +57,7 @@ int GlobalsInitTypeInfos(void) {
     return R_OK;
 }
 
-int GlobalsInitSingletonValues(void) {
+static int GlobalsInitSingletonValues(void) {
     int result;
     result = ValueMakeObject(&g_TheTrueValue, &g_TheBooleanTypeInfo, 0, 0);
     RETURN_ON_FAIL(result);
@@ -68,13 +71,35 @@ int GlobalsInitSingletonValues(void) {
     return R_OK;
 }
 
-int GlobalsInitGlobalScope(void) {
+static int GlobalsInitGlobalScope(void) {
     int result;
     g_TheGlobalScope = calloc(sizeof *g_TheGlobalScope, 1);
     result = SymbolTableMakeGlobalScope(g_TheGlobalScope);
     g_TheUberScope.Child = g_TheGlobalScope;
     g_TheGlobalScope->Parent = &g_TheUberScope;
     return result;
+}
+
+static int GlobalsInitGlobalTypeInfo(void) {
+    int result;
+    result = TypeTableMake(&g_TheGlobalTypeTable, 53);
+    RETURN_ON_FAIL(result);
+
+    result = TypeTableInsert(&g_TheGlobalTypeTable, &g_TheBaseObjectTypeInfo);
+    RETURN_ON_FAIL(result);
+    result = TypeTableInsert(&g_TheGlobalTypeTable, &g_TheFunctionTypeInfo);
+    RETURN_ON_FAIL(result);
+    result = TypeTableInsert(&g_TheGlobalTypeTable, &g_TheBuiltinFnTypeInfo);
+    RETURN_ON_FAIL(result);
+    result = TypeTableInsert(&g_TheGlobalTypeTable, &g_TheIntegerTypeInfo);
+    RETURN_ON_FAIL(result);
+    result = TypeTableInsert(&g_TheGlobalTypeTable, &g_TheRealTypeInfo);
+    RETURN_ON_FAIL(result);
+    result = TypeTableInsert(&g_TheGlobalTypeTable, &g_TheStringTypeInfo);
+    RETURN_ON_FAIL(result);
+    result = TypeTableInsert(&g_TheGlobalTypeTable, &g_TheBooleanTypeInfo);
+    RETURN_ON_FAIL(result);
+    return R_OK;
 }
 
 static int __globalValuesInitialized = 0;
@@ -90,6 +115,9 @@ int GlobalsInit(void) {
     RETURN_ON_FAIL(result);
 
     result = GlobalsInitGlobalScope();
+    RETURN_ON_FAIL(result);
+
+    result = GlobalsInitGlobalTypeInfo();
     RETURN_ON_FAIL(result);
 
     __globalValuesInitialized = 1;
