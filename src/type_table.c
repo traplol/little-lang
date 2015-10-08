@@ -74,11 +74,13 @@ int TypeTableFree(struct TypeTable *table) {
 }
 int TypeTableInsert(struct TypeTable *table, struct TypeInfo *typeInfo) {
     struct TypeTableEntry *entry, *tmp;
+    struct TypeInfo *ti;
     unsigned int tableIdx;
     if (TypeTableIsInvalid(table) || !typeInfo) {
         return R_InvalidArgument;
     }
-    if (TypeTableFind(table, typeInfo->TypeName, NULL)) {
+    TypeTableFind(table, typeInfo->TypeName, &ti);
+    if (ti) {
         return R_KeyAlreadyInTable;
     }
 
@@ -89,7 +91,7 @@ int TypeTableInsert(struct TypeTable *table, struct TypeInfo *typeInfo) {
         table->Entries[tableIdx] = entry;
         return R_OK;
     }
-    while (tmp) {
+    while (tmp->Next) {
         if (0 == strcmp(tmp->Key, typeInfo->TypeName)) {
             return R_KeyAlreadyInTable;
         }
@@ -102,24 +104,24 @@ int TypeTableFind(struct TypeTable *table, char *key, struct TypeInfo **out_type
     struct TypeTableEntry *entry;
     unsigned int tableIdx;
     if (TypeTableIsInvalid(table)) {
+        *out_typeInfo = NULL;
         return R_False;
     }
 
     tableIdx = TypeTableGetIdx(table, key);
     entry = table->Entries[tableIdx];
     if (!entry) {
+        *out_typeInfo = NULL;
         return R_False;
     }
 
     while (entry) {
         if (0 == strcmp(entry->Key, key)) {
-            break;
+            *out_typeInfo = entry->TypeInfo;
+            return R_True;
         }
         entry = entry->Next;
     }
-
-    if (out_typeInfo) {
-        *out_typeInfo = entry->TypeInfo;
-    }
-    return R_True;
+    *out_typeInfo = NULL;
+    return R_False;
 }
