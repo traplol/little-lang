@@ -205,7 +205,7 @@ struct Value *InterpreterDoLogicLtEq(struct Module *module, struct Ast *ast) {
     if (&g_TheTrueValue == lt) {
         return &g_TheTrueValue;
     }
-    eq = InterpreterDoLogicLt(module, ast);
+    eq = InterpreterDoLogicEq(module, ast);
     if (&g_TheTrueValue == eq) {
         return &g_TheTrueValue;
     }
@@ -219,7 +219,7 @@ struct Value *InterpreterDoLogicGtEq(struct Module *module, struct Ast *ast) {
     if (&g_TheTrueValue == gt) {
         return &g_TheTrueValue;
     }
-    eq = InterpreterDoLogicLt(module, ast);
+    eq = InterpreterDoLogicEq(module, ast);
     if (&g_TheTrueValue == eq) {
         return &g_TheTrueValue;
     }
