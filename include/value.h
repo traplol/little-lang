@@ -4,6 +4,8 @@
 #include "type_info.h"
 #include "ast.h"
 
+#include <stdint.h>
+
 struct Function {
     unsigned int NumArgs;
     int IsVarArgs;
@@ -40,6 +42,7 @@ struct Value {
     int Visited;
     union {
         int Integer;
+        uint64_t RealToIntBits;
         double Real;
         void *Object;
         struct Symbol *Symbol;

@@ -183,8 +183,20 @@ static struct Value *rt_Real__str__(unsigned int argc, struct Value **argv) {
 }
 static struct Value *rt_Real__hash__(unsigned int argc, struct Value **argv) {
     struct Value *result, *self = argv[0];
-    /* TODO: Handle NaNs and Infs */
-    ValueMakeInteger(&result, self->v.Integer);
+    union {
+        uint64_t whole;
+        struct {
+            uint32_t high;
+            uint32_t low;
+        } BE;
+        struct {
+            uint32_t low;
+            uint32_t high;
+        } LE;
+    } bits;
+    bits.whole = self->v.RealToIntBits;
+    int i = (bits.LE.high ^ bits.LE.low) & 0x7fffffff;
+    ValueMakeInteger(&result, i);
     return result;
 }
 static struct Value *rt_Real__dbg__(unsigned int argc, struct Value **argv) {
