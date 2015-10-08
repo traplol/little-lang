@@ -2,6 +2,8 @@
 #include "globals.h"
 #include "result.h"
 
+#include "helpers/macro_helpers.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -16,7 +18,11 @@ static struct GC_Object *GC_Tail;
 static unsigned int GC_Allocated;
 static int GC_Disabled;
 /* TODO: Proper size of memory allocated rather than number of objects. */
-const unsigned int GC_CollectThreshold = 1000;
+#ifdef GC_COLLECT_THRESHOLD
+const unsigned int GC_CollectThreshold = GC_COLLECT_THRESHOLD;
+#else
+const unsigned int GC_CollectThreshold = 0;
+#endif
 
 struct ScopeHolder {
     struct SymbolTable *ST;
