@@ -383,16 +383,28 @@ struct Value *InterpreterDoArrayIdx(struct Module *module, struct Ast *ast) {
     return DispatchBinaryOperationMethod(module, ast, "__index__");
 }
 struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) {
-    struct Ast *symbol = ast->Children[0];
+    struct Ast *left = ast->Children[0];
     struct Ast *memberAst = ast->Children[1];
     struct Value *value, *member;
     struct Module *import;
+    struct TypeInfo *typeInfo;
 
-    ModuleTableFind(module->Imports, symbol->u.SymbolName, &import);
-    if (import) {
-        return InterpreterRunAst(import, memberAst);
+    if (SymbolNode == left->Type) {
+        ModuleTableFind(module->Imports, left->u.SymbolName, &import);
+        if (import) {
+            return InterpreterRunAst(import, memberAst);
+        }
+
+        TypeTableFind(&g_TheGlobalTypeTable, left->u.SymbolName, &typeInfo);
+        if (typeInfo) {
+            TypeInfoLookupMethod(typeInfo, memberAst->u.SymbolName, &member);
+            if (member) {
+                return member;
+            }
+        }
     }
-    value = InterpreterRunAst(module, symbol);
+    
+    value = InterpreterRunAst(module, left);
     DEREF_IF_SYMBOL(value);
     TypeInfoLookupMethod(value->TypeInfo, memberAst->u.SymbolName, &member);
     if (member) {
