@@ -155,11 +155,14 @@ int TypeInfoLookupMethod(struct TypeInfo *typeInfo, char *methodName, struct Val
     if (!typeInfo || !methodName || !out_method) {
         return R_InvalidArgument;
     }
-    SymbolTableFindLocal(typeInfo->MethodTable, methodName, &out);
-    if (!out) {
-        *out_method = NULL;
-        return R_MethodNotFound;
+    while (typeInfo) {
+        SymbolTableFindLocal(typeInfo->MethodTable, methodName, &out);
+        if (out) {
+            *out_method = out->Value;
+            return R_OK;
+        }
+        typeInfo = typeInfo->DerivedFrom;
     }
-    *out_method = out->Value;
-    return R_OK;
+    *out_method = NULL;
+    return R_MethodNotFound;
 }
