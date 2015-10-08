@@ -227,6 +227,7 @@ def returns_x {
     while x < 10 {
         x = x + 1
     }
+    x
 }
 println(returns_x()) # prints "10"
 ```
