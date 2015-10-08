@@ -50,6 +50,12 @@ static struct Value *rt_String__dbg__(unsigned int argc, struct Value **argv) {
     return rt_String__str__(argc, argv);
 }
 
+static struct Value *rt_Stringlength(unsigned int argc, struct Value **argv) {
+    struct Value *result, *self = argv[0];
+    ValueMakeInteger(&result, self->v.String->Length);
+    return result;
+}
+
 #define STRING_METHOD_INSERT(name, numArgs, isVarArgs)                  \
     do {                                                                \
         struct Value *method;                                           \
@@ -66,5 +72,6 @@ int RT_String_RegisterBuiltins(void) {
     STRING_METHOD_INSERT(__str__, 1, 0);
     STRING_METHOD_INSERT(__hash__, 1, 0);
     STRING_METHOD_INSERT(__dbg__, 1, 0);
+    STRING_METHOD_INSERT(length, 1, 0);
     return R_OK;
 }
