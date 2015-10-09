@@ -5,6 +5,7 @@
 
 #include "helpers/strings.h"
 #include "interpreter.h"
+#include "helpers/macro_helpers.h"
 
 #include <stdio.h>
 
@@ -48,32 +49,21 @@ struct Value *_rt_type(struct Module *module, unsigned int argc, struct Value **
     return value;
 }
 
+#define GLOBAL_FUNCTION_INSERT(name, numArgs, isVarArgs)                \
+    do {                                                                \
+        struct Value *func;                                             \
+        struct BuiltinFn *fn;                                           \
+        GLUE2(RT_, name) = GLUE2(_rt_, name);                           \
+        func = ValueAllocNoGC();                                        \
+        BuiltinFnMake(&fn, XSTR(name), numArgs, isVarArgs, GLUE2(RT_, name)); \
+        ValueMakeBuiltinFn(func, fn);                                  \
+        SymbolTableInsert(g_TheGlobalScope, func, fn->Name, 0, srcLoc); \
+    } while (0)
+
 int RegisterRuntime_core(void) {
-    struct Value *value;
-    struct BuiltinFn *fn;
-
-    RT_print = _rt_print;
-    value = ValueAlloc();
-    BuiltinFnMake(&fn, "print", 0, 1, RT_print);
-    ValueMakeBuiltinFn(value, fn);
-    SymbolTableInsert(g_TheGlobalScope, value, fn->Name, 0, srcLoc);
-
-    RT_println = _rt_println;
-    value = ValueAlloc();
-    BuiltinFnMake(&fn, "println", 0, 1, RT_println);
-    ValueMakeBuiltinFn(value, fn);
-    SymbolTableInsert(g_TheGlobalScope, value, fn->Name, 0, srcLoc);
-
-    RT_string = _rt_string;
-    value = ValueAlloc();
-    BuiltinFnMake(&fn, "string", 1, 0, RT_string);
-    ValueMakeBuiltinFn(value, fn);
-    SymbolTableInsert(g_TheGlobalScope, value, fn->Name, 0, srcLoc);
-
-    RT_type = _rt_type;
-    value = ValueAlloc();
-    BuiltinFnMake(&fn, "type", 1, 0, RT_type);
-    ValueMakeBuiltinFn(value, fn);
-    SymbolTableInsert(g_TheGlobalScope, value, fn->Name, 0, srcLoc);
+    GLOBAL_FUNCTION_INSERT(print, 0, 1);
+    GLOBAL_FUNCTION_INSERT(println, 0, 1);
+    GLOBAL_FUNCTION_INSERT(string, 1, 0);
+    GLOBAL_FUNCTION_INSERT(type, 1, 0);
     return R_OK;
 }
