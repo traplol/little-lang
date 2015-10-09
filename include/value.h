@@ -15,7 +15,7 @@ struct Function {
     struct Module *OwnerModule;
 };
 
-typedef struct Value *(*BuiltinFnProc_t)(unsigned int argc, struct Value **argv);
+typedef struct Value *(*BuiltinFnProc_t)(struct Module *module, unsigned int argc, struct Value **argv);
 struct BuiltinFn {
     char *Name;
     unsigned int NumArgs;

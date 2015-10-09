@@ -10,7 +10,7 @@
 
 static struct SrcLoc srcLoc = {"string.c", -1, -1};
 
-static struct Value *rt_String___add__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_String___add__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *out, *self = argv[0];
     struct Value *other = argv[1];
     char *s, *l, *r;
@@ -20,7 +20,7 @@ static struct Value *rt_String___add__(unsigned int argc, struct Value **argv) {
     ValueMakeLLString(&out, s);
     return out;
 }
-static struct Value *rt_String___eq__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_String___eq__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     char *l, *r;
@@ -34,23 +34,23 @@ static struct Value *rt_String___eq__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheFalseValue;
 }
-static struct Value *rt_String___str__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_String___str__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *out, *self = argv[0];
     ValueMakeLLString(&out, self->v.String->CString);
     return out;
 }
-static struct Value *rt_String___hash__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_String___hash__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *out, *self = argv[0];
     int n = string_hash(self->v.String->CString);
     ValueMakeInteger(&out, n);
     return out;
 }
-static struct Value *rt_String___dbg__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_String___dbg__(struct Module *module, unsigned int argc, struct Value **argv) {
     /* TODO: Implement the escapes. */
-    return rt_String___str__(argc, argv);
+    return rt_String___str__(module, argc, argv);
 }
 
-static struct Value *rt_String_length(unsigned int argc, struct Value **argv) {
+static struct Value *rt_String_length(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *result, *self = argv[0];
     ValueMakeInteger(&result, self->v.String->Length);
     return result;

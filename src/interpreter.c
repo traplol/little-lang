@@ -64,7 +64,7 @@ struct Value *InterpreterDoBoolean(struct Ast *ast);
 struct Value *InterpreterDoReal(struct Ast *ast);
 struct Value *InterpreterDoInteger(struct Ast *ast);
 struct Value *InterpreterDoString(struct Ast *ast);
-struct Value *InterpreterDoCallBuiltinFn(struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc);
+struct Value *InterpreterDoCallBuiltinFn(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc);
 struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc);
 
 static inline struct Value *DispatchBinaryOperationMethod(struct Module *module, struct Ast *ast, char *methodName) {
@@ -86,7 +86,7 @@ static inline struct Value *DispatchBinaryOperationMethod(struct Module *module,
     argv[0] = lhs;
     argv[1] = rhs;
     if (method->IsBuiltInFn) {
-        return InterpreterDoCallBuiltinFn(method, 2, argv, ast->SrcLoc);
+        return InterpreterDoCallBuiltinFn(module, method, 2, argv, ast->SrcLoc);
     }
     return InterpreterDoCallFunction(module, method, 2, argv, ast->SrcLoc);
 }
@@ -106,7 +106,7 @@ static inline struct Value *DispatchPrefixUnaryOperationMethod(struct Module *mo
     }
     argv[0] = rhs;
     if (method->IsBuiltInFn) {
-        return InterpreterDoCallBuiltinFn(method, 1, argv, ast->SrcLoc);
+        return InterpreterDoCallBuiltinFn(module, method, 1, argv, ast->SrcLoc);
     }
     return InterpreterDoCallFunction(module, method, 1, argv, ast->SrcLoc);
 }
@@ -287,7 +287,7 @@ struct Value *InterpreterDoSymbol(struct Module *module, struct Ast *ast){
 struct Value *InterpreterDoDefFunction(struct Module *module, struct Ast *ast){
     return &g_TheNilValue;
 }
-struct Value *InterpreterDoCallBuiltinFn(struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
+struct Value *InterpreterDoCallBuiltinFn(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
     struct Value *value;
     struct BuiltinFn *fn = function->v.BuiltinFn;
     if (argc < fn->NumArgs || (argc > fn->NumArgs && !fn->IsVarArgs)) {
@@ -299,7 +299,7 @@ struct Value *InterpreterDoCallBuiltinFn(struct Value *function, unsigned int ar
         at(srcLoc);
         return &g_TheNilValue;
     }
-    value = function->v.BuiltinFn->Fn(argc, argv);
+    value = function->v.BuiltinFn->Fn(module, argc, argv);
     return value;
 }
 struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
@@ -370,7 +370,7 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
     }
     NumToInjectIntoNextCall = 0;
     if (func->IsBuiltInFn) {
-        ret = InterpreterDoCallBuiltinFn(func, argc, argv, ast->SrcLoc);
+        ret = InterpreterDoCallBuiltinFn(module, func, argc, argv, ast->SrcLoc);
     }
     else {
         ret = InterpreterDoCallFunction(func->v.Function->OwnerModule, func, argc, argv, ast->SrcLoc);
@@ -401,6 +401,11 @@ struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) 
             if (member) {
                 return member;
             }
+            printf("Type '%s' does not implement '%s'",
+                typeInfo->TypeName,
+                memberAst->u.SymbolName);
+            at(ast->SrcLoc);
+            return &g_TheNilValue;
         }
     }
     
@@ -412,11 +417,6 @@ struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) 
         InjectIntoNextCall[0] = value;
         return member;
     }
-
-    printf("Type '%s' does not implement '%s'",
-           value->TypeInfo->TypeName,
-           memberAst->u.SymbolName);
-    at(ast->SrcLoc);
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoReturn(struct Module *module, struct Ast *ast) {

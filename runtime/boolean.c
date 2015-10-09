@@ -8,7 +8,7 @@
 
 static struct SrcLoc srcLoc = {"boolean.c", -1, -1};
 
-static struct Value *rt_Boolean___eq__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Boolean___eq__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     if (self == other) {
@@ -16,14 +16,14 @@ static struct Value *rt_Boolean___eq__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheFalseValue;
 }
-static struct Value *rt_Boolean___not__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Boolean___not__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     if (&g_TheFalseValue == self) {
         return &g_TheTrueValue;
     }
     return &g_TheFalseValue;
 }
-static struct Value *rt_Boolean___str__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Boolean___str__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *out, *self = argv[0];
     char *s;
     if (&g_TheTrueValue == self) {
@@ -35,14 +35,14 @@ static struct Value *rt_Boolean___str__(unsigned int argc, struct Value **argv) 
     ValueMakeLLString(&out, s);
     return out;
 }
-static struct Value *rt_Boolean___hash__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Boolean___hash__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *out, *self = argv[0];
     int n = &g_TheTrueValue == self;
     ValueMakeInteger(&out, n);
     return out;
 }
-static struct Value *rt_Boolean___dbg__(unsigned int argc, struct Value **argv) {
-    return rt_Boolean___str__(argc, argv);
+static struct Value *rt_Boolean___dbg__(struct Module *module, unsigned int argc, struct Value **argv) {
+    return rt_Boolean___str__(module, argc, argv);
 }
 
 #define BOOLEAN_METHOD_INSERT(name, numArgs, isVarArgs)                  \

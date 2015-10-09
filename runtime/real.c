@@ -17,7 +17,7 @@ static struct SrcLoc srcLoc = {"real.c", -1, -1};
 #define IS_NUMERIC(v) (IS_INTEGER(v) || IS_REAL(v))
 #define REAL_EPSILON (1e-16)
 
-static struct Value *rt_Real___add__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Real___add__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -34,7 +34,7 @@ static struct Value *rt_Real___add__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Real___sub__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Real___sub__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -51,7 +51,7 @@ static struct Value *rt_Real___sub__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Real___mul__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Real___mul__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -68,7 +68,7 @@ static struct Value *rt_Real___mul__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Real___div__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Real___div__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -85,7 +85,7 @@ static struct Value *rt_Real___div__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Real___mod__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Real___mod__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -102,7 +102,7 @@ static struct Value *rt_Real___mod__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Real___pow__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Real___pow__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -119,13 +119,13 @@ static struct Value *rt_Real___pow__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Real___neg__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Real___neg__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *result;
     ValueMakeReal(&result, -self->v.Real);
     return result;
 }
-static struct Value *rt_Real___eq__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Real___eq__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     double diff;
@@ -143,7 +143,7 @@ static struct Value *rt_Real___eq__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheFalseValue;
 }
-static struct Value *rt_Real___lt__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Real___lt__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     if (IS_INTEGER(other)) {
@@ -158,7 +158,7 @@ static struct Value *rt_Real___lt__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheFalseValue;
 }
-static struct Value *rt_Real___gt__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Real___gt__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     if (IS_INTEGER(other)) {
@@ -173,7 +173,7 @@ static struct Value *rt_Real___gt__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheFalseValue;
 }
-static struct Value *rt_Real___str__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Real___str__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *out, *self = argv[0];
     char *s, buf[80];
     snprintf(buf, sizeof(buf)/sizeof(*buf), "%f", self->v.Real);
@@ -181,7 +181,7 @@ static struct Value *rt_Real___str__(unsigned int argc, struct Value **argv) {
     ValueMakeLLString(&out, s);
     return out;
 }
-static struct Value *rt_Real___hash__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Real___hash__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *result, *self = argv[0];
     union {
         uint64_t whole;
@@ -199,8 +199,8 @@ static struct Value *rt_Real___hash__(unsigned int argc, struct Value **argv) {
     ValueMakeInteger(&result, i);
     return result;
 }
-static struct Value *rt_Real___dbg__(unsigned int argc, struct Value **argv) {
-    return rt_Real___str__(argc, argv);
+static struct Value *rt_Real___dbg__(struct Module *module, unsigned int argc, struct Value **argv) {
+    return rt_Real___str__(module, argc, argv);
 }
 
 #define REAL_METHOD_INSERT(name, numArgs, isVarArgs)                  \

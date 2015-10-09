@@ -15,7 +15,7 @@ static struct SrcLoc srcLoc = {"integer.c", -1, -1};
 #define IS_REAL(v) ((v)->TypeInfo == &g_TheRealTypeInfo)
 #define IS_NUMERIC(v) (IS_INTEGER(v) || IS_REAL(v))
 
-static struct Value *rt_Integer___add__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___add__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -35,7 +35,7 @@ static struct Value *rt_Integer___add__(unsigned int argc, struct Value **argv) 
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Integer___sub__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___sub__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -55,7 +55,7 @@ static struct Value *rt_Integer___sub__(unsigned int argc, struct Value **argv) 
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Integer___mul__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___mul__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -75,7 +75,7 @@ static struct Value *rt_Integer___mul__(unsigned int argc, struct Value **argv) 
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Integer___div__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___div__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -95,7 +95,7 @@ static struct Value *rt_Integer___div__(unsigned int argc, struct Value **argv) 
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Integer___mod__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___mod__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -115,7 +115,7 @@ static struct Value *rt_Integer___mod__(unsigned int argc, struct Value **argv) 
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Integer___and__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___and__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -130,7 +130,7 @@ static struct Value *rt_Integer___and__(unsigned int argc, struct Value **argv) 
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Integer___or__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___or__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -145,7 +145,7 @@ static struct Value *rt_Integer___or__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Integer___xor__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___xor__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -160,7 +160,7 @@ static struct Value *rt_Integer___xor__(unsigned int argc, struct Value **argv) 
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Integer___pow__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___pow__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -180,17 +180,17 @@ static struct Value *rt_Integer___pow__(unsigned int argc, struct Value **argv) 
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Integer___neg__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___neg__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *result;
     ValueMakeInteger(&result, -self->v.Integer);
     return result;
 }
-static struct Value *rt_Integer___pos__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___pos__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     return self;
 }
-static struct Value *rt_Integer___lshift__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___lshift__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -205,7 +205,7 @@ static struct Value *rt_Integer___lshift__(unsigned int argc, struct Value **arg
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Integer___rshift__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___rshift__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     struct Value *result;
@@ -220,7 +220,7 @@ static struct Value *rt_Integer___rshift__(unsigned int argc, struct Value **arg
     }
     return &g_TheNilValue;
 }
-static struct Value *rt_Integer___eq__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___eq__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     if (IS_INTEGER(other)) {
@@ -230,7 +230,7 @@ static struct Value *rt_Integer___eq__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheFalseValue;
 }
-static struct Value *rt_Integer___lt__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___lt__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     if (IS_INTEGER(other)) {
@@ -245,7 +245,7 @@ static struct Value *rt_Integer___lt__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheFalseValue;
 }
-static struct Value *rt_Integer___gt__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___gt__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *other = argv[1];
     if (IS_INTEGER(other)) {
@@ -260,7 +260,7 @@ static struct Value *rt_Integer___gt__(unsigned int argc, struct Value **argv) {
     }
     return &g_TheFalseValue;
 }
-static struct Value *rt_Integer___str__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___str__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *out, *self = argv[0];
     char *s, buf[80];
     snprintf(buf, sizeof(buf)/sizeof(*buf), "%d", self->v.Integer);
@@ -268,12 +268,12 @@ static struct Value *rt_Integer___str__(unsigned int argc, struct Value **argv) 
     ValueMakeLLString(&out, s);
     return out;
 }
-static struct Value *rt_Integer___hash__(unsigned int argc, struct Value **argv) {
+static struct Value *rt_Integer___hash__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     return self;
 }
-static struct Value *rt_Integer___dbg__(unsigned int argc, struct Value **argv) {
-    return rt_Integer___str__(argc, argv);
+static struct Value *rt_Integer___dbg__(struct Module *module, unsigned int argc, struct Value **argv) {
+    return rt_Integer___str__(module, argc, argv);
 }
 
 #define INTEGER_METHOD_INSERT(name, numArgs, isVarArgs)                  \

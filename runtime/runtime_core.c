@@ -15,7 +15,7 @@ BuiltinFnProc_t RT_type;
 struct SrcLoc srcLoc = {"<runtime_core.c>", -1, -1};
 
 
-struct Value *_rt_print(unsigned int argc, struct Value **argv) {
+struct Value *_rt_print(struct Module *module, unsigned int argc, struct Value **argv) {
     unsigned int i;
     char *s;
     for (i = 0; i < argc; ++i) {
@@ -29,20 +29,20 @@ struct Value *_rt_print(unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
 
-struct Value *_rt_println(unsigned int argc, struct Value **argv) {
-    struct Value *value = RT_print(argc, argv);
+struct Value *_rt_println(struct Module *module, unsigned int argc, struct Value **argv) {
+    struct Value *value = RT_print(module, argc, argv);
     printf("\n");
     return value;
 }
 
-struct Value *_rt_string(unsigned int argc, struct Value **argv) {
+struct Value *_rt_string(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *value;
     char *string = ValueToString(argv[0]);
     ValueMakeLLString(&value, string);
     return value;
 }
 
-struct Value *_rt_type(unsigned int argc, struct Value **argv) {
+struct Value *_rt_type(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *value;
     char *type = argv[0]->TypeInfo->TypeName;
     ValueMakeLLString(&value, type);
