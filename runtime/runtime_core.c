@@ -4,6 +4,7 @@
 #include "symbol_table.h"
 
 #include "helpers/strings.h"
+#include "interpreter.h"
 
 #include <stdio.h>
 
@@ -12,16 +13,16 @@ BuiltinFnProc_t RT_print;
 BuiltinFnProc_t RT_println;
 BuiltinFnProc_t RT_type;
 
-struct SrcLoc srcLoc = {"<runtime_core.c>", -1, -1};
-
+static struct SrcLoc srcLoc = {"<runtime_core.c>", -1, -1};
 
 struct Value *_rt_print(struct Module *module, unsigned int argc, struct Value **argv) {
     unsigned int i;
-    char *s;
+    struct Value *str;
     for (i = 0; i < argc; ++i) {
-        s = ValueToString(argv[i]);
-        printf("%s", s);
-        free(s);
+        str = InterpreterDispatchMethod(module, argv[i], "__str__", 0, NULL, srcLoc);
+        if (&g_TheStringTypeInfo == str->TypeInfo) {
+            printf("%s", str->v.String->CString);
+        }
         if (i + 1 < argc) {
             printf(" ");
         }
@@ -36,10 +37,8 @@ struct Value *_rt_println(struct Module *module, unsigned int argc, struct Value
 }
 
 struct Value *_rt_string(struct Module *module, unsigned int argc, struct Value **argv) {
-    struct Value *value;
-    char *string = ValueToString(argv[0]);
-    ValueMakeLLString(&value, string);
-    return value;
+    struct Value *str = InterpreterDispatchMethod(module, argv[0], "__str__", 0, NULL, srcLoc);
+    return str;
 }
 
 struct Value *_rt_type(struct Module *module, unsigned int argc, struct Value **argv) {
