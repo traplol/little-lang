@@ -77,7 +77,7 @@ static inline struct Value *DispatchBinaryOperationMethod(struct Module *module,
     DEREF_IF_SYMBOL(rhs);
     TypeInfoLookupMethod(lhs->TypeInfo, methodName, &method);
     if (!method) {
-        printf("Binary method '%s' not implemented for type of '%s'\n",
+        printf("Binary method '%s' not implemented for type of '%s'",
                methodName,
                lhs->TypeInfo->TypeName);
         at(ast->SrcLoc);
@@ -98,7 +98,7 @@ static inline struct Value *DispatchPrefixUnaryOperationMethod(struct Module *mo
     DEREF_IF_SYMBOL(rhs);
     TypeInfoLookupMethod(rhs->TypeInfo, methodName, &method);
     if (!method) {
-        printf("Prefix unary method '%s' not implemented for type of '%s'\n",
+        printf("Prefix unary method '%s' not implemented for type of '%s'",
                methodName,
                rhs->TypeInfo->TypeName);
         at(ast->SrcLoc);
@@ -109,6 +109,36 @@ static inline struct Value *DispatchPrefixUnaryOperationMethod(struct Module *mo
         return InterpreterDoCallBuiltinFn(module, method, 1, argv, ast->SrcLoc);
     }
     return InterpreterDoCallFunction(module, method, 1, argv, ast->SrcLoc);
+}
+
+struct Value *InterpreterDispatchMethod(struct Module *module, struct Value *object, char *methodName, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
+    struct Value *method, *result;
+    unsigned int i, newArgc = argc + 1;
+    struct Value **newArgv;
+
+    DEREF_IF_SYMBOL(object);
+    TypeInfoLookupMethod(object->TypeInfo, methodName, &method);
+    if (!method) {
+        printf("Method '%s' not implemented for type of '%s'",
+               methodName,
+               object->TypeInfo->TypeName);
+        at(srcLoc);
+        return &g_TheNilValue;
+    }
+
+    newArgv = malloc(sizeof(*newArgv) * newArgc);
+    newArgv[0] = object;
+    for (i = 0; i < argc; ++i) {
+        newArgv[i+1] = argv[i];
+    }
+    if (method->IsBuiltInFn) {
+        result = InterpreterDoCallBuiltinFn(module, method, newArgc, newArgv, srcLoc);
+    }
+    else {
+        result = InterpreterDoCallFunction(module, method, newArgc, newArgv, srcLoc);
+    }
+    free(newArgv);
+    return result;
 }
 
 /* Function definitions */
