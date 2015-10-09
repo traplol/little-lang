@@ -8,6 +8,8 @@ extern BuiltinFnProc_t RT_string;
 extern BuiltinFnProc_t RT_print;
 extern BuiltinFnProc_t RT_println;
 extern BuiltinFnProc_t RT_type;
+extern BuiltinFnProc_t RT_hash;
+extern BuiltinFnProc_t RT_dbg;
 
 int RegisterRuntime_core(void);
 
