@@ -162,10 +162,10 @@ int TypeInfoLookupMethod(struct TypeInfo *typeInfo, char *methodName, struct Val
             *out_method = out->Value;
             return R_OK;
         }
-        typeInfo = typeInfo->DerivedFrom;
         if (&g_TheBaseObjectTypeInfo == typeInfo) {
             break;
         }
+        typeInfo = typeInfo->DerivedFrom;
     }
     *out_method = NULL;
     return R_MethodNotFound;
