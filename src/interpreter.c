@@ -11,11 +11,12 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define TO_BOOLEAN(b) ((b) ? &g_TheTrueValue : &g_TheFalseValue)
-
-#define DEREF_IF_SYMBOL(s) ((s) = (s)->IsSymbol ? (s)->v.Symbol->Value : s)
-
-#define IS_NUMERIC(v) ((v) == TypeReal || (v) == TypeInteger)
+#define DEREF_IF_SYMBOL(s)                      \
+    do {                                        \
+        if ((s)->IsSymbol) {                    \
+            (s) = (s)->v.Symbol->Value;         \
+        }                                       \
+    } while (0)
 
 void at(struct SrcLoc srcLoc) {
     printf(" at %s:%d:%d\n", srcLoc.Filename, srcLoc.LineNumber, srcLoc.ColumnNumber);
