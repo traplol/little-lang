@@ -276,6 +276,10 @@ static struct Value *rt_Integer___dbg__(struct Module *module, unsigned int argc
     return rt_Integer___str__(module, argc, argv);
 }
 
+static struct Value *rt_Integer_is_nan(struct Module *module, unsigned int argc, struct Value **argv) {
+    return &g_TheFalseValue;
+}
+
 #define INTEGER_METHOD_INSERT(name, numArgs, isVarArgs)                  \
     do {                                                                \
         struct Value *method;                                           \
@@ -306,5 +310,6 @@ int RT_Integer_RegisterBuiltins(void) {
     INTEGER_METHOD_INSERT(__str__, 1, 0);
     INTEGER_METHOD_INSERT(__hash__, 1, 0);
     INTEGER_METHOD_INSERT(__dbg__, 1, 0);
+    INTEGER_METHOD_INSERT(is_nan, 1, 0);
     return R_OK;
 }

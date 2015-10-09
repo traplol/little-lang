@@ -203,6 +203,14 @@ static struct Value *rt_Real___dbg__(struct Module *module, unsigned int argc, s
     return rt_Real___str__(module, argc, argv);
 }
 
+static struct Value *rt_Real_is_nan(struct Module *module, unsigned int argc, struct Value **argv) {
+    struct Value *self = argv[0];
+    if (isnan(self->v.Real)) {
+        return &g_TheTrueValue;
+    }
+    return &g_TheFalseValue;
+}
+
 #define REAL_METHOD_INSERT(name, numArgs, isVarArgs)                  \
     do {                                                                \
         struct Value *method;                                           \
@@ -227,5 +235,6 @@ int RT_Real_RegisterBuiltins(void) {
     REAL_METHOD_INSERT(__str__, 1, 0);
     REAL_METHOD_INSERT(__hash__, 1, 0);
     REAL_METHOD_INSERT(__dbg__, 1, 0);
+    REAL_METHOD_INSERT(is_nan, 1, 0);
     return R_OK;
 }

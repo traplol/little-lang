@@ -86,6 +86,11 @@ static struct Value *rt_Object_new(struct Module *module, unsigned int argc, str
     return result;
 }
 
+static struct Value *rt_Object_is_nan(struct Module *module, unsigned int argc, struct Value **argv) {
+    return &g_TheTrueValue;
+}
+
+
 #define OBJECT_METHOD_INSERT(name, numArgs, isVarArgs)                  \
     do {                                                                \
         struct Value *method;                                           \
@@ -119,5 +124,6 @@ int RT_Object_RegisterBuiltins(void) {
     OBJECT_METHOD_INSERT(__hash__, 1, 0);
     OBJECT_METHOD_INSERT(__dbg__, 1, 0);
     OBJECT_METHOD_INSERT(new, 1, 0);
+    OBJECT_METHOD_INSERT(is_nan, 1, 0);
     return R_OK;
 }
