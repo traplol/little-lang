@@ -3,6 +3,7 @@
 #include "module_table.h"
 #include "globals.h"
 #include "runtime/registrar.h"
+#include "runtime/object.h"
 #include "runtime/gc.h"
 #include "value.h"
 #include "result.h"
@@ -10,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #define DEREF_IF_SYMBOL(s)                      \
     do {                                        \
@@ -321,8 +323,17 @@ struct Value *InterpreterDoDefFunction(struct Module *module, struct Ast *ast){
 }
 static void InstallFunctionDef(struct Module *module, struct TypeInfo *ti, struct Ast *ast) {
     struct Value *fn = ast->u.Value;
+    struct Value *defaultConstructor;
     fn->v.Function->OwnerModule = module;
-    SymbolTableInsert(ti->MethodTable, fn, fn->v.Function->Name, 0, ast->SrcLoc);
+    if (0 == strcmp("new", fn->v.Function->Name)) {
+        FunctionMaker(&defaultConstructor, "new", 0, 1, RT_Object_NewAllocator);
+        SymbolTableInsert(ti->MethodTable, defaultConstructor, "new", 0, ast->SrcLoc);
+        /* TODO: centralize `#_new_#' */ 
+        SymbolTableInsert(ti->MethodTable, fn, "#_new_#", 0, ast->SrcLoc);
+    }
+    else {
+        SymbolTableInsert(ti->MethodTable, fn, fn->v.Function->Name, 0, ast->SrcLoc);
+    }
 }
 static void InstallMutExpr(struct TypeInfo *ti, struct Ast *ast) {
     TypeInfoInsertMember(ti, ast);
@@ -330,14 +341,33 @@ static void InstallMutExpr(struct TypeInfo *ti, struct Ast *ast) {
 static void InstallConstExpr(struct TypeInfo *ti, struct Ast *ast) {
     TypeInfoInsertMember(ti, ast);
 }
+struct Value *InterpreterBuildObjectWithDefaults(struct Module *module, struct TypeInfo *typeInfo) {
+    unsigned int i;
+    struct Ast *ast;
+    struct Value *value;
+    struct Module fakeModule;
+    ValueMakeObject(&value, typeInfo);
+    fakeModule.ModuleScope = module->CurrentScope;
+    fakeModule.CurrentScope = value->v.Object;
+    fakeModule.TypeTable = module->TypeTable;
+    fakeModule.Program = module->Program;
+    fakeModule.Imports = module->Imports;
+    ValueMakeObject(&value, typeInfo);
+    for (i = 0; i < typeInfo->NumMembers; ++i) {
+        ast = typeInfo->Members[i];
+        InterpreterRunAst(&fakeModule, ast);
+    }
+    return value;
+}
 struct Value *InterpreterDoDefClass(struct Module *module, struct Ast *ast){
     unsigned int i;
     struct Ast *typeName = ast->Children[0];
     struct TypeInfo *typeInfo = calloc(sizeof *typeInfo, 1);
+    struct Ast *body = ast->Children[1];
     TypeInfoMake(typeInfo, TypeUserObject, &g_TheBaseObjectTypeInfo, typeName->u.SymbolName);
 
-    for (i = 0; i < ast->NumChildren; ++i) {
-        struct Ast *a = ast->Children[i];
+    for (i = 0; i < body->NumChildren; ++i) {
+        struct Ast *a = body->Children[i];
         if (FunctionNode == a->Type) {
             InstallFunctionDef(module, typeInfo, a);
         }
@@ -460,6 +490,9 @@ struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) 
         }
 
         TypeTableFind(&g_TheGlobalTypeTable, left->u.SymbolName, &typeInfo);
+        if (!typeInfo) {
+            TypeTableFind(module->TypeTable, left->u.SymbolName, &typeInfo);
+        }
         if (typeInfo) {
             TypeInfoLookupMethod(typeInfo, memberAst->u.SymbolName, &member);
             if (member) {
