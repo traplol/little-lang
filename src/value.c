@@ -187,6 +187,7 @@ int ValueMakeObject(struct Value **out_value, struct TypeInfo *typeInfo) {
     value->IsPassByReference = 1;
     value->v.Object = calloc(sizeof(*value->v.Object), 1);
     SymbolTableMake(value->v.Object);
+    *out_value = value;
     return R_OK;
 }
 int ValueAllocLLString(struct Value **out_value, char *cString, ValueAllocator allocator) {
