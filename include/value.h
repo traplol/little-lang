@@ -37,10 +37,10 @@ struct LLVector {
 
 struct Value {
     struct TypeInfo *TypeInfo;
-    int IsBuiltInFn;
-    int IsPassByReference;
-    int IsSymbol;
-    int Visited;
+    int IsBuiltInFn : 1,
+        IsPassByReference : 1,
+        IsSymbol : 1,
+        Visited : 1;
     union {
         int Integer;
         uint64_t RealToIntBits;
