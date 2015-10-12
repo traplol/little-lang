@@ -3,7 +3,7 @@ class MyClass {
     mut language = "English"
     const theAnswer = 42
 
-    def New(self, name, age) {
+    def new(self, name, age) {
         self.name = name
         self.age = age
     }
