@@ -52,6 +52,7 @@ struct Value *InterpreterDoLogicNot(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoAssign(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoSymbol(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoDefFunction(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoDefClass(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoArrayIdx(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast);
@@ -316,6 +317,38 @@ struct Value *InterpreterDoSymbol(struct Module *module, struct Ast *ast){
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoDefFunction(struct Module *module, struct Ast *ast){
+    return &g_TheNilValue;
+}
+static void InstallFunctionDef(struct Module *module, struct TypeInfo *ti, struct Ast *ast) {
+    struct Value *fn = ast->u.Value;
+    fn->v.Function->OwnerModule = module;
+    SymbolTableInsert(ti->MethodTable, fn, fn->v.Function->Name, 0, ast->SrcLoc);
+}
+static void InstallMutExpr(struct TypeInfo *ti, struct Ast *ast) {
+    TypeInfoInsertMember(ti, ast);
+}
+static void InstallConstExpr(struct TypeInfo *ti, struct Ast *ast) {
+    TypeInfoInsertMember(ti, ast);
+}
+struct Value *InterpreterDoDefClass(struct Module *module, struct Ast *ast){
+    unsigned int i;
+    struct Ast *typeName = ast->Children[0];
+    struct TypeInfo *typeInfo = calloc(sizeof *typeInfo, 1);
+    TypeInfoMake(typeInfo, TypeUserObject, &g_TheBaseObjectTypeInfo, typeName->u.SymbolName);
+
+    for (i = 0; i < ast->NumChildren; ++i) {
+        struct Ast *a = ast->Children[i];
+        if (FunctionNode == a->Type) {
+            InstallFunctionDef(module, typeInfo, a);
+        }
+        else if (MutExpr == a->Type) {
+            InstallMutExpr(typeInfo, a);
+        }
+        else if (ConstExpr == a->Type) {
+            InstallConstExpr(typeInfo, a);
+        }
+    }
+    TypeTableInsert(module->TypeTable, typeInfo);
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoCallBuiltinFn(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
@@ -619,6 +652,7 @@ struct Value *InterpreterRunAst(struct Module *module, struct Ast *ast) {
         case StringNode: return InterpreterDoString(ast);
         case SymbolNode: return InterpreterDoSymbol(module, ast);
         case FunctionNode: return InterpreterDoDefFunction(module, ast);
+        case ClassNode: return InterpreterDoDefClass(module, ast);
 
         case CallExpr: return InterpreterDoCall(module, ast);
         case ArrayIdxExpr: return InterpreterDoArrayIdx(module, ast);

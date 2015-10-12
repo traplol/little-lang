@@ -3,13 +3,15 @@ class MyClass {
     mut language = "English"
     const theAnswer = 42
 
-    def New(name, age) {
-        name = name
-        age = age
+    def New(self, name, age) {
+        self.name = name
+        self.age = age
     }
 
-    def Greet {
-        println("Hello,", name)
+    def Greet(self) {
+        println("Hello,", self.name)
+        println("You speak " + self.language + ".")
+        println("The answer is", self.theAnswer)
     }
 }
 

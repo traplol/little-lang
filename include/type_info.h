@@ -60,13 +60,8 @@ struct TypeInfo {
     enum TypeInfoType Type;
     struct TypeInfo *DerivedFrom; /* All objects are derived from at least the BaseObject including the BaseObject */
     char *TypeName;
-    unsigned int Size;
     struct SymbolTable *MethodTable;
-    struct Member {
-        char *Name;
-        struct TypeInfo *TypeInfo;
-        unsigned int MemOffset;
-    } **Members;
+    struct Ast **Members;
     unsigned int MembersLen;
     unsigned int CurrentMemberIdx;
 };
@@ -78,10 +73,7 @@ int TypeInfoFree(struct TypeInfo *typeInfo);
 /* Inserts a method into the method table */
 int TypeInfoInsertMethod(struct TypeInfo *typeInfo, struct Value *method, struct SrcLoc srcLoc);
 /* Inserts a new member into the type info. */
-int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo *memberTypeInfo);
-/* Lookup a member, returns a non-zero integer if the member was found and sets
- * out_member to the found member. */
-int TypeInfoLookupMember(struct TypeInfo *typeInfo, char *name, struct Member **out_member);
+int TypeInfoInsertMember(struct TypeInfo *typeInfo, struct Ast *ast);
 /* Searches for a method */
 int TypeInfoLookupMethod(struct TypeInfo *typeInfo, char *methodName, struct Value **out_method);
 #endif

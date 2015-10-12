@@ -31,19 +31,10 @@ int TypeInfoResizeMembers(struct TypeInfo *typeInfo) {
     return R_OK;
 }
 
-int TypeInfoMemberFree(struct Member *member) {
-    if (!member) {
-        return R_InvalidArgument;
-    }
-    free(member->Name);
-    return R_OK;
-}
-
 
 /******************* Public Functions *******************/
 
 int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeInfo *derivedFrom, char *typeName) {
-    unsigned int size;
     struct SymbolTable *methodTable;
     if (!typeInfo || !typeName || typeInfo == derivedFrom) {
         return R_InvalidArgument;
@@ -51,16 +42,6 @@ int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeI
     typeInfo->Type = type;
     typeInfo->DerivedFrom = derivedFrom;
     typeInfo->TypeName = strdup(typeName);
-    switch (type) {
-        case TypeFunction: 
-        case TypeBaseObject: 
-        case TypeString:
-        case TypeBoolean: /* Booleans are pointers that point to the "true" or "false" object */
-        case TypeUserObject: size = sizeof(void*); break;
-        case TypeInteger: size = sizeof(int); break;
-        case TypeReal: size = sizeof(double); break;
-    }
-    typeInfo->Size = size;
     typeInfo->Members = calloc(sizeof(*typeInfo->Members), MEMBERS_BASE_LENGTH);
     if (!typeInfo->Members) {
         return R_AllocFailed;
@@ -79,7 +60,7 @@ int TypeInfoFree(struct TypeInfo *typeInfo) {
     }
 
     for(i = 0; i < typeInfo->MembersLen; ++i) {
-        TypeInfoMemberFree(typeInfo->Members[i]);
+        AstFree(typeInfo->Members[i]);
         free(typeInfo->Members[i]);
     }
     free(typeInfo->Members);
@@ -101,13 +82,11 @@ int TypeInfoInsertMethod(struct TypeInfo *typeInfo, struct Value *method, struct
     else {
         name = method->v.Function->Name;
     }
-    /* TODO: Maybe this shouldn't be mutable */
-    return SymbolTableAssign(typeInfo->MethodTable, method, name, 1, srcLoc);
+    return SymbolTableAssign(typeInfo->MethodTable, method, name, 0, srcLoc);
 }
-int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo *memberTypeInfo) {
-    struct Member *member;
+int TypeInfoInsertMember(struct TypeInfo *typeInfo, struct Ast *ast) {
     int result;
-    if (TypeInfoIsInvalid(typeInfo) || TypeInfoIsInvalid(memberTypeInfo) || !name) {
+    if (TypeInfoIsInvalid(typeInfo) || !ast) {
         return R_InvalidArgument;
     }
     if (typeInfo->CurrentMemberIdx + 1 >= typeInfo->MembersLen) {
@@ -116,39 +95,8 @@ int TypeInfoInsertMember(struct TypeInfo *typeInfo, char *name, struct TypeInfo 
             return result;
         }
     }
-    member = malloc(sizeof *member);
-    member->Name = name;
-    member->TypeInfo = memberTypeInfo;
-    member->MemOffset = typeInfo->Size;
-    typeInfo->Size += memberTypeInfo->Size;
-    typeInfo->Members[typeInfo->CurrentMemberIdx++] = member;
+    typeInfo->Members[typeInfo->CurrentMemberIdx++] = ast;
     return R_OK;
-}
-
-/* TODO: Implement better member lookup than O(n) */
-struct Member *TypeInfoGetMember(struct TypeInfo *typeInfo, char *name) {
-    unsigned int i;
-    for (i = 0; i < typeInfo->CurrentMemberIdx; ++i) {
-        if (0 == strcmp(typeInfo->Members[i]->Name, name)) {
-            return typeInfo->Members[i];
-        }
-    }
-    return NULL;
-}
-
-int TypeInfoLookupMember(struct TypeInfo *typeInfo, char *name, struct Member **out_member) {
-    struct Member *temp;
-    if (TypeInfoIsInvalid(typeInfo) || !name) {
-        return R_False;
-    } 
-    temp = TypeInfoGetMember(typeInfo, name);
-    if (!temp) {
-        return R_False;
-    }
-    if (out_member) {
-        *out_member = temp;
-    }
-    return R_True;
 }
 
 int TypeInfoLookupMethod(struct TypeInfo *typeInfo, char *methodName, struct Value **out_method) {
