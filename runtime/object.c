@@ -3,9 +3,11 @@
 #include "globals.h"
 #include "helpers/macro_helpers.h"
 #include "helpers/strings.h"
+#include "interpreter.h"
 
 #include "result.h"
 
+BuiltinFnProc_t RT_Object_NewAllocator;
 static struct SrcLoc srcLoc = {"object.c", -1, -1};
 
 static struct Value *rt_Object___add__(struct Module *module, unsigned int argc, struct Value **argv) {
@@ -90,6 +92,16 @@ static struct Value *rt_Object_is_nan(struct Module *module, unsigned int argc, 
     return &g_TheTrueValue;
 }
 
+static struct Value *rt_Object_NewAllocator(struct Module *module, unsigned int argc, struct Value **argv) {
+    struct Value *value = InterpreterBuildObjectWithDefaults(module, argv[0]->TypeInfo);
+    /* TODO: centralize `#_new_#' */ 
+    struct Value *userReturn = InterpreterDispatchMethod(module, argv[0], "#_new_#", argc, argv, srcLoc);
+    if (value != userReturn) {
+        return userReturn;
+    }
+    return value;
+}
+
 
 #define OBJECT_METHOD_INSERT(name, numArgs, isVarArgs)                  \
     do {                                                                \
@@ -102,6 +114,7 @@ static struct Value *rt_Object_is_nan(struct Module *module, unsigned int argc, 
     } while (0)
 
 int RT_Object_RegisterBuiltins(void) {
+    RT_Object_NewAllocator = rt_Object_NewAllocator;
     OBJECT_METHOD_INSERT(__add__, 2, 0);
     OBJECT_METHOD_INSERT(__sub__, 2, 0);
     OBJECT_METHOD_INSERT(__mul__, 2, 0);
