@@ -168,16 +168,25 @@ int ValueMakeRealLiteral(struct Value **out_value, double real) {
 int ValueMakeReal(struct Value **out_value, double real) {
     return ValueAllocReal(out_value, real, ValueAlloc);
 }
-int ValueMakeObject(struct Value *value, struct TypeInfo *typeInfo, void *object, unsigned int objectSize) {
+int ValueMakeSingleton(struct Value *value, struct TypeInfo *typeInfo) {
     if (!value || !typeInfo) {
         return R_InvalidArgument;
     }
     ValueDefaults(value);
     value->TypeInfo = typeInfo;
     value->IsPassByReference = 1;
-    if (object && objectSize) {
-        memcpy(value->v.__ptrsize, object, objectSize);
+    return R_OK;
+}
+int ValueMakeObject(struct Value **out_value, struct TypeInfo *typeInfo) {
+    struct Value *value;
+    if (!out_value || !typeInfo) {
+        return R_InvalidArgument;
     }
+    value = ValueAlloc();
+    value->TypeInfo = typeInfo;
+    value->IsPassByReference = 1;
+    value->v.Object = calloc(sizeof(*value->v.Object), 1);
+    SymbolTableMake(value->v.Object);
     return R_OK;
 }
 int ValueAllocLLString(struct Value **out_value, char *cString, ValueAllocator allocator) {

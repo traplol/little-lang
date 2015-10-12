@@ -2,6 +2,7 @@
 #define _LITTLE_LANG_VALUE_H
 
 #include "type_info.h"
+#include "symbol_table.h"
 #include "ast.h"
 
 #include <stdint.h>
@@ -44,7 +45,7 @@ struct Value {
         int Integer;
         uint64_t RealToIntBits;
         double Real;
-        void *Object;
+        struct SymbolTable *Object;
         struct Symbol *Symbol;
         struct LLString *String;
         struct Function *Function;
@@ -68,8 +69,9 @@ int ValueMakeLLStringLiteral(struct Value **out_value, char *cString);
 
 int ValueMakeInteger(struct Value **out_value, int integer);
 int ValueMakeReal(struct Value **out_value, double real);
-int ValueMakeObject(struct Value *value, struct TypeInfo *typeInfo, void *object, unsigned int objectSize);
+int ValueMakeObject(struct Value **out_value, struct TypeInfo *typeInfo);
 int ValueMakeLLString(struct Value **out_value, char *cString);
+int ValueMakeSingleton(struct Value *value, struct TypeInfo *typeInfo);
 int ValueMakeFunction(struct Value *value, struct Function *function);
 int ValueMakeBuiltinFn(struct Value *value, struct BuiltinFn *builtinFn);
 

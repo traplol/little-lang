@@ -59,13 +59,13 @@ static int GlobalsInitTypeInfos(void) {
 
 static int GlobalsInitSingletonValues(void) {
     int result;
-    result = ValueMakeObject(&g_TheTrueValue, &g_TheBooleanTypeInfo, 0, 0);
+    result = ValueMakeSingleton(&g_TheTrueValue, &g_TheBooleanTypeInfo);
     RETURN_ON_FAIL(result);
 
-    result = ValueMakeObject(&g_TheFalseValue, &g_TheBooleanTypeInfo, 0, 0);
+    result = ValueMakeSingleton(&g_TheFalseValue, &g_TheBooleanTypeInfo);
     RETURN_ON_FAIL(result);
 
-    result = ValueMakeObject(&g_TheNilValue, &g_TheBaseObjectTypeInfo, 0, 0);
+    result = ValueMakeSingleton(&g_TheNilValue, &g_TheBaseObjectTypeInfo);
     RETURN_ON_FAIL(result);
 
     return R_OK;
