@@ -62,8 +62,8 @@ struct TypeInfo {
     char *TypeName;
     struct SymbolTable *MethodTable;
     struct Ast **Members;
-    unsigned int MembersLen;
-    unsigned int CurrentMemberIdx;
+    unsigned int CapMembers;
+    unsigned int NumMembers;
 };
 
 /* Initializes the type info. */

@@ -23,8 +23,8 @@ int TypeInfoResizeMembers(struct TypeInfo *typeInfo) {
     if (TypeInfoIsInvalid(typeInfo)) {
         return R_InvalidArgument;
     }
-    typeInfo->MembersLen *= 1.5;
-    typeInfo->Members = realloc(typeInfo->Members, typeInfo->MembersLen * sizeof(*typeInfo->Members));
+    typeInfo->CapMembers *= 1.5;
+    typeInfo->Members = realloc(typeInfo->Members, typeInfo->CapMembers * sizeof(*typeInfo->Members));
     if (!typeInfo->Members) {
         return R_AllocFailed;
     }
@@ -49,8 +49,8 @@ int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeI
     methodTable = calloc(sizeof *methodTable, 1);
     SymbolTableMake(methodTable);
     typeInfo->MethodTable = methodTable;
-    typeInfo->MembersLen = MEMBERS_BASE_LENGTH;
-    typeInfo->CurrentMemberIdx = 0;
+    typeInfo->CapMembers = MEMBERS_BASE_LENGTH;
+    typeInfo->NumMembers = 0;
     return R_OK;
 }
 int TypeInfoFree(struct TypeInfo *typeInfo) {
@@ -59,7 +59,7 @@ int TypeInfoFree(struct TypeInfo *typeInfo) {
         return R_InvalidArgument;
     }
 
-    for(i = 0; i < typeInfo->MembersLen; ++i) {
+    for(i = 0; i < typeInfo->CapMembers; ++i) {
         AstFree(typeInfo->Members[i]);
         free(typeInfo->Members[i]);
     }
@@ -89,13 +89,13 @@ int TypeInfoInsertMember(struct TypeInfo *typeInfo, struct Ast *ast) {
     if (TypeInfoIsInvalid(typeInfo) || !ast) {
         return R_InvalidArgument;
     }
-    if (typeInfo->CurrentMemberIdx + 1 >= typeInfo->MembersLen) {
+    if (typeInfo->NumMembers + 1 >= typeInfo->CapMembers) {
         result = TypeInfoResizeMembers(typeInfo);
         if (R_OK != result) {
             return result;
         }
     }
-    typeInfo->Members[typeInfo->CurrentMemberIdx++] = ast;
+    typeInfo->Members[typeInfo->NumMembers++] = ast;
     return R_OK;
 }
 
