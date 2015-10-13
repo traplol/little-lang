@@ -55,12 +55,10 @@ typedef struct Value *(*ValueAllocator)(void);
 struct Value *ValueAlloc(void) {
     struct Value *v;
     GC_AllocValue(&v);
-    ValueAllocMembers(v);
     return v;
 }
 struct Value *ValueAllocNoGC(void) {
     struct Value *v = calloc(sizeof *v, 1);
-    ValueAllocMembers(v);
     return v;
 }
 int ValueFree(struct Value *value) {
@@ -190,6 +188,7 @@ int ValueMakeObject(struct Value **out_value, struct TypeInfo *typeInfo) {
         return R_InvalidArgument;
     }
     value = ValueAlloc();
+    ValueAllocMembers(value);
     value->TypeInfo = typeInfo;
     value->IsPassByReference = 1;
     *out_value = value;
@@ -200,7 +199,7 @@ int ValueMakeType(struct Value **out_value, struct TypeInfo *typeInfo) {
     if (!out_value || !typeInfo) {
         return R_InvalidArgument;
     }
-    value = ValueAlloc();
+    value = ValueAllocNoGC();
     value->TypeInfo = &g_TheTypeTypeInfo;
     value->v.MetaTypeInfo = typeInfo;
     value->IsPassByReference = 1;
