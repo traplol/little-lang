@@ -14,7 +14,7 @@ static struct Value *rt_Type_new(struct Module *module, unsigned int argc, struc
     struct Value *value = InterpreterBuildObjectWithDefaults(module, self->v.MetaTypeInfo);
     if (R_OK == TypeInfoHasMethod(value->TypeInfo, "new")) {
         /* TODO: maybe validate argc and argv here? */
-        value = InterpreterDispatchMethod(module, value, "new", argc-1, argv+1, srcLoc);
+        InterpreterDispatchMethod(module, value, "new", argc-1, argv+1, srcLoc);
     }
     return value;
 }
