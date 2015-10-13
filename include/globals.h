@@ -6,6 +6,7 @@ extern struct Value g_TheFalseValue;
 extern struct Value g_TheNilValue;
 
 extern struct TypeInfo g_TheBaseObjectTypeInfo;
+extern struct TypeInfo g_TheTypeTypeInfo;
 extern struct TypeInfo g_TheFunctionTypeInfo;
 extern struct TypeInfo g_TheBuiltinFnTypeInfo;
 extern struct TypeInfo g_TheIntegerTypeInfo;

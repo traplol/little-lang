@@ -18,6 +18,7 @@ struct Value g_TheFalseValue;
 struct Value g_TheNilValue;
 
 struct TypeInfo g_TheBaseObjectTypeInfo;
+struct TypeInfo g_TheTypeTypeInfo;
 struct TypeInfo g_TheFunctionTypeInfo;
 struct TypeInfo g_TheBuiltinFnTypeInfo;
 struct TypeInfo g_TheIntegerTypeInfo;
@@ -35,6 +36,9 @@ static int GlobalsInitTypeInfos(void) {
     result = TypeInfoMake(&g_TheBaseObjectTypeInfo, TypeBaseObject, 0, "Object");
     RETURN_ON_FAIL(result);
     g_TheBaseObjectTypeInfo.DerivedFrom = &g_TheBaseObjectTypeInfo;
+
+    result = TypeInfoMake(&g_TheTypeTypeInfo, TypeType, &g_TheBaseObjectTypeInfo, "Type");
+    RETURN_ON_FAIL(result);
 
     result = TypeInfoMake(&g_TheFunctionTypeInfo, TypeFunction, &g_TheBaseObjectTypeInfo, "Function");
     RETURN_ON_FAIL(result);
