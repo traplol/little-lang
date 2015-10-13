@@ -1,6 +1,7 @@
 #include "registrar.h"
 #include "type_info.h"
 #include "globals.h"
+#include "interpreter.h"
 #include "helpers/macro_helpers.h"
 #include "helpers/strings.h"
 
@@ -56,6 +57,14 @@ static struct Value *rt_String_length(struct Module *module, unsigned int argc, 
     return result;
 }
 
+static struct Value *rt_String_new(struct Module *module, unsigned int argc, struct Value **argv) {
+    struct Value *self = argv[0];
+    struct Value *arg = argv[1];
+    struct Value *s = InterpreterDispatchMethod(module, arg, "__str__", 0, NULL, srcLoc);
+    self->v.String = s->v.String;
+    return &g_TheNilValue;
+}
+
 #define STRING_METHOD_INSERT(name, numArgs, isVarArgs)                  \
     do {                                                                \
         struct Value *method;                                           \
@@ -73,5 +82,6 @@ int RT_String_RegisterBuiltins(void) {
     STRING_METHOD_INSERT(__hash__, 1, 0);
     STRING_METHOD_INSERT(__dbg__, 1, 0);
     STRING_METHOD_INSERT(length, 1, 0);
+    STRING_METHOD_INSERT(new, 2, 0);
     return R_OK;
 }
