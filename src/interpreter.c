@@ -309,37 +309,21 @@ struct Value *InterpreterDoSymbol(struct Module *module, struct Ast *ast){
         value->v.Symbol = sym;
         return value;
     }
+    /* Classes use a separate `ModuleScope' */
+    else if (SymbolTableFindNearest(module->ModuleScope, ast->u.SymbolName, &sym)) {
+        value->v.Symbol = sym;
+        return value;
+    }
     else if (SymbolTableFindLocal(g_TheGlobalScope, ast->u.SymbolName, &sym)) {
         value->v.Symbol = sym;
         return value;
     }
     printf("Undefined symbol: '%s'", ast->u.SymbolName);
     at(ast->SrcLoc);
-    free(value);
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoDefFunction(struct Module *module, struct Ast *ast){
     return &g_TheNilValue;
-}
-static void InstallFunctionDef(struct Module *module, struct TypeInfo *ti, struct Ast *ast) {
-    struct Value *fn = ast->u.Value;
-    struct Value *defaultConstructor;
-    fn->v.Function->OwnerModule = module;
-    if (0 == strcmp("new", fn->v.Function->Name)) {
-        FunctionMaker(&defaultConstructor, "new", 0, 1, RT_Object_NewAllocator);
-        SymbolTableInsert(ti->MethodTable, defaultConstructor, "new", 0, ast->SrcLoc);
-        /* TODO: centralize `#_new_#' */ 
-        SymbolTableInsert(ti->MethodTable, fn, "#_new_#", 0, ast->SrcLoc);
-    }
-    else {
-        SymbolTableInsert(ti->MethodTable, fn, fn->v.Function->Name, 0, ast->SrcLoc);
-    }
-}
-static void InstallMutExpr(struct TypeInfo *ti, struct Ast *ast) {
-    TypeInfoInsertMember(ti, ast);
-}
-static void InstallConstExpr(struct TypeInfo *ti, struct Ast *ast) {
-    TypeInfoInsertMember(ti, ast);
 }
 struct Value *InterpreterBuildObjectWithDefaults(struct Module *module, struct TypeInfo *typeInfo) {
     unsigned int i;
@@ -347,27 +331,45 @@ struct Value *InterpreterBuildObjectWithDefaults(struct Module *module, struct T
     struct Value *value;
     struct Module fakeModule;
     ValueMakeObject(&value, typeInfo);
-    fakeModule.ModuleScope = module->CurrentScope;
-    fakeModule.CurrentScope = value->v.Object;
+    fakeModule.ModuleScope = module->ModuleScope;
+    fakeModule.CurrentScope = value->Members;
     fakeModule.TypeTable = module->TypeTable;
     fakeModule.Program = module->Program;
     fakeModule.Imports = module->Imports;
-    ValueMakeObject(&value, typeInfo);
     for (i = 0; i < typeInfo->NumMembers; ++i) {
         ast = typeInfo->Members[i];
         InterpreterRunAst(&fakeModule, ast);
     }
     return value;
 }
+static void InstallFunctionDef(struct Module *module, struct TypeInfo *ti, struct Ast *ast) {
+    struct Value *fn = ast->u.Value;
+    fn->v.Function->OwnerModule = module;
+    SymbolTableInsert(ti->MethodTable, fn, fn->v.Function->Name, 0, ast->SrcLoc);
+}
+static void InstallMutExpr(struct TypeInfo *ti, struct Ast *ast) {
+    TypeInfoInsertMember(ti, ast);
+}
+static void InstallConstExpr(struct TypeInfo *ti, struct Ast *ast) {
+    TypeInfoInsertMember(ti, ast);
+}
 struct Value *InterpreterDoDefClass(struct Module *module, struct Ast *ast){
     unsigned int i;
+    struct Value *value;
+    struct Symbol *symbol;
     struct Ast *typeName = ast->Children[0];
     struct TypeInfo *typeInfo = calloc(sizeof *typeInfo, 1);
     struct Ast *body = ast->Children[1];
+    if (SymbolTableFindNearest(module->CurrentScope, typeName->u.SymbolName, &symbol)) {
+        printf("Symbol already defined: '%s'", symbol->Key);
+        at(symbol->SrcLoc);
+        return &g_TheNilValue;
+    }
     TypeInfoMake(typeInfo, TypeUserObject, &g_TheBaseObjectTypeInfo, typeName->u.SymbolName);
 
     for (i = 0; i < body->NumChildren; ++i) {
         struct Ast *a = body->Children[i];
+        body->Children[i] = NULL;
         if (FunctionNode == a->Type) {
             InstallFunctionDef(module, typeInfo, a);
         }
@@ -379,7 +381,9 @@ struct Value *InterpreterDoDefClass(struct Module *module, struct Ast *ast){
         }
     }
     TypeTableInsert(module->TypeTable, typeInfo);
-    return &g_TheNilValue;
+    ValueMakeType(&value, typeInfo);
+    SymbolTableInsert(module->CurrentScope, value, typeInfo->TypeName, 0, ast->SrcLoc);
+    return value;
 }
 struct Value *InterpreterDoCallBuiltinFn(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
     struct Value *value;
@@ -481,6 +485,7 @@ struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) 
     struct Ast *memberAst = ast->Children[1];
     struct Value *value, *member;
     struct Module *import;
+    struct Symbol *symbol;
     struct TypeInfo *typeInfo;
 
     if (SymbolNode == left->Type) {
@@ -489,25 +494,32 @@ struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) 
             return InterpreterRunAst(import, memberAst);
         }
 
-        TypeTableFind(&g_TheGlobalTypeTable, left->u.SymbolName, &typeInfo);
-        if (!typeInfo) {
-            TypeTableFind(module->TypeTable, left->u.SymbolName, &typeInfo);
-        }
-        if (typeInfo) {
-            TypeInfoLookupMethod(typeInfo, memberAst->u.SymbolName, &member);
-            if (member) {
-                return member;
-            }
-            printf("Type '%s' does not implement '%s'",
-                typeInfo->TypeName,
-                memberAst->u.SymbolName);
-            at(ast->SrcLoc);
-            return &g_TheNilValue;
-        }
+        // TypeTableFind(&g_TheGlobalTypeTable, left->u.SymbolName, &typeInfo);
+        // if (!typeInfo) {
+        //     TypeTableFind(module->TypeTable, left->u.SymbolName, &typeInfo);
+        // }
+        // if (typeInfo) {
+        //     TypeInfoLookupMethod(typeInfo, memberAst->u.SymbolName, &member);
+        //     if (member) {
+        //         return member;
+        //     }
+        //     printf("Type '%s' does not implement '%s'",
+        //         typeInfo->TypeName,
+        //         memberAst->u.SymbolName);
+        //     at(ast->SrcLoc);
+        //     return &g_TheNilValue;
+        // }
     }
     
     value = InterpreterRunAst(module, left);
     DEREF_IF_SYMBOL(value);
+    SymbolTableFindLocal(value->Members, memberAst->u.SymbolName, &symbol);
+    if (symbol) {
+        member = ValueAlloc();
+        member->IsSymbol = 1;
+        member->v.Symbol = symbol;
+        return member;
+    }
     TypeInfoLookupMethod(value->TypeInfo, memberAst->u.SymbolName, &member);
     if (member) {
         NumToInjectIntoNextCall = 1;
