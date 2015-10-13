@@ -36,7 +36,7 @@ int TypeInfoResizeMembers(struct TypeInfo *typeInfo) {
 
 int TypeInfoMake(struct TypeInfo *typeInfo, enum TypeInfoType type, struct TypeInfo *derivedFrom, char *typeName) {
     struct SymbolTable *methodTable;
-    if (!typeInfo || !typeName || typeInfo == derivedFrom) {
+    if (!typeInfo || !typeName) {
         return R_InvalidArgument;
     }
     typeInfo->Type = type;
