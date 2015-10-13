@@ -100,8 +100,16 @@ void GC_Dump(void) {
     }
 }
 
+void GC_MarkSymbolTable(struct SymbolTable *st);
+void GC_MarkObjectMembers(struct Value *o) {
+    GC_MarkSymbolTable(o->Members);
+}
+
 void GC_MarkSymbols(struct Symbol *s) {
     while (s) {
+        if (TypeUserObject == s->Value->TypeInfo->Type) {
+            GC_MarkObjectMembers(s->Value);
+        }
         s->Value->Visited = 1;
         s = s->Next;
     }
