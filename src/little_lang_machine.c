@@ -122,6 +122,26 @@ int DefineTopLevelFunctions(struct Module *module, struct Ast *functionDefs) {
     return result;
 }
 
+int DefineClass(struct Module *module, struct Ast *class) {
+    InterpreterRunAst(module, class);
+    return R_OK;
+}
+int DefineClasses(struct Module *module, struct Ast *classDefs) {
+    unsigned int i;
+    int result;
+    if (!classDefs) {
+        return R_OK;
+    }
+    for (i = 0; i < classDefs->NumChildren; ++i) {
+        result = DefineClass(module, classDefs->Children[i]);
+        if (R_OK != result) {
+            break;
+        }
+    }
+    return result;
+    
+}
+
 int LittleLangMachineMakeLexer(struct LittleLangMachine *llm) {
     int result;
     llm->Lexer = malloc(sizeof(*llm->Lexer));
@@ -304,6 +324,7 @@ int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, s
         goto cleanup;
     }
     DefineTopLevelFunctions(module, programTrees->TopLevelFunctions);
+    DefineClasses(module, programTrees->Classes);
     InterpreterRunProgram(module);
 
     *out_module = module;
