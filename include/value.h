@@ -37,7 +37,7 @@ struct LLVector {
 
 struct Value {
     struct TypeInfo *TypeInfo;
-    int IsBuiltInFn : 1,
+    unsigned int IsBuiltInFn : 1,
         IsPassByReference : 1,
         IsSymbol : 1,
         Visited : 1;
