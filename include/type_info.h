@@ -47,6 +47,7 @@
 
 enum TypeInfoType {
     TypeBaseObject,           /* The base object every object is derived from. */
+    TypeType,                 /* These types describe how to build an object. */
     TypeBoolean,              /* true or false object */
     TypeString,               /* A string object */
     TypeInteger,              /* Integer object */
@@ -76,4 +77,6 @@ int TypeInfoInsertMethod(struct TypeInfo *typeInfo, struct Value *method, struct
 int TypeInfoInsertMember(struct TypeInfo *typeInfo, struct Ast *ast);
 /* Searches for a method */
 int TypeInfoLookupMethod(struct TypeInfo *typeInfo, char *methodName, struct Value **out_method);
+/* Returns R_OK if typeInfo has methodName */
+int TypeInfoHasMethod(struct TypeInfo *typeInfo, char *methodName);
 #endif

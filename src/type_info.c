@@ -118,3 +118,15 @@ int TypeInfoLookupMethod(struct TypeInfo *typeInfo, char *methodName, struct Val
     *out_method = NULL;
     return R_MethodNotFound;
 }
+
+int TypeInfoHasMethod(struct TypeInfo *typeInfo, char *methodName) {
+    struct Symbol *out;
+    if (!typeInfo || !methodName) {
+        return R_InvalidArgument;
+    }
+    SymbolTableFindLocal(typeInfo->MethodTable, methodName, &out);
+    if (out) {
+        return R_OK;
+    }
+    return R_MethodNotFound;
+}
