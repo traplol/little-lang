@@ -363,6 +363,7 @@ struct Value *InterpreterDoDefClass(struct Module *module, struct Ast *ast){
     if (SymbolTableFindNearest(module->CurrentScope, typeName->u.SymbolName, &symbol)) {
         printf("Symbol already defined: '%s'", symbol->Key);
         at(symbol->SrcLoc);
+        free(typeInfo);
         return &g_TheNilValue;
     }
     TypeInfoMake(typeInfo, TypeUserObject, &g_TheBaseObjectTypeInfo, typeName->u.SymbolName);
@@ -473,6 +474,7 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
     else {
         ret = InterpreterDoCallFunction(func->v.Function->OwnerModule, func, argc, argv, ast->SrcLoc);
     }
+    ret->Visited = 1;
     GC_Collect();
     free(argv);
     return ret;
