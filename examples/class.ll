@@ -9,9 +9,18 @@ class MyClass {
     }
 
     def Greet(self) {
-        println("Hello,", self.name)
-        println("You speak " + self.language + ".")
-        println("The answer is", self.theAnswer)
+       println("Hello,", self.name)
+       if self.age == 1 {
+           println("You are 1 year old!")
+       }
+       else {
+           println("You are", self.age, "years old!")
+       }
+       println("You speak " + self.language + ".")
+       println("The answer is " + string(self.theAnswer) + ".")
     }
 }
+
+mut mc = MyClass.new("Max", 24)
+mc.Greet()
 
