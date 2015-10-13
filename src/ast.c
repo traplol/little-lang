@@ -331,13 +331,12 @@ int AstMakeIfElse(struct Ast **out_ast, struct Ast *condition, struct Ast *body,
     return R_OK;
 }
 int AstMakeClass(struct Ast **out_ast, char *className, struct Ast *body, struct SrcLoc srcLoc) {
-    unsigned int i;
-    struct Ast *ast, *name, *c;
+    struct Ast *ast, *name;
     if (!out_ast || !className || !body) {
         return R_InvalidArgument;
     }
     AstMakeSymbol(&name, className, srcLoc);
-    ast = AstAlloc(5);
+    ast = AstAlloc(2);
     ast->Type = ClassNode;
     ast->Children[0] = name;
     ast->Children[1] = body;
