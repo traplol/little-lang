@@ -155,6 +155,7 @@ int SymbolTableFindLocal(struct SymbolTable *table, char *key, struct Symbol **o
     struct Symbol *symbol;
     unsigned int tableIdx;
     if (SymbolTableIsInvalid(table)) {
+        *out_symbol = NULL;
         return R_InvalidArgument;
     }
 
