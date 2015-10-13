@@ -3,6 +3,7 @@
 
 #include "runtime/runtime_core.h"
 #include "runtime/object.h"
+#include "runtime/type.h"
 #include "runtime/string.h"
 #include "runtime/integer.h"
 #include "runtime/real.h"
@@ -13,6 +14,7 @@
 int RegisterRuntimes(void) {
     RegisterRuntime_core();
     RT_Object_RegisterBuiltins();
+    RT_Type_RegisterBuiltins();
     RT_String_RegisterBuiltins();
     RT_Integer_RegisterBuiltins();
     RT_Real_RegisterBuiltins();
