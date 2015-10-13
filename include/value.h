@@ -45,13 +45,14 @@ struct Value {
         int Integer;
         uint64_t RealToIntBits;
         double Real;
-        struct SymbolTable *Object;
+        struct TypeInfo *MetaTypeInfo;
         struct Symbol *Symbol;
         struct LLString *String;
         struct Function *Function;
         struct BuiltinFn *BuiltinFn;
         unsigned char __ptrsize[sizeof(void*)];
     } v;
+    struct SymbolTable *Members;
 };
 
 struct Value *ValueAlloc(void);
@@ -70,6 +71,7 @@ int ValueMakeLLStringLiteral(struct Value **out_value, char *cString);
 int ValueMakeInteger(struct Value **out_value, int integer);
 int ValueMakeReal(struct Value **out_value, double real);
 int ValueMakeObject(struct Value **out_value, struct TypeInfo *typeInfo);
+int ValueMakeType(struct Value **out_value, struct TypeInfo *typeInfo);
 int ValueMakeLLString(struct Value **out_value, char *cString);
 int ValueMakeSingleton(struct Value *value, struct TypeInfo *typeInfo);
 int ValueMakeFunction(struct Value *value, struct Function *function);

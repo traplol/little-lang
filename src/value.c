@@ -43,6 +43,11 @@ int LLStringFree(struct LLString *llString) {
     return R_OK;
 }
 
+int ValueAllocMembers(struct Value *v) {
+    v->Members = calloc(sizeof(*v->Members), 1);
+    return SymbolTableMake(v->Members);
+}
+
 /********************* Public Functions *********************/
 
 typedef struct Value *(*ValueAllocator)(void);
@@ -50,10 +55,12 @@ typedef struct Value *(*ValueAllocator)(void);
 struct Value *ValueAlloc(void) {
     struct Value *v;
     GC_AllocValue(&v);
+    ValueAllocMembers(v);
     return v;
 }
 struct Value *ValueAllocNoGC(void) {
     struct Value *v = calloc(sizeof *v, 1);
+    ValueAllocMembers(v);
     return v;
 }
 int ValueFree(struct Value *value) {
@@ -185,10 +192,21 @@ int ValueMakeObject(struct Value **out_value, struct TypeInfo *typeInfo) {
     value = ValueAlloc();
     value->TypeInfo = typeInfo;
     value->IsPassByReference = 1;
-    value->v.Object = calloc(sizeof(*value->v.Object), 1);
-    SymbolTableMake(value->v.Object);
     *out_value = value;
     return R_OK;
+}
+int ValueMakeType(struct Value **out_value, struct TypeInfo *typeInfo) {
+    struct Value *value;
+    if (!out_value || !typeInfo) {
+        return R_InvalidArgument;
+    }
+    value = ValueAlloc();
+    value->TypeInfo = &g_TheTypeTypeInfo;
+    value->v.MetaTypeInfo = typeInfo;
+    value->IsPassByReference = 1;
+    *out_value = value;
+    return R_OK;
+    
 }
 int ValueAllocLLString(struct Value **out_value, char *cString, ValueAllocator allocator) {
     struct Value *value;
