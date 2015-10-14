@@ -70,7 +70,12 @@ static struct Value *rt_Object___index__(struct Module *module, unsigned int arg
 }
 static struct Value *rt_Object___str__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *result, *self = argv[0];
-    ValueMakeLLString(&result, self->TypeInfo->TypeName);
+    if (&g_TheNilValue == self) {
+        ValueMakeLLString(&result, "nil");
+    }
+    else {
+        ValueMakeLLString(&result, self->TypeInfo->TypeName);
+    }
     return result;
 }
 static struct Value *rt_Object___hash__(struct Module *module, unsigned int argc, struct Value **argv) {
