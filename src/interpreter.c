@@ -434,7 +434,6 @@ struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *fun
     }
     ValueDuplicate(&returnValue, returnValue);
     SymbolTablePopScope(&(module->CurrentScope));
-    SymbolTableAssign(module->CurrentScope, returnValue, "#_return_#", 1, srcLoc);
     return returnValue;
 }
 struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
@@ -474,7 +473,7 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
     else {
         ret = InterpreterDoCallFunction(func->v.Function->OwnerModule, func, argc, argv, ast->SrcLoc);
     }
-    ret->Visited = 1;
+    SymbolTableAssign(module->CurrentScope, ret, "#_return_#", 1, ast->SrcLoc);
     GC_Collect();
     free(argv);
     return ret;
