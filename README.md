@@ -82,7 +82,7 @@ $ ./bin/little-lang examples/fizzbuzz.ll
 #### Nil
 ```nil``` -- anything may point to it, it's a lone value that only evaluates to itself.
 
-#### Booleans
+#### Boolean
 little-lang has no concept if "truthy" values, booleans only evaluate to themselves, e.g:
 	```1, 0, "true", "false", nil```
 none of these evaluate to a boolean value.
@@ -90,14 +90,21 @@ none of these evaluate to a boolean value.
 Either ```true``` or ```false```, these values can only be acquired through literal assignment or logical 
 comparisons.
 
-#### Reals
+#### Real
 64-bit floating point values.
 
-#### Integers
+#### Integer
 32-bit signed integers that can currently only be represented in decimal.
 
-#### Strings
+#### String
 Strings are immutable, all string manipulation is done through copying.
+
+#### Vector
+Vectors are a 1D dynamicly resizing array of objects.
+
+#### Type
+Defining a class will create a new Type object of class' name that knows how to process ClassName.new()
+and generate the defaults and call ClassName's constructor.
 
 ### Builtin functions
 
