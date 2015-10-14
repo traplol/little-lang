@@ -27,6 +27,7 @@ struct TypeInfo g_TheIntegerTypeInfo;
 struct TypeInfo g_TheRealTypeInfo;
 struct TypeInfo g_TheStringTypeInfo;
 struct TypeInfo g_TheBooleanTypeInfo;
+struct TypeInfo g_TheVectorTypeInfo;
 
 struct TypeTable g_TheGlobalTypeTable;
 
@@ -55,6 +56,7 @@ static int GlobalsInitTypeInfos(void) {
     MAKE_TYPEINFO_AND_CONSTANT(Real, TypeReal);
     MAKE_TYPEINFO_AND_CONSTANT(String, TypeString);
     MAKE_TYPEINFO_AND_CONSTANT(Boolean, TypeBoolean);
+    MAKE_TYPEINFO_AND_CONSTANT(Vector, TypeVector);
     return R_OK;
 }
 
