@@ -71,7 +71,7 @@ int ValueFree(struct Value *value) {
     if (!value) {
         return R_InvalidArgument;
     }
-    if (value->IsSymbol) {
+    if (value->IsSymbol || value->IsPtrToValue) {
         return R_OK;
     }
     else if (value->IsBuiltInFn) {
@@ -86,6 +86,7 @@ int ValueFree(struct Value *value) {
             case TypeBoolean:
             case TypeInteger:
             case TypeReal:
+            case TypeVector:
                 return R_OK;
             case TypeUserObject:
                 return ValueFreeUserObject(value);
@@ -260,6 +261,9 @@ char *ValueToString(struct Value *value) {
     char buf[80];
     if (value->IsSymbol) {
         return ValueToString(value->v.Symbol->Value);
+    }
+    if (value->IsPtrToValue) {
+        return ValueToString(*value->v.PtrToValue);
     }
     switch (value->TypeInfo->Type) {
         default:

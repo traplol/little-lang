@@ -35,11 +35,13 @@ struct Value {
     unsigned int IsBuiltInFn : 1,
         IsPassByReference : 1,
         IsSymbol : 1,
-        Visited : 1;
+        Visited : 1,
+        IsPtrToValue : 1;
     union {
         int Integer;
         uint64_t RealToIntBits;
         double Real;
+        struct Value **PtrToValue;
         struct TypeInfo *MetaTypeInfo;
         struct Symbol *Symbol;
         struct LLString *String;
