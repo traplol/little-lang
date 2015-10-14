@@ -9,7 +9,7 @@ class HashTable {
         hash(key) % self.table.length()
     }
 
-    def put(self, key, value) {
+    def set(self, key, value) {
         mut idx = self.index(key)
         self.table[idx] = value
     }
@@ -25,9 +25,9 @@ class HashTable {
 }
 
 mut h = HashTable.new(10)
-h.put("a", 42)
-h.put("b", 123)
-h.put("c", 444)
+h.set("a", 42)
+h.set("b", 123)
+h.set("c", 444)
 
 println(h.get("a"))
 println(h.get("b"))
