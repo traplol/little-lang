@@ -92,6 +92,11 @@ static struct Value *rt_Vector___str__(struct Module *module, unsigned int argc,
     return string;
 }
 
+static struct Value *rt_Vector___dbg__(struct Module *module, unsigned int argc, struct Value **argv) {
+    return rt_Vector___str__(module, argc, argv);
+}
+
+
 #define VECTOR_METHOD_INSERT(name, numArgs, isVarArgs)                  \
     do {                                                                \
         struct Value *method;                                           \
@@ -104,6 +109,7 @@ static struct Value *rt_Vector___str__(struct Module *module, unsigned int argc,
 
 int RT_Vector_RegisterBuiltins(void) {
     VECTOR_METHOD_INSERT(__str__, 1, 0);
+    VECTOR_METHOD_INSERT(__dbg__, 1, 0);
     VECTOR_METHOD_INSERT(__index__, 2, 0);
     VECTOR_METHOD_INSERT(__lshift__, 2, 0);
     VECTOR_METHOD_INSERT(push_back, 2, 0);
