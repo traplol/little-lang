@@ -108,9 +108,6 @@ and generate the defaults and call ClassName's constructor.
 
 ### Builtin functions
 
-```string(x)``` -- Returns a String object, takes one argument, and attempts to represent the value as a 
-string. If ```string``` is unable to represent the value as a string it returns the value's type name.
-
 ```print(...)``` -- Returns ```nil```, takes any arguments, and prints the ```string``` representation of each 
 argument separated with a space.
 
@@ -118,6 +115,10 @@ argument separated with a space.
 to the end.
 
 ```type(x)``` -- Returns a String object, takes one argument, and returns the value's type name.
+
+```string(x)``` -- Returns a String object, takes one argument, and attempts to represent the value as a 
+string by calling ```x.__str__()```. If ```string``` is unable to represent the value as a string it 
+returns the value's type name.
 
 ```hash(x)``` -- Takes one argument and returns the value from ```x.__hash__()```.
 
