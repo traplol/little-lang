@@ -83,8 +83,9 @@ int GC_Free(struct GC_Object *object) {
 void GC_PrintObject(struct GC_Object *object) {
     char *s;
     struct Value *v = object->Value;
+    printf("<%08zx>", (size_t)v);
     if (v->IsSymbol) {
-        printf("%s -> ", v->v.Symbol->Key);
+        printf("%s -> <%08zx>", v->v.Symbol->Key, (size_t)v->v.Symbol->Value);
         v = v->v.Symbol->Value;
     }
     s = ValueToString(v);
