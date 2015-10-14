@@ -100,17 +100,33 @@ void GC_Dump(void) {
     }
 }
 
+void GC_MarkObject(struct Value *v);
 void GC_MarkSymbolTable(struct SymbolTable *st);
 void GC_MarkObjectMembers(struct Value *o) {
     GC_MarkSymbolTable(o->Members);
 }
 
+void GC_MarkVector(struct LLVector *v) {
+    unsigned int i;
+    for (i = 0; i < v->Length; ++i) {
+        GC_MarkObject(v->Values[i]);
+    }
+}
+
+void GC_MarkObject(struct Value *v) {
+    v->Visited = 1;
+    if (TypeUserObject == v->TypeInfo->Type) {
+        GC_MarkObjectMembers(v);
+    }
+    else if (&g_TheVectorTypeInfo == v->TypeInfo) {
+        GC_MarkVector(v->v.Vector);
+    }
+}
+
 void GC_MarkSymbols(struct Symbol *s) {
     while (s) {
-        if (TypeUserObject == s->Value->TypeInfo->Type) {
-            GC_MarkObjectMembers(s->Value);
-        }
         s->Value->Visited = 1;
+        GC_MarkObject(s->Value);
         s = s->Next;
     }
 }
