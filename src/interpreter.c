@@ -555,7 +555,7 @@ struct Value *InterpreterDoMut(struct Module *module, struct Ast *ast) {
 
     for (i = 0; i < names->NumChildren; ++i) {
         curName = names->Children[i];
-        if (SymbolTableFindNearest(module->CurrentScope, curName->u.SymbolName, &symbol)) {
+        if (SymbolTableFindLocal(module->CurrentScope, curName->u.SymbolName, &symbol)) {
             printf("Symbol already defined: '%s'", symbol->Key);
             at(symbol->SrcLoc);
             return &g_TheNilValue;
@@ -577,7 +577,7 @@ struct Value *InterpreterDoConst(struct Module *module, struct Ast *ast) {
     struct Value *value;
     name = ast->Children[0];
     valueAst = ast->Children[1];
-    if (SymbolTableFindNearest(module->CurrentScope, name->u.SymbolName, &symbol)) {
+    if (SymbolTableFindLocal(module->CurrentScope, name->u.SymbolName, &symbol)) {
         printf("Symbol already defined: '%s'", symbol->Key);
         at(symbol->SrcLoc);
         return &g_TheNilValue;
