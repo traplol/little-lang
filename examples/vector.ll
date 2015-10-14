@@ -6,6 +6,7 @@ def vector_test(n) {
     for mut i = 0; i < v.length(); i = i + 1 {
         println(i)
     }
+    println(v)
 }
 
 vector_test(20)
