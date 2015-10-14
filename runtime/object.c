@@ -9,6 +9,8 @@
 
 static struct SrcLoc srcLoc = {"object.c", -1, -1};
 
+static struct Value *nil_String;
+
 static struct Value *rt_Object___add__(struct Module *module, unsigned int argc, struct Value **argv) {
     return &g_TheNilValue;
 }
@@ -71,11 +73,9 @@ static struct Value *rt_Object___index__(struct Module *module, unsigned int arg
 static struct Value *rt_Object___str__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *result, *self = argv[0];
     if (&g_TheNilValue == self) {
-        ValueMakeLLString(&result, "nil");
+        return nil_String;
     }
-    else {
-        ValueMakeLLString(&result, self->TypeInfo->TypeName);
-    }
+    ValueMakeLLString(&result, self->TypeInfo->TypeName);
     return result;
 }
 static struct Value *rt_Object___hash__(struct Module *module, unsigned int argc, struct Value **argv) {
@@ -107,6 +107,7 @@ static struct Value *rt_Object_is_nan(struct Module *module, unsigned int argc, 
     } while (0)
 
 int RT_Object_RegisterBuiltins(void) {
+    ValueMakeLLStringLiteral(&nil_String, "nil");
     OBJECT_METHOD_INSERT(__add__, 2, 0);
     OBJECT_METHOD_INSERT(__sub__, 2, 0);
     OBJECT_METHOD_INSERT(__mul__, 2, 0);
