@@ -21,17 +21,24 @@ static struct Value *rt_Vector_length(struct Module *module, unsigned int argc, 
 
 static struct Value *rt_Vector_new(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
+    unsigned int cap;
+    if (argc > 1) {
+        cap = argv[1]->v.Integer;
+    }
+    else {
+        cap = 4;
+    }
     self->TypeInfo = &g_TheVectorTypeInfo;
     self->IsPassByReference = 1;
     self->v.Vector = calloc(sizeof *self->v.Vector, 1);
-    LLVectorMake(self->v.Vector);
+    LLVectorMake(self->v.Vector, cap);
     return &g_TheNilValue;
 }
 
 static struct Value *rt_Vector___index__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *idx = argv[1];
-    struct Value *value;
+    struct Value *ptrToValue;
     int i;
     if (&g_TheIntegerTypeInfo != idx->TypeInfo) {
         printf("%s.__idx__ only accepts Integers\n", self->TypeInfo->TypeName);
@@ -42,9 +49,10 @@ static struct Value *rt_Vector___index__(struct Module *module, unsigned int arg
     if ((unsigned)i >= self->v.Vector->Length) {
         return &g_TheNilValue;
     }
-
-    value = self->v.Vector->Values[i];
-    return value;
+    ptrToValue = ValueAlloc();
+    ptrToValue->IsPtrToValue = 1;
+    ptrToValue->v.PtrToValue = &(self->v.Vector->Values[i]);
+    return ptrToValue;
 }
 
 static struct Value *rt_Vector_push_back(struct Module *module, unsigned int argc, struct Value **argv) {
