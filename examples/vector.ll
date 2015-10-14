@@ -7,6 +7,12 @@ def vector_test(n) {
         println(i)
     }
     println(v)
+    v
 }
 
-vector_test(20)
+mut v = vector_test(10)
+
+v[0] = true
+v[v.length()-1] = 42
+println(v)
+
