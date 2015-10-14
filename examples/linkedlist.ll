@@ -35,6 +35,7 @@ class LinkedList {
                 c = c.next
             }
             c.next = nil
+            self.tail = c
         }
         else {
             node.data = node.next.data
@@ -71,6 +72,6 @@ ll.print()
 ll.pop_back()
 ll.print()
 
-mut node = ll.find(2)
-ll.delete(node)
+mut n = ll.find(2)
+ll.delete(n)
 ll.print()
