@@ -4,6 +4,7 @@
 struct LLVector {
     unsigned int Length;
     unsigned int Capacity;
+    unsigned int Index;
     struct Value **Values;
 };
 

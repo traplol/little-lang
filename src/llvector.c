@@ -1,4 +1,5 @@
 #include "llvector.h"
+#include "globals.h"
 
 #include "result.h"
 
@@ -9,18 +10,24 @@ static inline unsigned int min(unsigned int a, unsigned int b) {
 }
 
 int LLVectorMake(struct LLVector *vector, unsigned int capacity) {
+    unsigned int i;
     if (!vector || 0 == capacity) {
         return R_InvalidArgument;
     }
-    vector->Length = 0;
+    vector->Index = 0;
     vector->Capacity = capacity;
+    vector->Length = capacity;
     vector->Values = calloc(sizeof *vector->Values, vector->Capacity);
+    for (i = 0; i < capacity; ++i) {
+        vector->Values[i] = &g_TheNilValue;
+    }
     return R_OK;
 }
 int LLVectorFree(struct LLVector *vector) {
     if (!vector) {
         return R_InvalidArgument;
     }
+    vector->Index = 0;
     vector->Length = 0;
     vector->Capacity = 0;
     free(vector->Values);
@@ -53,7 +60,10 @@ int LLVectorAppendValue(struct LLVector *vector, struct Value *value) {
     if (vector->Length + 1 >= vector->Capacity) {
         LLVectorResize(vector, vector->Capacity * 2);
     }
-    vector->Values[vector->Length++] = value;
+    if (vector->Index == vector->Length) {
+        vector->Length++;
+    }
+    vector->Values[vector->Index++] = value;
     return R_OK;
 }
 int LLVectorSlice(struct LLVector *vector, unsigned int s, unsigned int e, struct LLVector **out_vector) {
