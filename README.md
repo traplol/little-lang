@@ -112,6 +112,10 @@ to the end.
 
 ```type(x)``` -- Returns a String object, takes one argument, and returns the value's type name.
 
+```hash(x)``` -- Takes one argument and returns the value from ```x.__hash__()```.
+
+```dbg(x)``` -- Takes one argument and returns the value from ```x.__dbg__()```.
+
 ### Constructs
 
 #### Defining variables
