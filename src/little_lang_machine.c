@@ -18,6 +18,8 @@
 char *CameFrom;
 char *StdinString = "<stdin>";
 
+static struct SrcLoc srcLoc = {"<little_lang_machine.c>", -1, -1};
+
 int LittleLangMachineIsValid(struct LittleLangMachine *llm) {
     return llm && llm->Lexer && llm->AllImportedModules;
 }
@@ -204,7 +206,8 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
         }
         else {
             value = InterpreterRunAst(llm->ThisModule, stmt);
-            printf(" => %s\n", ValueToString(value));
+            value = InterpreterDispatchMethod(llm->ThisModule, value, "__dbg__", 0, NULL, srcLoc);
+            printf(" => %s\n", value->v.String->CString);
         }
     }
     return result;
