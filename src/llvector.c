@@ -8,13 +8,22 @@ static inline unsigned int min(unsigned int a, unsigned int b) {
     return a < b ? a : b;
 }
 
-int LLVectorMake(struct LLVector *vector) {
+int LLVectorMake(struct LLVector *vector, unsigned int capacity) {
+    if (!vector || 0 == capacity) {
+        return R_InvalidArgument;
+    }
+    vector->Length = 0;
+    vector->Capacity = capacity;
+    vector->Values = calloc(sizeof *vector->Values, vector->Capacity);
+    return R_OK;
+}
+int LLVectorFree(struct LLVector *vector) {
     if (!vector) {
         return R_InvalidArgument;
     }
     vector->Length = 0;
-    vector->Capacity = 4;
-    vector->Values = calloc(sizeof *vector->Values, vector->Capacity);
+    vector->Capacity = 0;
+    free(vector->Values);
     return R_OK;
 }
 int LLVectorResize(struct LLVector *vector, unsigned int newSize) {
@@ -63,7 +72,7 @@ int LLVectorSlice(struct LLVector *vector, unsigned int s, unsigned int e, struc
         return R_InvalidArgument;
     }
     slice = calloc(sizeof *slice, 1);
-    LLVectorMake(slice);
+    LLVectorMake(slice, e-s+1);
     while (s < e) {
         LLVectorAppendValue(slice, vector->Values[s]);
         s++;

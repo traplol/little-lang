@@ -7,7 +7,8 @@ struct LLVector {
     struct Value **Values;
 };
 
-int LLVectorMake(struct LLVector *vector);
+int LLVectorMake(struct LLVector *vector, unsigned int capacity);
+int LLVectorFree(struct LLVector *vector);
 int LLVectorResize(struct LLVector *vector, unsigned int newSize);
 int LLVectorAppendValue(struct LLVector *vector, struct Value *value);
 int LLVectorSlice(struct LLVector *vector, unsigned int s, unsigned int e, struct LLVector **out_vector);
