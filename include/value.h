@@ -4,6 +4,7 @@
 #include "type_info.h"
 #include "symbol_table.h"
 #include "ast.h"
+#include "llvector.h"
 
 #include <stdint.h>
 
@@ -29,12 +30,6 @@ struct LLString {
     char *CString;
 };
 
-struct LLVector {
-    unsigned int Length;
-    unsigned int Capacity;
-    struct Value **Values;
-};
-
 struct Value {
     struct TypeInfo *TypeInfo;
     unsigned int IsBuiltInFn : 1,
@@ -48,6 +43,7 @@ struct Value {
         struct TypeInfo *MetaTypeInfo;
         struct Symbol *Symbol;
         struct LLString *String;
+        struct LLVector *Vector;
         struct Function *Function;
         struct BuiltinFn *BuiltinFn;
         unsigned char __ptrsize[sizeof(void*)];
