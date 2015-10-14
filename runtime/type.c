@@ -44,6 +44,13 @@ static struct Value *rt_Type_new(struct Module *module, unsigned int argc, struc
     return value;
 }
 
+static struct Value *rt_Type___str__(struct Module *module, unsigned int argc, struct Value **argv) {
+    struct Value *self = argv[0];
+    struct Value *string;
+    ValueMakeLLString(&string, self->v.MetaTypeInfo->TypeName);
+    return string;
+}
+
 #define TYPE_METHOD_INSERT(name, numArgs, isVarArgs)                  \
     do {                                                                \
         struct Value *method;                                           \
@@ -56,5 +63,6 @@ static struct Value *rt_Type_new(struct Module *module, unsigned int argc, struc
 
 int RT_Type_RegisterBuiltins(void) {
     TYPE_METHOD_INSERT(new, 0, 1);
+    TYPE_METHOD_INSERT(__str__, 1, 0);
     return R_OK;
 }
