@@ -16,7 +16,11 @@ struct GC_Object {
 static struct GC_Object *GC_Head;
 static struct GC_Object *GC_Tail;
 static unsigned int GC_Allocated;
+#ifdef NO_GC
+static int GC_Disabled = 1;
+#else
 static int GC_Disabled;
+#endif
 /* TODO: Proper size of memory allocated rather than number of objects. */
 #ifdef GC_COLLECT_THRESHOLD
 const unsigned int GC_CollectThreshold = GC_COLLECT_THRESHOLD;

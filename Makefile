@@ -26,6 +26,10 @@ strict: clean exe
 fast: CFLAGS:=$(CFLAGS_FAST)
 fast: clean exe
 
+no-gc: CFLAGS:=$(CFLAGS_LAX)
+no-gc: CFLAGS+=-DNO_GC
+no-gc: clean exe
+
 exe: $(OBJ_DIR) $(BIN_DIR) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS) | $(BIN_DIR)
