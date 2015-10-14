@@ -214,8 +214,7 @@ def HelloWorld {
 }
 ```
 
-The return value of a function is the value of the last statement executed, even from loops
-or conditional blocks.
+The return value of a function is the value of the last statement executed, even from conditional blocks.
 
 ```
 def returns_42 {
@@ -242,6 +241,7 @@ def returns_x {
 }
 println(returns_x()) # prints "10"
 ```
+*NOTE:* The return value from a loop is always ```nil```.
 
 #### Imports
 A rudimentary module import system is in place to allow for multiple source file programs where each file may be
