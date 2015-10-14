@@ -1,7 +1,6 @@
 # little-lang (actual name TBD)
 little-lang is a simple interpreted programming language inspired by an amalgamation of Ruby, Go, Python, and Lisp.
-Currently, it provides duck typing and mutable/const variables with plans to include a class/object and inheritance 
-system, garbage collection, and dynamically scoped closures.
+Currently, it provides duck typing and mutable/const variables, a class/object system, stop-the-world mark/sweep garbage collection, and a simple module import system.
 
 ## Overview
 
@@ -83,7 +82,7 @@ $ ./bin/little-lang examples/fizzbuzz.ll
 #### Nil
 ```nil``` -- anything may point to it, it's a lone value that only evaluates to itself.
 
-#### Booleans
+#### Boolean
 little-lang has no concept if "truthy" values, booleans only evaluate to themselves, e.g:
 	```1, 0, "true", "false", nil```
 none of these evaluate to a boolean value.
@@ -91,14 +90,21 @@ none of these evaluate to a boolean value.
 Either ```true``` or ```false```, these values can only be acquired through literal assignment or logical 
 comparisons.
 
-#### Reals
+#### Real
 64-bit floating point values.
 
-#### Integers
+#### Integer
 32-bit signed integers that can currently only be represented in decimal.
 
-#### Strings
+#### String
 Strings are immutable, all string manipulation is done through copying.
+
+#### Vector
+Vectors are a 1D dynamicly resizing array of objects.
+
+#### Type
+Defining a class will create a new Type object of class' name that knows how to process ClassName.new()
+and generate the defaults and call ClassName's constructor.
 
 ### Builtin functions
 
@@ -112,6 +118,10 @@ argument separated with a space.
 to the end.
 
 ```type(x)``` -- Returns a String object, takes one argument, and returns the value's type name.
+
+```hash(x)``` -- Takes one argument and returns the value from ```x.__hash__()```.
+
+```dbg(x)``` -- Takes one argument and returns the value from ```x.__dbg__()```.
 
 ### Constructs
 
@@ -244,3 +254,58 @@ libName.SomeFunc()
 
 *NOTE:* There are currently no cycle/loop checks for recursive imports which will result in a stack overflow in the 
 interpreter.
+
+#### Objects
+Every type implements at least the default version (returns ```nil```) of the following methods:
+
+Arithmetic/math
+```
+__add__(self, other)         alias => self + other
+__sub__(self, other)         alias => self - other
+__mul__(self, other)         alias => self * other
+__div__(self, other)         alias => self / other
+__mod__(self, other)         alias => self % other
+__and__(self, other)         alias => self & other
+__or__(self, other)          alias => self | other
+__xor__(self, other)         alias => self ^ other
+__pow__(self, other)         alias => self ** other
+__neg__(self)                alias => - self
+__pos__(self)                alias => + self
+__lshift__(self, other)      alias => self << other
+__rshift__(self, other)      alias => self >> other
+```
+
+Comparison/logic
+```
+__not__(self)                alias => ! self
+__eq__(self, other)          alias => self == other
+__lt__(self, other)          alias => self < other
+__gt__(self, other)          alias => self > other
+```
+
+*NOTE:* ```__eq__``` is expected to return a true or false value
+
+*NOTE:* ```__lt__``` is expected to return a true or false value
+
+*NOTE:* ```__eq__``` is expected to return a true or false value
+
+*NOTE:* ```!=``` returns the opposite of ```__eq__```
+
+*NOTE:* ```<=``` returns ```__lt__``` OR ```__eq__```
+
+*NOTE:* ```>=``` returns ```__gt__``` OR ```__eq__```
+
+Misc.
+```
+__index__(self, other)       alias => self[other]
+__str__(self)                called by => str(thing)
+__hash__(self)               called by => hash(thing)
+__dbg__(self)                called by => dbg(thing)
+```
+
+*NOTE:* ```__str__``` is expected to return a String object
+
+*NOTE:* ```__hash__``` is expected to return an Integer object
+
+*NOTE:* ```__dbg__``` is expected to return a String object
+
