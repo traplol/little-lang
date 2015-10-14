@@ -48,6 +48,12 @@ int ValueFreeUserObject(struct Value *object) {
     return result;
 }
 
+int ValueFreeLLVector(struct Value *object) {
+    int result = LLVectorFree(object->v.Vector);
+    free(object->v.Vector);
+    return result;
+}
+
 int ValueAllocMembers(struct Value *v) {
     v->Members = calloc(sizeof(*v->Members), 1);
     return SymbolTableMake(v->Members);
@@ -86,8 +92,9 @@ int ValueFree(struct Value *value) {
             case TypeBoolean:
             case TypeInteger:
             case TypeReal:
-            case TypeVector:
                 return R_OK;
+            case TypeVector:
+                return ValueFreeLLVector(value);
             case TypeUserObject:
                 return ValueFreeUserObject(value);
             case TypeString:
