@@ -11,6 +11,8 @@
 
 static struct SrcLoc srcLoc = {"string.c", -1, -1};
 
+BuiltinFnProc_t RT_String_Concat;
+
 static struct Value *rt_String___add__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *out, *self = argv[0];
     struct Value *other = argv[1];
@@ -76,6 +78,7 @@ static struct Value *rt_String_new(struct Module *module, unsigned int argc, str
     } while (0)
 
 int RT_String_RegisterBuiltins(void) {
+    RT_String_Concat = rt_String___add__;
     STRING_METHOD_INSERT(__add__, 2, 0);
     STRING_METHOD_INSERT(__eq__, 2, 0);
     STRING_METHOD_INSERT(__str__, 1, 0);

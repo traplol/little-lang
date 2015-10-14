@@ -3,6 +3,7 @@
 #include "globals.h"
 #include "interpreter.h"
 #include "helpers/macro_helpers.h"
+#include "runtime/string.h"
 
 #include "result.h"
 
@@ -57,6 +58,32 @@ static struct Value *rt_Vector___lshift__(struct Module *module, unsigned int ar
     return rt_Vector_push_back(module, argc, argv);
 }
 
+static struct Value *rt_Vector___str__(struct Module *module, unsigned int argc, struct Value **argv) {
+    unsigned int i;
+    struct Value *close, *sep, *other, *string, *self = argv[0];
+    struct LLVector *v = self->v.Vector;
+    struct Value *strArgv[2];
+    ValueMakeLLString(&string, "[");
+    ValueMakeLLString(&close, "]");
+    ValueMakeLLString(&sep, ", ");
+    for (i = 0; i < v->Length; ++i) {
+        other = InterpreterDispatchMethod(module, v->Values[i], "__str__", 0, NULL, srcLoc);
+        strArgv[0] = string;
+        strArgv[1] = other;
+        string = RT_String_Concat(module, 2, strArgv);
+
+        if (i + 1 < v->Length) {
+            strArgv[0] = string;
+            strArgv[1] = sep;
+            string = RT_String_Concat(module, 2, strArgv);
+        }
+    }
+    strArgv[0] = string;
+    strArgv[1] = close;
+    string = RT_String_Concat(module, 2, strArgv);
+    return string;
+}
+
 #define VECTOR_METHOD_INSERT(name, numArgs, isVarArgs)                  \
     do {                                                                \
         struct Value *method;                                           \
@@ -68,6 +95,7 @@ static struct Value *rt_Vector___lshift__(struct Module *module, unsigned int ar
     } while (0)
 
 int RT_Vector_RegisterBuiltins(void) {
+    VECTOR_METHOD_INSERT(__str__, 1, 0);
     VECTOR_METHOD_INSERT(__index__, 2, 0);
     VECTOR_METHOD_INSERT(__lshift__, 2, 0);
     VECTOR_METHOD_INSERT(push_back, 2, 0);
