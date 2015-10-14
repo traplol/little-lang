@@ -45,10 +45,13 @@ static struct Value *_rt_string(struct Module *module, unsigned int argc, struct
 }
 
 static struct Value *_rt_type(struct Module *module, unsigned int argc, struct Value **argv) {
-    struct Value *value;
-    char *type = argv[0]->TypeInfo->TypeName;
-    ValueMakeLLString(&value, type);
-    return value;
+    char *typeName = argv[0]->TypeInfo->TypeName;
+    struct Symbol *symbol;
+    SymbolTableFindNearest(module->CurrentScope, typeName, &symbol);
+    if (!symbol) {
+        SymbolTableFindLocal(g_TheGlobalScope, typeName, &symbol);
+    }
+    return symbol->Value;
 }
 
 static struct Value *_rt_hash(struct Module *module, unsigned int argc, struct Value **argv) {
