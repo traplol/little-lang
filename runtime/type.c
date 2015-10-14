@@ -9,31 +9,38 @@
 
 static struct SrcLoc srcLoc = {"type.c", -1, -1};
 
+static inline unsigned int isPBR(struct TypeInfo *typeInfo) {
+    switch (typeInfo->Type) {
+    default:
+        return 1;
+    case TypeInteger:
+    case TypeReal:
+        return 0;
+    }
+}
+
 static struct Value *rt_Type_new(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *value, *func;
 
     if (TypeUserObject == self->v.MetaTypeInfo->Type) {
         value = InterpreterBuildObjectWithDefaults(module, self->v.MetaTypeInfo);
-        if (R_OK == TypeInfoHasMethod(value->TypeInfo, "new")) {
-            /* TODO: maybe validate argc and argv here? */
-            InterpreterDispatchMethod(module, value, "new", argc-1, argv+1, srcLoc);
-        }
     }
     else {
         value = ValueAlloc();
-        TypeInfoLookupMethod(self->v.MetaTypeInfo, "new", &func);
-        if (func) {
-            argv[0] = value;
-            if (func->IsBuiltInFn) {
-                InterpreterDoCallBuiltinFn(module, func, argc, argv, srcLoc);
-            }
-            else {
-                InterpreterDoCallFunction(module, func, argc, argv, srcLoc);
-            }
+        value->TypeInfo = self->v.MetaTypeInfo;
+        value->IsPassByReference = isPBR(value->TypeInfo);
+    }
+    TypeInfoLookupMethod(value->TypeInfo, "new", &func);
+    if (func) {
+        argv[0] = value;
+        if (func->IsBuiltInFn) {
+            InterpreterDoCallBuiltinFn(module, func, argc, argv, srcLoc);
+        }
+        else {
+            InterpreterDoCallFunction(module, func, argc, argv, srcLoc);
         }
     }
-    
     return value;
 }
 
