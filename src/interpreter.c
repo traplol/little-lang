@@ -18,6 +18,9 @@
         if ((s)->IsSymbol) {                    \
             (s) = (s)->v.Symbol->Value;         \
         }                                       \
+        else if ((s)->IsPtrToValue) {           \
+            (s) = *(s)->v.PtrToValue;           \
+        }                                       \
     } while (0)
 
 void at(struct SrcLoc srcLoc) {
@@ -286,6 +289,10 @@ struct Value *InterpreterDoAssign(struct Module *module, struct Ast *ast) {
         }
         symbol->Value = rvalue;
         return symbol->Value;
+    }
+    if (lvalue->IsPtrToValue) {
+        *lvalue->v.PtrToValue = rvalue;
+        return rvalue;
     }
     return &g_TheNilValue;
 }
