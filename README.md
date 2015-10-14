@@ -114,7 +114,7 @@ argument separated with a space.
 ```println(...)``` -- Returns ```nil```, takes any arguments, calls ```print``` and adds a ```newline``` character
 to the end.
 
-```type(x)``` -- Returns a String object, takes one argument, and returns the value's type name.
+```type(x)``` -- Returns a Type object, takes one argument, and returns the value's Type object.
 
 ```string(x)``` -- Returns a String object, takes one argument, and attempts to represent the value as a 
 string by calling ```x.__str__()```. If ```string``` is unable to represent the value as a string it 
