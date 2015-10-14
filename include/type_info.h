@@ -53,6 +53,7 @@ enum TypeInfoType {
     TypeInteger,              /* Integer object */
     TypeReal,                 /* Floating point object*/
     TypeUserObject,           /* A user defined object */
+    TypeVector,               /* A dynamic array */
 
     TypeFunction,             /* Functions are first class objects */
 };
