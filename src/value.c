@@ -42,6 +42,11 @@ int LLStringFree(struct LLString *llString) {
     free(llString->CString);
     return R_OK;
 }
+int ValueFreeUserObject(struct Value *object) {
+    int result = SymbolTableFree(object->Members);
+    free(object->Members);
+    return result;
+}
 
 int ValueAllocMembers(struct Value *v) {
     v->Members = calloc(sizeof(*v->Members), 1);
@@ -76,12 +81,14 @@ int ValueFree(struct Value *value) {
     }
     else {
         switch (value->TypeInfo->Type) {
+            case TypeType:
             case TypeBaseObject:
             case TypeBoolean:
             case TypeInteger:
             case TypeReal:
-            case TypeUserObject:
                 return R_OK;
+            case TypeUserObject:
+                return ValueFreeUserObject(value);
             case TypeString:
                 return LLStringFree(value->v.String);
             case TypeFunction:
