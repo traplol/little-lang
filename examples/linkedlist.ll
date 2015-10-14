@@ -72,6 +72,6 @@ ll.print()
 ll.pop_back()
 ll.print()
 
-mut n = ll.find(2)
-ll.delete(n)
+mut node = ll.find(2)
+ll.delete(node)
 ll.print()
