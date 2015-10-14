@@ -8,6 +8,7 @@
 #include "runtime/integer.h"
 #include "runtime/real.h"
 #include "runtime/boolean.h"
+#include "runtime/vector.h"
 
 #include <stdlib.h>
 
@@ -19,6 +20,7 @@ int RegisterRuntimes(void) {
     RT_Integer_RegisterBuiltins();
     RT_Real_RegisterBuiltins();
     RT_Boolean_RegisterBuiltins();
+    RT_Vector_RegisterBuiltins();
     return R_OK;
 }
 
