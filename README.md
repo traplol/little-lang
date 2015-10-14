@@ -1,7 +1,6 @@
 # little-lang (actual name TBD)
 little-lang is a simple interpreted programming language inspired by an amalgamation of Ruby, Go, Python, and Lisp.
-Currently, it provides duck typing and mutable/const variables with plans to include a class/object and inheritance 
-system, garbage collection, and dynamically scoped closures.
+Currently, it provides duck typing and mutable/const variables, a class/object system, stop-the-world mark/sweep garbage collection, and a simple module import system.
 
 ## Overview
 
@@ -244,3 +243,58 @@ libName.SomeFunc()
 
 *NOTE:* There are currently no cycle/loop checks for recursive imports which will result in a stack overflow in the 
 interpreter.
+
+#### Objects
+Every type implements at least the default version (returns ```nil```) of the following methods:
+
+Arithmetic/math
+```
+__add__(self, other)         alias => self + other
+__sub__(self, other)         alias => self - other
+__mul__(self, other)         alias => self * other
+__div__(self, other)         alias => self / other
+__mod__(self, other)         alias => self % other
+__and__(self, other)         alias => self & other
+__or__(self, other)          alias => self | other
+__xor__(self, other)         alias => self ^ other
+__pow__(self, other)         alias => self ** other
+__neg__(self)                alias => - self
+__pos__(self)                alias => + self
+__lshift__(self, other)      alias => self << other
+__rshift__(self, other)      alias => self >> other
+```
+
+Comparison/logic
+```
+__not__(self)                alias => ! self
+__eq__(self, other)          alias => self == other
+__lt__(self, other)          alias => self < other
+__gt__(self, other)          alias => self > other
+```
+
+*NOTE:* ```__eq__``` is expected to return a true or false value
+
+*NOTE:* ```__lt__``` is expected to return a true or false value
+
+*NOTE:* ```__eq__``` is expected to return a true or false value
+
+*NOTE:* ```!=``` returns the opposite of ```__eq__```
+
+*NOTE:* ```<=``` returns ```__lt__``` OR ```__eq__```
+
+*NOTE:* ```>=``` returns ```__gt__``` OR ```__eq__```
+
+Misc.
+```
+__index__(self, other)       alias => self[other]
+__str__(self)                called by => str(thing)
+__hash__(self)               called by => hash(thing)
+__dbg__(self)                called by => dbg(thing)
+```
+
+*NOTE:* ```__str__``` is expected to return a String object
+
+*NOTE:* ```__hash__``` is expected to return an Integer object
+
+*NOTE:* ```__dbg__``` is expected to return a String object
+
