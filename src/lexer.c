@@ -3,6 +3,7 @@
 
 #include "helpers/strings.h"
 #include "helpers/io.h"
+#include "helpers/macro_helpers.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -168,6 +169,11 @@ done:
     *out_str = str;
     return R_OK;
 }
+
+#define OPER_CHK(lit, token) \
+    if (STRN_EQ(lit, str, STRLEN_LIT(lit))) {type = token; adv = STRLEN_LIT(lit);}
+#define OPER_CHKe(lit, token) else OPER_CHK(lit, token)
+
 int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_str) {
     char *str;
     unsigned int adv = 0;
@@ -176,38 +182,52 @@ int LexerParseOther(struct Lexer *lexer, enum TokenType *out_type, char **out_st
     while (*str && IsWhitespace(*str)) {
         LEX_ADVE(lexer, str);
     }
-    
-    if (STRN_EQ("..", str, 2)) { type = TokenDotDot; adv = 2;}
-    else if (STRN_EQ("==", str, 2)) { type = TokenEqEq; adv = 2;}
-    else if (STRN_EQ("!=", str, 2)) { type = TokenBangEq; adv = 2;}
-    else if (STRN_EQ("&&", str, 2)) { type = TokenAmpAmp; adv = 2;}
-    else if (STRN_EQ("||", str, 2)) { type = TokenBarBar; adv = 2;}
-    else if (STRN_EQ("<=", str, 2)) { type = TokenLtEq; adv = 2;}
-    else if (STRN_EQ(">=", str, 2)) { type = TokenGtEq; adv = 2;}
-    else if (STRN_EQ("**", str, 2)) { type = TokenStarStar; adv = 2;}
-    else if (STRN_EQ("<<", str, 2)) { type = TokenLtLt; adv = 2;}
-    else if (STRN_EQ(">>", str, 2)) { type = TokenGtGt; adv = 2;}
-    else if (STRN_EQ(",", str, 1)) { type = TokenComma; adv = 1;}
-    else if (STRN_EQ(";", str, 1)) { type = TokenSemicolon; adv = 1;}
-    else if (STRN_EQ("{", str, 1)) { type = TokenLeftCurlyBrace; adv = 1;}
-    else if (STRN_EQ("}", str, 1)) { type = TokenRightCurlyBrace; adv = 1;}
-    else if (STRN_EQ("(", str, 1)) { type = TokenLeftParen; adv = 1;}
-    else if (STRN_EQ(")", str, 1)) { type = TokenRightParen; adv = 1;}
-    else if (STRN_EQ("[", str, 1)) { type = TokenLeftSqBracket; adv = 1;}
-    else if (STRN_EQ("]", str, 1)) { type = TokenRightSqBracket; adv = 1;}
-    else if (STRN_EQ(".", str, 1)) { type = TokenDot; adv = 1;}
-    else if (STRN_EQ("=", str, 1)) { type = TokenEquals; adv = 1;}
-    else if (STRN_EQ("!", str, 1)) { type = TokenBang; adv = 1;}
-    else if (STRN_EQ("+", str, 1)) { type = TokenPlus; adv = 1;}
-    else if (STRN_EQ("-", str, 1)) { type = TokenMinus; adv = 1;}
-    else if (STRN_EQ("*", str, 1)) { type = TokenAsterisk; adv = 1;}
-    else if (STRN_EQ("/", str, 1)) { type = TokenSlash; adv = 1;}
-    else if (STRN_EQ("%", str, 1)) { type = TokenPercent; adv = 1;}
-    else if (STRN_EQ("^", str, 1)) { type = TokenCaret; adv = 1;}
-    else if (STRN_EQ("&", str, 1)) { type = TokenAmp; adv = 1;}
-    else if (STRN_EQ("|", str, 1)) { type = TokenBar; adv = 1;}
-    else if (STRN_EQ("<", str, 1)) { type = TokenLt; adv = 1;}
-    else if (STRN_EQ(">", str, 1)) { type = TokenGt; adv = 1;}
+
+    OPER_CHK("...", TokenDotDotDot)
+    OPER_CHKe("<<=", TokenLtLtEq)
+    OPER_CHKe(">>=", TokenGtGtEq)
+    OPER_CHKe("**=", TokenStarStarEq)
+
+    OPER_CHKe("..", TokenDotDot)
+    OPER_CHKe("==", TokenEqEq)
+    OPER_CHKe("!=", TokenBangEq)
+    OPER_CHKe("&&", TokenAmpAmp)
+    OPER_CHKe("||", TokenBarBar)
+    OPER_CHKe("<=", TokenLtEq)
+    OPER_CHKe(">=", TokenGtEq)
+    OPER_CHKe("**", TokenStarStar)
+    OPER_CHKe("<<", TokenLtLt)
+    OPER_CHKe(">>", TokenGtGt)
+    OPER_CHKe("+=", TokenPlusEq)
+    OPER_CHKe("-=", TokenMinusEq)
+    OPER_CHKe("*=", TokenAsteriskEq)
+    OPER_CHKe("/=", TokenSlashEq)
+    OPER_CHKe("%=", TokenPercentEq)
+    OPER_CHKe("^=", TokenCaretEq)
+    OPER_CHKe("&=", TokenAmpEq)
+    OPER_CHKe("|=", TokenBarEq)
+
+    OPER_CHKe(",", TokenComma)
+    OPER_CHKe(";", TokenSemicolon)
+    OPER_CHKe("{", TokenLeftCurlyBrace)
+    OPER_CHKe("}", TokenRightCurlyBrace)
+    OPER_CHKe("(", TokenLeftParen)
+    OPER_CHKe(")", TokenRightParen)
+    OPER_CHKe("[", TokenLeftSqBracket)
+    OPER_CHKe("]", TokenRightSqBracket)
+    OPER_CHKe(".", TokenDot)
+    OPER_CHKe("=", TokenEquals)
+    OPER_CHKe("!", TokenBang)
+    OPER_CHKe("+", TokenPlus)
+    OPER_CHKe("-", TokenMinus)
+    OPER_CHKe("*", TokenAsterisk)
+    OPER_CHKe("/", TokenSlash)
+    OPER_CHKe("%", TokenPercent)
+    OPER_CHKe("^", TokenCaret)
+    OPER_CHKe("&", TokenAmp)
+    OPER_CHKe("|", TokenBar)
+    OPER_CHKe("<", TokenLt)
+    OPER_CHKe(">", TokenGt)
     else if (STRN_EQ("\n", str, 1)) { goto handle_newline; }
     else if (!*str) { goto end_of_stream; }
     else { type = TokenUnknown; }
