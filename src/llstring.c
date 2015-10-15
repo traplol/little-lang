@@ -67,6 +67,7 @@ int LLStringConcatenate(struct LLString *s1, struct LLString *s2, struct LLStrin
         *s++ = *r++;
     }
     *s = 0;
+    *out_string = out;
     return R_OK;
 }
 int LLStringSlice(struct LLString *string, unsigned int start, unsigned int end, struct LLString **out_string) {
@@ -93,5 +94,6 @@ int LLStringSlice(struct LLString *string, unsigned int start, unsigned int end,
         *s++ = string->CString[start++];
     }
     *s = 0;
+    *out_string = out;
     return R_OK;
 }
