@@ -213,8 +213,16 @@ int GC_RegisterSymbolTable(struct SymbolTable *st) {
 
 int GC_AllocValue(struct Value **out_value) {
     int result;
-    struct GC_Object *object = calloc(sizeof *object, 1);
-    struct Value *value = calloc(sizeof *value, 1);
+    struct GC_Object *object;
+    struct Value *value;
+
+    //result = GC_Collect();
+    //if (R_OK != result) {
+    //return result;
+    //}
+
+    object = calloc(sizeof *object, 1);
+    value = calloc(sizeof *value, 1);
     value->Visited = 1;
     object->Value = value;
     result = GC_Append(object);

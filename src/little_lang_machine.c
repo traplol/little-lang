@@ -174,7 +174,6 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
     struct Value *value;
     struct Module *mod;
     char *filename, *as;
-    GC_Disable();
     llm->Lexer->REPL = llm->CmdOpts.ReplMode;
     tokenStream = calloc(sizeof *tokenStream, 1);
     if (!llm->ThisModule) {
