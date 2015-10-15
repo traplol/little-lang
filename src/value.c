@@ -282,6 +282,9 @@ char *ValueToString(struct Value *value) {
     if (value->IsPtrToValue) {
         return ValueToString(*value->v.PtrToValue);
     }
+    if (!value || !value->TypeInfo) {
+        return NULL;
+    }
     switch (value->TypeInfo->Type) {
         default:
             if (&g_TheNilValue == value) {
