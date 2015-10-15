@@ -27,6 +27,9 @@ void at(struct SrcLoc srcLoc) {
     printf(" at %s:%d:%d\n", srcLoc.Filename, srcLoc.LineNumber, srcLoc.ColumnNumber);
 }
 
+static unsigned int IsBreaking = 0;
+static unsigned int IsContinuing = 0;
+static unsigned int IsReturning = 0;
 static unsigned int NumToInjectIntoNextCall;
 static struct Value *InjectIntoNextCall[4];
 
@@ -62,6 +65,8 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoArrayIdx(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoReturn(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoBreak(struct Module *module, struct Ast *ast);
+struct Value *InterpreterDoContinue(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoMut(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoConst(struct Module *module, struct Ast *ast);
 struct Value *InterpreterDoFor(struct Module *module, struct Ast *ast);
@@ -153,6 +158,9 @@ struct Value *InterpreterDoBody(struct Module *module, struct Ast *ast) {
     unsigned int i;
     struct Value *value = &g_TheNilValue;
     for (i = 0; i < ast->NumChildren; ++i) {
+        if (IsContinuing || IsBreaking || IsReturning) {
+            break;
+        }
         value = InterpreterRunAst(module, ast->Children[i]);
     }
     return value;
@@ -435,10 +443,15 @@ struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *fun
         }
     }
     /* Execute body. */
+    returnValue = &g_TheNilValue;
     for (i = 0; i < body->NumChildren; ++i) {
         returnValue = InterpreterRunAst(module, body->Children[i]);
         DEREF_IF_SYMBOL(returnValue);
+        if (IsReturning) {
+            break;
+        }
     }
+    IsReturning = 0;
     ValueDuplicate(&returnValue, returnValue);
     SymbolTablePopScope(&(module->CurrentScope));
     return returnValue;
@@ -494,29 +507,12 @@ struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) 
     struct Value *value, *member;
     struct Module *import;
     struct Symbol *symbol;
-    struct TypeInfo *typeInfo;
 
     if (SymbolNode == left->Type) {
         ModuleTableFind(module->Imports, left->u.SymbolName, &import);
         if (import) {
             return InterpreterRunAst(import, memberAst);
         }
-
-        // TypeTableFind(&g_TheGlobalTypeTable, left->u.SymbolName, &typeInfo);
-        // if (!typeInfo) {
-        //     TypeTableFind(module->TypeTable, left->u.SymbolName, &typeInfo);
-        // }
-        // if (typeInfo) {
-        //     TypeInfoLookupMethod(typeInfo, memberAst->u.SymbolName, &member);
-        //     if (member) {
-        //         return member;
-        //     }
-        //     printf("Type '%s' does not implement '%s'",
-        //         typeInfo->TypeName,
-        //         memberAst->u.SymbolName);
-        //     at(ast->SrcLoc);
-        //     return &g_TheNilValue;
-        // }
     }
     
     value = InterpreterRunAst(module, left);
@@ -537,6 +533,19 @@ struct Value *InterpreterDoMemberAccess(struct Module *module, struct Ast *ast) 
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoReturn(struct Module *module, struct Ast *ast) {
+    struct Ast *expr = ast->Children[0];
+    IsReturning = 1;
+    if (!expr) {
+        return &g_TheNilValue;
+    }
+    return InterpreterRunAst(module, expr);
+}
+struct Value *InterpreterDoBreak(struct Module *module, struct Ast *ast) {
+    IsBreaking = 1;
+    return &g_TheNilValue;
+}
+struct Value *InterpreterDoContinue(struct Module *module, struct Ast *ast) {
+    IsContinuing = 1;
     return &g_TheNilValue;
 }
 struct Value *InterpreterDoMut(struct Module *module, struct Ast *ast) {
@@ -603,6 +612,19 @@ struct Value *InterpreterDoFor(struct Module *module, struct Ast *ast) {
             break;
         }
         InterpreterRunAst(module, body);
+        if (IsContinuing) {
+            IsContinuing = 0;
+            goto do_post;
+        }
+        if (IsBreaking) {
+            IsBreaking = 0;
+            break;
+        }
+        if (IsReturning) {
+            SymbolTablePopScope(&(module->CurrentScope));
+            return c;
+        }
+    do_post:
         InterpreterRunAst(module, post);
     }
     SymbolTablePopScope(&(module->CurrentScope));
@@ -620,7 +642,19 @@ struct Value *InterpreterDoWhile(struct Module *module, struct Ast *ast) {
         if (&g_TheTrueValue != c) {
             break;
         }
+        if (IsContinuing) {
+            IsContinuing = 0;
+            continue;
+        }
         InterpreterRunAst(module, body);
+        if (IsBreaking) {
+            IsBreaking = 0;
+            break;
+        }
+        if (IsReturning) {
+            SymbolTablePopScope(&(module->CurrentScope));
+            return c;
+        }
     }
     SymbolTablePopScope(&(module->CurrentScope));
     return &g_TheNilValue;
@@ -711,6 +745,8 @@ struct Value *InterpreterRunAst(struct Module *module, struct Ast *ast) {
         case ArrayIdxExpr: return InterpreterDoArrayIdx(module, ast);
         case MemberAccessExpr: return InterpreterDoMemberAccess(module, ast);
         case ReturnExpr: return InterpreterDoReturn(module, ast);
+        case ContinueExpr: return InterpreterDoContinue(module, ast);
+        case BreakExpr: return InterpreterDoBreak(module, ast);
         case MutExpr: return InterpreterDoMut(module, ast);
         case ConstExpr: return InterpreterDoConst(module, ast);
 
