@@ -16,11 +16,7 @@ struct GC_Object {
 static struct GC_Object *GC_Head;
 static struct GC_Object *GC_Tail;
 static unsigned int GC_Allocated;
-#ifdef NO_GC
-static int GC_Disabled = 1;
-#else
 static int GC_Disabled;
-#endif
 /* TODO: Proper size of memory allocated rather than number of objects. */
 #ifdef GC_COLLECT_THRESHOLD
 const unsigned int GC_CollectThreshold = GC_COLLECT_THRESHOLD;
@@ -192,6 +188,9 @@ struct ScopeHolder *ScopeHolderMake(struct SymbolTable *st) {
 void GC_Disable(void) {
     GC_Disabled = 1;
 }
+void GC_Enable(void) {
+    GC_Disabled = 0;
+}
 
 int GC_RegisterSymbolTable(struct SymbolTable *st) {
     unsigned int idx = (size_t)st % ScopesSize;
@@ -216,10 +215,14 @@ int GC_AllocValue(struct Value **out_value) {
     struct GC_Object *object;
     struct Value *value;
 
-    //result = GC_Collect();
-    //if (R_OK != result) {
-    //return result;
-    //}
+    /* TODO: Need to fix marking: cycles and symbol lifetime. */
+    /*
+    result = GC_Collect();
+    if (R_OK != result) {
+        *out_value = NULL;
+        return result;
+    }
+    */
 
     object = calloc(sizeof *object, 1);
     value = calloc(sizeof *value, 1);
@@ -237,6 +240,11 @@ int GC_AllocValue(struct Value **out_value) {
     return R_OK;
 }
 
+#ifdef NO_GC
+int GC_Collect(void) {
+    return R_OK;
+}
+#else
 int GC_Collect(void) {
     if (GC_Disabled) {
         return R_OK;
@@ -244,10 +252,8 @@ int GC_Collect(void) {
     if (GC_Allocated < GC_CollectThreshold) {
         return R_OK;
     }
-//    printf("%d -> ", GC_Allocated);
     GC_Mark();
     GC_Sweep();
-//    printf("%d\n", GC_Allocated);
     return R_OK;
 }
-
+#endif
