@@ -6,4 +6,6 @@
 #define GLUE2(a, b) a ## b
 #define GLUE3(a, b, c) a ## b ## c
 
+#define STRLEN_LIT(lit) ((sizeof lit)-1)
+
 #endif
