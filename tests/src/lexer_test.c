@@ -138,6 +138,21 @@ const char *SourceCode =
     " import "
     " as "
     " \n "
+    " ... "
+    " <<= "
+    " >>= "
+    " **= "
+    " += "
+    " -= "
+    " *= "
+    " /= "
+    " %= "
+    " ^= "
+    " &= "
+    " |= "
+    " return "
+    " continue "
+    " break "
     ;
 TEST(LexerTestAllTokenTypes) {
     struct Lexer *lexer = malloc(sizeof *lexer);
@@ -196,6 +211,22 @@ TEST(LexerTestAllTokenTypes) {
     LEX_TEST(lexer, "import", token, TokenImport);
     LEX_TEST(lexer, "as", token, TokenAs);
     LEX_TEST(lexer, "<newline>", token, TokenNewline);
+
+    LEX_TEST(lexer, "...", token, TokenDotDotDot);
+    LEX_TEST(lexer, "<<=", token, TokenLtLtEq);
+    LEX_TEST(lexer, ">>=", token, TokenGtGtEq);
+    LEX_TEST(lexer, "**=", token, TokenStarStarEq);
+    LEX_TEST(lexer, "+=", token, TokenPlusEq);
+    LEX_TEST(lexer, "-=", token, TokenMinusEq);
+    LEX_TEST(lexer, "*=", token, TokenAsteriskEq);
+    LEX_TEST(lexer, "/=", token, TokenSlashEq);
+    LEX_TEST(lexer, "%=", token, TokenPercentEq);
+    LEX_TEST(lexer, "^=", token, TokenCaretEq);
+    LEX_TEST(lexer, "&=", token, TokenAmpEq);
+    LEX_TEST(lexer, "|=", token, TokenBarEq);
+    LEX_TEST(lexer, "return", token, TokenReturn);
+    LEX_TEST(lexer, "continue", token, TokenContinue);
+    LEX_TEST(lexer, "break", token, TokenBreak);
 
     LEX_TEST(lexer, "<EOS>", token, TokenEOS);
     assert_eq(Token_NUM_TOKENS, lex_tests, "Not all tokens have been tested.");
