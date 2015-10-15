@@ -242,17 +242,40 @@ int AstMakeCall(struct Ast **out_ast, struct Ast *primary, struct Ast *args, str
     *out_ast = ast;
     return R_OK;
 }
-int AstMakeReturn(struct Ast **out_ast, struct Ast *value, struct SrcLoc srcLoc) {
+int AstMakeReturn(struct Ast **out_ast, struct Ast *expr, struct SrcLoc srcLoc) {
     struct Ast *ast;
     if (!out_ast) {
         return R_InvalidArgument;
     }
     ast = AstAlloc(1);
     ast->Type = ReturnExpr;
-    ast->Children[0] = value;
+    ast->Children[0] = expr;
     ast->SrcLoc = srcLoc;
     *out_ast = ast;
     return R_OK;
+}
+int AstMakeContinue(struct Ast **out_ast, struct SrcLoc srcLoc) {
+    struct Ast *ast;
+    if (!out_ast) {
+        return R_InvalidArgument;
+    }
+    ast = AstAlloc(0);
+    ast->Type = ContinueExpr;
+    ast->SrcLoc = srcLoc;
+    *out_ast = ast;
+    return R_OK;
+}
+int AstMakeBreak(struct Ast **out_ast, struct SrcLoc srcLoc) {
+    struct Ast *ast;
+    if (!out_ast) {
+        return R_InvalidArgument;
+    }
+    ast = AstAlloc(0);
+    ast->Type = BreakExpr;
+    ast->SrcLoc = srcLoc;
+    *out_ast = ast;
+    return R_OK;
+    
 }
 int AstMakeMut(struct Ast **out_ast, struct Ast *names, struct Ast *values, struct SrcLoc srcLoc) {
     struct Ast *ast;

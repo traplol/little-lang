@@ -47,6 +47,8 @@ enum AstNodeType {
     MemberAccessExpr,
 
     ReturnExpr,
+    ContinueExpr,
+    BreakExpr,
     MutExpr,
     ConstExpr,
 
@@ -94,7 +96,9 @@ int AstMakeAssign(struct Ast **out_ast, struct Ast *lValue, struct Ast *rhs, str
 int AstMakeCall(struct Ast **out_ast, struct Ast *primary, struct Ast *args, struct SrcLoc srcLoc);
 int AstMakeArrayIdx(struct Ast **out_ast, struct Ast *postfix, struct Ast *expr, struct SrcLoc srcLoc);
 int AstMakeMemberAccess(struct Ast **out_ast, struct Ast *postfix, struct Ast *symbol, struct SrcLoc srcLoc);
-int AstMakeReturn(struct Ast **out_ast, struct Ast *value, struct SrcLoc srcLoc);
+int AstMakeReturn(struct Ast **out_ast, struct Ast *expr, struct SrcLoc srcLoc);
+int AstMakeContinue(struct Ast **out_ast, struct SrcLoc srcLoc);
+int AstMakeBreak(struct Ast **out_ast, struct SrcLoc srcLoc);
 int AstMakeMut(struct Ast **out_ast, struct Ast *names, struct Ast *values, struct SrcLoc srcLoc);
 int AstMakeConst(struct Ast **out_ast, char *name, struct Ast *value, struct SrcLoc srcLoc);
 int AstMakeFor(struct Ast **out_ast, struct Ast *pre, struct Ast *condition, struct Ast *body, struct Ast *post, struct SrcLoc srcLoc);
