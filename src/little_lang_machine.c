@@ -231,6 +231,7 @@ int ParseProgramTrees(char *absPath, struct ParsedTrees **out_programTrees) {
     programTrees = calloc(sizeof *programTrees, 1);
     result = Parse(programTrees, lexer);
     if (R_OK != result) {
+        *out_programTrees = programTrees;
         return result;
     }
     LexerFree(lexer);
