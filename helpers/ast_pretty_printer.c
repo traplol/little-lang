@@ -224,7 +224,20 @@ void printAssign(struct Ast *node) {
     printNode(value);
 }
 void printReturn(struct Ast *node) {
-    printf("return %s", fmtNode(node));
+    struct Ast *expr = node->Children[0];
+    if (!expr) {
+        printf("return nil");
+    }
+    else {
+        printf("return ");
+        printNode(expr);
+    }
+}
+void printContinue(void) {
+    printf("continue");
+}
+void printBreak(void) {
+    printf("break");
 }
 void printMut(struct Ast *node) {
     unsigned int i;
@@ -372,6 +385,12 @@ void printNode(struct Ast *node) {
             break;
         case ReturnExpr:
             printReturn(node);
+            break;
+        case ContinueExpr:
+            printContinue();
+            break;
+        case BreakExpr:
+            printBreak();
             break;
         case MutExpr:
             printMut(node);
