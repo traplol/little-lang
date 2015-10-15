@@ -35,6 +35,9 @@ const char *tokenStrings[Token_NUM_TOKENS] = {
     [TokenEquals] = "=",
 };
 
+static unsigned int isInsideLoop = 0;
+static unsigned int isInsideFunction = 0;
+
 #define SAVE(ts, sp) sp = (ts)->Current
 
 #define RESTORE(ts, sp) (ts)->Current = sp
@@ -249,6 +252,9 @@ int IsUnaryOperator(struct Token *token) {
 int ParseParamList(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseArgList(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseExpr(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseReturn(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseContinue(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseBreak(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseAssign(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseFunction(struct Ast **out_ast, struct TokenStream *tokenStream);
@@ -371,7 +377,9 @@ int ParseFor(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
     result = ParseAssign(&post, tokenStream);
 
+    isInsideLoop = 1;
     result = ParseStmtList(&body, tokenStream);
+    isInsideLoop = 0;
 
     return AstMakeFor(out_ast, pre, cond, body, post, save->Token->SrcLoc);
 }
@@ -388,7 +396,9 @@ int ParseWhile(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
     result = ParseAssign(&cond, tokenStream);
 
+    isInsideLoop = 1;
     result = ParseStmtList(&body, tokenStream);
+    isInsideLoop = 0;
 
     return AstMakeWhile(out_ast, cond, body, save->Token->SrcLoc);
 }
@@ -764,6 +774,48 @@ int ParseExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     return R_UnexpectedToken;
 }
 
+/* Only parses if inside a function. */
+/* <return> := return <assign> */
+int ParseReturn(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    int result;
+    struct Ast *ast;
+    struct Node *save;
+    SAVE(tokenStream, save);
+    EXPECT_NO_MSG(TokenReturn, tokenStream);
+    if (!isInsideFunction) {
+        return ParseErrorUnexpectedToken(save->Token);
+    }
+    result = ParseAssign(&ast, tokenStream);
+    if (R_OK == result) {
+        return AstMakeReturn(out_ast, ast, save->Token->SrcLoc);
+    }
+    return AstMakeReturn(out_ast, NULL, save->Token->SrcLoc);
+}
+
+/* Only parses if inside a loop. */
+/* <continue> := continue */
+int ParseContinue(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    struct Node *save;
+    SAVE(tokenStream, save);
+    EXPECT_NO_MSG(TokenContinue, tokenStream);
+    if (!isInsideLoop) {
+        return ParseErrorUnexpectedToken(save->Token);
+    }
+    return AstMakeContinue(out_ast, save->Token->SrcLoc);
+}
+
+/* Only parses if inside a loop. */
+/* <continue> := break */
+int ParseBreak(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    struct Node *save;
+    SAVE(tokenStream, save);
+    EXPECT_NO_MSG(TokenBreak, tokenStream);
+    if (!isInsideLoop) {
+        return ParseErrorUnexpectedToken(save->Token);
+    }
+    return AstMakeBreak(out_ast, save->Token->SrcLoc);
+}
+
 /*
  * <funciton> := def <identifier> ( <param-list> ) { <stmt-list> }
  *            := def <identifier { <stmt-list> }
@@ -787,7 +839,9 @@ int ParseFunction(struct Ast **out_ast, struct TokenStream *tokenStream) {
     else {
         params = NULL; /* no params */
     }
+    isInsideFunction = 1;
     result = ParseStmtList(&body, tokenStream); /* body */
+    isInsideFunction = 0;
     IF_FAIL_RETURN_PARSE_ERROR(result, tokenStream, save, out_ast);
 
     if (params) {
@@ -882,6 +936,9 @@ int ParseDeclStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
  *        := <for>
  *        := <while>
  *        := <decl-stmt>
+ *        := <continue>
+ *        := <break>
+ *        := <return>
  */
 int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
     struct Node *save;
@@ -914,6 +971,24 @@ int ParseStmt(struct Ast **out_ast, struct TokenStream *tokenStream) {
     }
     RESTORE(tokenStream, save);
     result = ParseWhile(&ast, tokenStream);
+    if (R_OK == result) {
+        *out_ast = ast;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    result = ParseReturn(&ast, tokenStream);
+    if (R_OK == result) {
+        *out_ast = ast;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    result = ParseBreak(&ast, tokenStream);
+    if (R_OK == result) {
+        *out_ast = ast;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
+    result = ParseContinue(&ast, tokenStream);
     if (R_OK == result) {
         *out_ast = ast;
         return R_OK;
