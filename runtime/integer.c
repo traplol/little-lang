@@ -265,7 +265,7 @@ static struct Value *rt_Integer___str__(struct Module *module, unsigned int argc
     char *s, buf[80];
     snprintf(buf, sizeof(buf)/sizeof(*buf), "%d", self->v.Integer);
     s = strdup(buf);
-    ValueMakeLLString(&out, s);
+    ValueMakeLLStringWithCString(&out, s);
     return out;
 }
 static struct Value *rt_Integer___hash__(struct Module *module, unsigned int argc, struct Value **argv) {

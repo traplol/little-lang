@@ -32,7 +32,7 @@ static struct Value *rt_Boolean___str__(struct Module *module, unsigned int argc
     else {
         s = strdup("false");
     }
-    ValueMakeLLString(&out, s);
+    ValueMakeLLStringWithCString(&out, s);
     return out;
 }
 static struct Value *rt_Boolean___hash__(struct Module *module, unsigned int argc, struct Value **argv) {

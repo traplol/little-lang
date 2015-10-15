@@ -533,7 +533,7 @@ int ParseLiteral(struct Ast **out_ast, struct TokenStream *tokenStream) {
             result = AstMakeReal(out_ast, value, save->Token->SrcLoc);
             goto success;
         case TokenStringLiteral:
-            if (R_OK != ValueMakeLLStringLiteral(&value, token->v.String)) {
+            if (R_OK != ValueMakeLLStringLiteralWithCString(&value, token->v.String)) {
                 goto fail_cleanup;
             }
             result = AstMakeString(out_ast, value, save->Token->SrcLoc);

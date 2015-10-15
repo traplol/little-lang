@@ -71,9 +71,9 @@ static struct Value *rt_Vector___str__(struct Module *module, unsigned int argc,
     struct Value *close, *sep, *other, *string, *self = argv[0];
     struct LLVector *v = self->v.Vector;
     struct Value *strArgv[2];
-    ValueMakeLLString(&string, "[");
-    ValueMakeLLString(&close, "]");
-    ValueMakeLLString(&sep, ", ");
+    ValueMakeLLStringWithCString(&string, "[");
+    ValueMakeLLStringWithCString(&close, "]");
+    ValueMakeLLStringWithCString(&sep, ", ");
     for (i = 0; i < v->Length; ++i) {
         other = InterpreterDispatchMethod(module, v->Values[i], "__str__", 0, NULL, srcLoc);
         strArgv[0] = string;

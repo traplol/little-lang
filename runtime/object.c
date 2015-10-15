@@ -75,7 +75,7 @@ static struct Value *rt_Object___str__(struct Module *module, unsigned int argc,
     if (&g_TheNilValue == self) {
         return nil_String;
     }
-    ValueMakeLLString(&result, self->TypeInfo->TypeName);
+    ValueMakeLLStringWithCString(&result, self->TypeInfo->TypeName);
     return result;
 }
 static struct Value *rt_Object___hash__(struct Module *module, unsigned int argc, struct Value **argv) {
@@ -107,7 +107,7 @@ static struct Value *rt_Object_is_nan(struct Module *module, unsigned int argc, 
     } while (0)
 
 int RT_Object_RegisterBuiltins(void) {
-    ValueMakeLLStringLiteral(&nil_String, "nil");
+    ValueMakeLLStringLiteralWithCString(&nil_String, "nil");
     OBJECT_METHOD_INSERT(__add__, 2, 0);
     OBJECT_METHOD_INSERT(__sub__, 2, 0);
     OBJECT_METHOD_INSERT(__mul__, 2, 0);

@@ -47,7 +47,7 @@ static struct Value *rt_Type_new(struct Module *module, unsigned int argc, struc
 static struct Value *rt_Type___str__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *self = argv[0];
     struct Value *string;
-    ValueMakeLLString(&string, self->v.MetaTypeInfo->TypeName);
+    ValueMakeLLStringWithCString(&string, self->v.MetaTypeInfo->TypeName);
     return string;
 }
 

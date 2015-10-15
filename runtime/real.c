@@ -178,7 +178,7 @@ static struct Value *rt_Real___str__(struct Module *module, unsigned int argc, s
     char *s, buf[80];
     snprintf(buf, sizeof(buf)/sizeof(*buf), "%f", self->v.Real);
     s = strdup(buf);
-    ValueMakeLLString(&out, s);
+    ValueMakeLLStringWithCString(&out, s);
     return out;
 }
 static struct Value *rt_Real___hash__(struct Module *module, unsigned int argc, struct Value **argv) {

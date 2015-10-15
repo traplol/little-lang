@@ -16,10 +16,10 @@ BuiltinFnProc_t RT_String_Concat;
 static struct Value *rt_String___add__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *out, *self = argv[0];
     struct Value *other = argv[1];
-    char *s, *l, *r;
-    l = self->v.String->CString;
-    r = other->v.String->CString;
-    s = str_cat(l, r);
+    struct LLString *s, *l, *r;
+    l = self->v.String;
+    r = other->v.String;
+    LLStringConcatenate(l, r, &s);
     ValueMakeLLString(&out, s);
     return out;
 }
@@ -39,7 +39,7 @@ static struct Value *rt_String___eq__(struct Module *module, unsigned int argc, 
 }
 static struct Value *rt_String___str__(struct Module *module, unsigned int argc, struct Value **argv) {
     struct Value *out, *self = argv[0];
-    ValueMakeLLString(&out, self->v.String->CString);
+    ValueMakeLLStringWithCString(&out, self->v.String->CString);
     return out;
 }
 static struct Value *rt_String___hash__(struct Module *module, unsigned int argc, struct Value **argv) {
@@ -51,6 +51,18 @@ static struct Value *rt_String___hash__(struct Module *module, unsigned int argc
 static struct Value *rt_String___dbg__(struct Module *module, unsigned int argc, struct Value **argv) {
     /* TODO: Implement the escapes. */
     return rt_String___str__(module, argc, argv);
+}
+
+static struct Value *rt_String___index__(struct Module *module, unsigned int argc, struct Value **argv) {
+    struct Value *result, *self = argv[0];
+    struct LLString *str, *selfStr = self->v.String;
+    int at = argv[1]->v.Integer;
+    if (at >= selfStr->Length) {
+        return &g_TheNilValue;
+    }
+    LLStringCharAt(selfStr, at, &str);
+    ValueMakeLLString(&result, str);
+    return result;
 }
 
 static struct Value *rt_String_length(struct Module *module, unsigned int argc, struct Value **argv) {
@@ -81,6 +93,7 @@ int RT_String_RegisterBuiltins(void) {
     RT_String_Concat = rt_String___add__;
     STRING_METHOD_INSERT(__add__, 2, 0);
     STRING_METHOD_INSERT(__eq__, 2, 0);
+    STRING_METHOD_INSERT(__index__, 2, 0);
     STRING_METHOD_INSERT(__str__, 1, 0);
     STRING_METHOD_INSERT(__hash__, 1, 0);
     STRING_METHOD_INSERT(__dbg__, 1, 0);
