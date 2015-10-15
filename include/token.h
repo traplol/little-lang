@@ -45,6 +45,7 @@ enum TokenType {
 
     TokenDot,
     TokenDotDot,
+    TokenDotDotDot,
 
     TokenEquals,
     TokenEqEq,
@@ -67,6 +68,18 @@ enum TokenType {
     TokenStarStar,
     TokenLtLt,
     TokenGtGt,
+
+    TokenPlusEq,
+    TokenMinusEq,
+    TokenAsteriskEq,
+    TokenSlashEq,
+    TokenPercentEq,
+    TokenCaretEq,
+    TokenAmpEq,
+    TokenBarEq,
+    TokenStarStarEq,
+    TokenLtLtEq,
+    TokenGtGtEq,
 
     Token_NUM_TOKENS,
 };
