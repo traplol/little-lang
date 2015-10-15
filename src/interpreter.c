@@ -345,16 +345,28 @@ struct Value *InterpreterBuildObjectWithDefaults(struct Module *module, struct T
     struct Ast *ast;
     struct Value *value;
     struct Module fakeModule;
+    struct SymbolTable *st;
+    GC_Disable();
     ValueMakeObject(&value, typeInfo);
-    fakeModule.ModuleScope = module->ModuleScope;
-    fakeModule.CurrentScope = value->Members;
-    fakeModule.TypeTable = module->TypeTable;
-    fakeModule.Program = module->Program;
-    fakeModule.Imports = module->Imports;
+    SymbolTablePushScope(&(module->CurrentScope));
+    //fakeModule.ModuleScope = module->ModuleScope;
+    //fakeModule.CurrentScope = value->Members;
+    //fakeModule.TypeTable = module->TypeTable;
+    //fakeModule.Program = module->Program;
+    //fakeModule.Imports = module->Imports;
     for (i = 0; i < typeInfo->NumMembers; ++i) {
         ast = typeInfo->Members[i];
-        InterpreterRunAst(&fakeModule, ast);
+        InterpreterRunAst(module, ast);
     }
+    st = calloc(sizeof *st, 1);
+    st->Symbols = module->CurrentScope->Symbols;
+    st->TableLength = module->CurrentScope->TableLength;
+    value->Members = st;
+
+    module->CurrentScope->Symbols = NULL;
+    module->CurrentScope->TableLength = 0;
+    SymbolTablePopScope(&(module->CurrentScope));
+    GC_Enable();
     return value;
 }
 static void InstallFunctionDef(struct Module *module, struct TypeInfo *ti, struct Ast *ast) {
