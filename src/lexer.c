@@ -116,6 +116,9 @@ int LexerParseIdentOrKeyword(struct Lexer *lexer, enum TokenType *out_type, char
     else if (STR_EQ(str, "as")) { type = TokenAs; }
     else if (STR_EQ(str, "mut")) { type = TokenMut; }
     else if (STR_EQ(str, "const")) { type = TokenConst; }
+    else if (STR_EQ(str, "return")) { type = TokenReturn; }
+    else if (STR_EQ(str, "break")) { type = TokenBreak; }
+    else if (STR_EQ(str, "continue")) { type = TokenContinue; }
     else if (STR_EQ(str, "class")) { type = TokenClass; }
     else if (STR_EQ(str, "if")) { type = TokenIf; }
     else if (STR_EQ(str, "else")) { type = TokenElse; }

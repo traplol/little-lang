@@ -22,6 +22,9 @@ enum TokenType {
 
     TokenMut,
     TokenConst,
+    TokenReturn,
+    TokenContinue,
+    TokenBreak,
 
     TokenClass,
 
