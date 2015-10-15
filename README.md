@@ -114,7 +114,7 @@ argument separated with a space.
 ```println(...)``` -- Returns ```nil```, takes any arguments, calls ```print``` and adds a ```newline``` character
 to the end.
 
-```type(x)``` -- Returns a String object, takes one argument, and returns the value's type name.
+```type(x)``` -- Returns a Type object, takes one argument, and returns the value's Type object.
 
 ```string(x)``` -- Returns a String object, takes one argument, and attempts to represent the value as a 
 string by calling ```x.__str__()```. If ```string``` is unable to represent the value as a string it 
@@ -214,8 +214,7 @@ def HelloWorld {
 }
 ```
 
-The return value of a function is the value of the last statement executed, even from loops
-or conditional blocks.
+The return value of a function is the value of the last statement executed, even from conditional blocks.
 
 ```
 def returns_42 {
@@ -242,6 +241,7 @@ def returns_x {
 }
 println(returns_x()) # prints "10"
 ```
+*NOTE:* The return value from a loop is always ```nil```.
 
 #### Imports
 A rudimentary module import system is in place to allow for multiple source file programs where each file may be
