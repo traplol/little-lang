@@ -5,6 +5,7 @@
 #include "symbol_table.h"
 #include "ast.h"
 #include "llvector.h"
+#include "llstring.h"
 
 #include <stdint.h>
 
@@ -23,11 +24,6 @@ struct BuiltinFn {
     unsigned int NumArgs;
     int IsVarArgs;
     BuiltinFnProc_t Fn;
-};
-
-struct LLString {
-    unsigned int Length;
-    char *CString;
 };
 
 struct Value {

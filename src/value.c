@@ -35,13 +35,6 @@ int FunctionFree(struct Function *function) {
     free(function->Body);
     return R_OK;
 }
-int LLStringFree(struct LLString *llString) {
-    if (!llString) {
-        return R_InvalidArgument;
-    }
-    free(llString->CString);
-    return R_OK;
-}
 int ValueFreeUserObject(struct Value *object) {
     int result = SymbolTableFree(object->Members);
     free(object->Members);
@@ -231,8 +224,7 @@ int ValueAllocLLString(struct Value **out_value, char *cString, ValueAllocator a
     value->TypeInfo = &g_TheStringTypeInfo;
     value->IsPassByReference = 1;
     value->v.String = malloc(sizeof *(value->v.String));
-    value->v.String->CString = strdup(cString);
-    value->v.String->Length = strlen(value->v.String->CString);
+    LLStringMake(value->v.String, cString);
     *out_value = value;
     return R_OK;
 }
