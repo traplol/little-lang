@@ -51,6 +51,11 @@ static struct Value *rt_Type___str__(struct Module *module, unsigned int argc, s
     return string;
 }
 
+static struct Value *rt_Type___dbg__(struct Module *module, unsigned int argc, struct Value **argv) {
+    return rt_Type___str__(module, argc, argv);
+}
+
+
 #define TYPE_METHOD_INSERT(name, numArgs, isVarArgs)                  \
     do {                                                                \
         struct Value *method;                                           \
@@ -64,5 +69,6 @@ static struct Value *rt_Type___str__(struct Module *module, unsigned int argc, s
 int RT_Type_RegisterBuiltins(void) {
     TYPE_METHOD_INSERT(new, 0, 1);
     TYPE_METHOD_INSERT(__str__, 1, 0);
+    TYPE_METHOD_INSERT(__dbg__, 1, 0);
     return R_OK;
 }
