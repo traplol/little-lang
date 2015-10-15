@@ -29,7 +29,7 @@ void SymbolFree(struct Symbol *symbol) {
 }
 
 int SymbolTableIsValid(struct SymbolTable *table) {
-    return table && table->Symbols;
+    return table != NULL;
 }
 
 int SymbolTableIsInvalid(struct SymbolTable *table) {
