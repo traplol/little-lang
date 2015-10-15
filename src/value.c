@@ -215,7 +215,25 @@ int ValueMakeType(struct Value **out_value, struct TypeInfo *typeInfo) {
     return R_OK;
     
 }
-int ValueAllocLLString(struct Value **out_value, char *cString, ValueAllocator allocator) {
+int ValueAllocLLString(struct Value **out_value, struct LLString *llString, ValueAllocator allocator) {
+    struct Value *value;
+    if (!out_value || !llString) {
+        return R_InvalidArgument;
+    }
+    value = allocator();
+    value->TypeInfo = &g_TheStringTypeInfo;
+    value->IsPassByReference = 1;
+    value->v.String = llString;
+    *out_value = value;
+    return R_OK;
+}
+int ValueMakeLLStringLiteral(struct Value **out_value, struct LLString *llString) {
+    return ValueAllocLLString(out_value, llString, ValueAllocNoGC);
+}
+int ValueMakeLLString(struct Value **out_value, struct LLString *llString) {
+    return ValueAllocLLString(out_value, llString, ValueAlloc);
+}
+int ValueAllocLLStringWithCString(struct Value **out_value, char *cString, ValueAllocator allocator) {
     struct Value *value;
     if (!out_value || !cString) {
         return R_InvalidArgument;
@@ -223,16 +241,16 @@ int ValueAllocLLString(struct Value **out_value, char *cString, ValueAllocator a
     value = allocator();
     value->TypeInfo = &g_TheStringTypeInfo;
     value->IsPassByReference = 1;
-    value->v.String = malloc(sizeof *(value->v.String));
+    value->v.String = malloc(sizeof *value->v.String);
     LLStringMake(value->v.String, cString);
     *out_value = value;
     return R_OK;
 }
-int ValueMakeLLStringLiteral(struct Value **out_value, char *cString) {
-    return ValueAllocLLString(out_value, cString, ValueAllocNoGC);
+int ValueMakeLLStringLiteralWithCString(struct Value **out_value, char *cString) {
+    return ValueAllocLLStringWithCString(out_value, cString, ValueAllocNoGC);
 }
-int ValueMakeLLString(struct Value **out_value, char *cString) {
-    return ValueAllocLLString(out_value, cString, ValueAlloc);
+int ValueMakeLLStringWithCString(struct Value **out_value, char *cString) {
+    return ValueAllocLLStringWithCString(out_value, cString, ValueAlloc);
 }
 int ValueMakeFunction(struct Value *value, struct Function *function) {
     if (!value || !function) {

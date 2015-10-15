@@ -60,13 +60,15 @@ int ValueDuplicate(struct Value **out_value, struct Value *toDup);
 
 int ValueMakeIntegerLiteral(struct Value **out_value, int integer);
 int ValueMakeRealLiteral(struct Value **out_value, double real);
-int ValueMakeLLStringLiteral(struct Value **out_value, char *cString);
+int ValueMakeLLStringLiteralWithCString(struct Value **out_value, char *cString);
+int ValueMakeLLStringLiteral(struct Value **out_value, struct LLString *llString);
 
 int ValueMakeInteger(struct Value **out_value, int integer);
 int ValueMakeReal(struct Value **out_value, double real);
 int ValueMakeObject(struct Value **out_value, struct TypeInfo *typeInfo);
 int ValueMakeType(struct Value **out_value, struct TypeInfo *typeInfo);
-int ValueMakeLLString(struct Value **out_value, char *cString);
+int ValueMakeLLStringWithCString(struct Value **out_value, char *cString);
+int ValueMakeLLString(struct Value **out_value, struct LLString *llString);
 int ValueMakeSingleton(struct Value *value, struct TypeInfo *typeInfo);
 int ValueMakeFunction(struct Value *value, struct Function *function);
 int ValueMakeBuiltinFn(struct Value *value, struct BuiltinFn *builtinFn);
