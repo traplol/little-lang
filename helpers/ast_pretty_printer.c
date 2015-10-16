@@ -27,10 +27,8 @@ const char *nodeString[] = {
     [BLogicLtEqExpr] = "<=",
     [BLogicGtExpr] = ">",
     [BLogicGtEqExpr] = ">=",
-    [UNegExpr] = "u-",
-    [ULogicNotExpr] = "u!",
-    [AssignExpr] = "assign",
-    [ReturnExpr] = "Ret",
+    [UNegExpr] = "-",
+    [ULogicNotExpr] = "!",
 };
 
 const char *fmtBooleanLiteral(struct Ast *node) {
@@ -136,14 +134,18 @@ void printBody(struct Ast *node) {
     printf("}\n");
 }
 void printBinaryExpr(struct Ast *node) {
-    printf("(%s ", fmtNode(node));
+    //printNode(node->Children[0]);
+    //printf(" %s ", fmtNode(node));
+    //printNode(node->Children[1]);
+
+    printf("(");
     printNode(node->Children[0]);
-    printf(" ");
+    printf(" %s ", fmtNode(node));
     printNode(node->Children[1]);
     printf(")");
 }
 void printUnaryExpr(struct Ast *node) {
-    printf("(%s ", fmtNode(node));
+    printf("(%s", fmtNode(node));
     printNode(node->Children[0]);
     printf(")");
 }
