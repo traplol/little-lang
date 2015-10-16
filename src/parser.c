@@ -203,6 +203,42 @@ enum AstNodeType GetBinaryOperatorType(struct Token *token) {
     }
 }
 
+enum AstNodeType GetAssignmentOperatorOperatorType(struct Token *token) {
+    switch (token->Type) {
+        default: return UNASSIGNED;
+        case TokenPlusEq: return BAddExpr;
+        case TokenMinusEq: return BSubExpr;
+        case TokenAsteriskEq: return BMulExpr;
+        case TokenSlashEq: return BDivExpr;
+        case TokenPercentEq: return BModExpr;
+        case TokenCaretEq: return BArithXorExpr;
+        case TokenAmpEq: return BArithAndExpr;
+        case TokenBarEq: return BArithOrExpr;
+        case TokenStarStarEq: return BPowExpr;
+        case TokenLtLtEq: return BLShift;
+        case TokenGtGtEq: return BRShift;
+    }
+}
+
+int IsAssignmentOperator(struct Token *token) {
+    switch (token->Type) {
+        default:
+            return 0;
+        case TokenPlusEq:
+        case TokenMinusEq:
+        case TokenAsteriskEq:
+        case TokenSlashEq:
+        case TokenPercentEq:
+        case TokenCaretEq:
+        case TokenAmpEq:
+        case TokenBarEq:
+        case TokenStarStarEq:
+        case TokenLtLtEq:
+        case TokenGtGtEq:
+            return 1;
+    }
+}
+
 int IsBinaryOperator(struct Token *token) {
     switch(token->Type) {
         default:
@@ -255,6 +291,7 @@ int ParseExpr(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseReturn(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseContinue(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseBreak(struct Ast **out_ast, struct TokenStream *tokenStream);
+int ParseOpAssign(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseAssign(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseIfElse(struct Ast **out_ast, struct TokenStream *tokenStream);
 int ParseFunction(struct Ast **out_ast, struct TokenStream *tokenStream);
@@ -356,7 +393,8 @@ int ParseMut(struct Ast **out_ast, struct TokenStream *tokenStream) {
     return AstMakeMut(out_ast, names, NULL, save->Token->SrcLoc);
 }
 
-/* <for> := for <expr> ; <expr> ; <expr> { <stmt-list> } */
+/* <for> := for <assign> ; <assign> ; <assign> { <stmt-list> } */
+/*       := for <assign> ; <assign> ; <op-assign> { <stmt-list> } */
 int ParseFor(struct Ast **out_ast, struct TokenStream *tokenStream) {
     /* TODO: Validate 'for' parsing. */
     int result;
@@ -375,7 +413,10 @@ int ParseFor(struct Ast **out_ast, struct TokenStream *tokenStream) {
     result = ParseAssign(&cond, tokenStream);
     EXPECT(TokenSemicolon, tokenStream);
 
-    result = ParseAssign(&post, tokenStream);
+    result = ParseOpAssign(&post, tokenStream);
+    if (R_OK != result) {
+        result = ParseAssign(&post, tokenStream);
+    }
 
     isInsideLoop = 1;
     result = ParseStmtList(&body, tokenStream);
@@ -723,6 +764,42 @@ int ParseBinaryExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     return result;
 }
 
+
+int ParseOpAssign(struct Ast **out_ast, struct TokenStream *tokenStream) {
+    int result;
+    struct Ast *lhs, *rhs, *op, *assign, *tmp;
+    struct Node *save;
+    struct Token *token;
+    enum AstNodeType opType;
+    SAVE(tokenStream, save);
+    result = ParseUnaryExpr(&lhs, tokenStream);
+    if (R_OK != result) {
+        *out_ast = NULL;
+        return result;
+    }
+    if (!IsAssignmentOperator(tokenStream->Current->Token)) {
+        RESTORE(tokenStream, save);
+        *out_ast = NULL;
+        return R_UnexpectedToken;
+    }
+    token = tokenStream->Current->Token;
+    TokenStreamAdvance(tokenStream);
+
+    result = ParseAssign(&rhs, tokenStream);
+    if (R_OK != result) {
+        RESTORE(tokenStream, save);
+        *out_ast = NULL;
+        return result;
+    }
+
+    opType = GetAssignmentOperatorOperatorType(token);
+    AstMakeBinaryOp(&op, lhs, opType, rhs, token->SrcLoc);
+    AstDeepCopy(&tmp, lhs);
+    AstMakeAssign(&assign, tmp, op, save->Token->SrcLoc);
+    *out_ast = assign;
+    return R_OK;
+}
+
 /*
  * <assign> := <binary-expr>
  *          := <unary-expr> <assignment-operator> <assign> 
@@ -751,12 +828,21 @@ int ParseAssign(struct Ast **out_ast, struct TokenStream *tokenStream) {
 
 /*
  * <expr> := <assign> 
+ *        := <op-assign>
+ *        := <decl-stmt>
  */
 int ParseExpr(struct Ast **out_ast, struct TokenStream *tokenStream) {
     int result;
     struct Ast *ast;
     struct Node *save;
     SAVE(tokenStream, save);
+    result = ParseOpAssign(&ast, tokenStream);
+    if (R_OK == result) {
+        OPT_EXPECT(TokenSemicolon, tokenStream);
+        *out_ast = ast;
+        return R_OK;
+    }
+    RESTORE(tokenStream, save);
     result = ParseAssign(&ast, tokenStream);
     if (R_OK == result) {
         OPT_EXPECT(TokenSemicolon, tokenStream);
