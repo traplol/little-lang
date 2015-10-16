@@ -9,6 +9,8 @@
 #include "runtime/real.h"
 #include "runtime/boolean.h"
 #include "runtime/vector.h"
+#include "runtime/function.h"
+#include "runtime/builtinfn.h"
 
 #include <stdlib.h>
 
@@ -21,6 +23,8 @@ int RegisterRuntimes(void) {
     RT_Real_RegisterBuiltins();
     RT_Boolean_RegisterBuiltins();
     RT_Vector_RegisterBuiltins();
+    RT_Function_RegisterBuiltins();
+    RT_BuiltinFn_RegisterBuiltins();
     return R_OK;
 }
 
