@@ -76,6 +76,8 @@ void AstPrettyPrint(struct Ast *ast);
 int AstMakeBlank(struct Ast **out_ast);
 int AstFree(struct Ast *ast);
 
+int AstDeepCopy(struct Ast **out_ast, struct Ast *ast);
+
 /* Terminals */
 int AstMakeBoolean(struct Ast **out_ast, struct Value *boolean, struct SrcLoc srcLoc);
 int AstMakeTrue(struct Ast **out_ast, struct SrcLoc srcLoc);

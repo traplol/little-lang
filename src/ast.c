@@ -41,6 +41,7 @@ struct Ast *AstAlloc(unsigned int numChildren) {
 
 /************************** Public Functions **************************/
 
+
 int AstFree(struct Ast *ast) {
     unsigned int i;
     if (!ast) {
@@ -54,6 +55,29 @@ int AstFree(struct Ast *ast) {
         free(ast->Children[i]);
     }
     free(ast->Children);
+    return R_OK;
+}
+
+int AstDeepCopy(struct Ast **out_ast, struct Ast *ast) {
+    struct Ast *out, *tmp;
+    unsigned int i;
+    if (!out_ast) {
+        return R_InvalidArgument;
+    }
+    out = AstAlloc(ast->NumChildren);
+    out->Type = ast->Type;
+    if (SymbolNode == ast->Type) {
+        out->u.SymbolName = strdup(ast->u.SymbolName);
+    }
+    else {
+        out->u = ast->u;
+    }
+    out->SrcLoc = ast->SrcLoc;
+    for (i = 0; i < ast->NumChildren; ++i) {
+        AstDeepCopy(&tmp, ast->Children[i]);
+        out->Children[i] = tmp;
+    }
+    *out_ast = out;
     return R_OK;
 }
 
