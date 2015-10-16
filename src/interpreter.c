@@ -80,7 +80,7 @@ struct Value *InterpreterDoCallBuiltinFn(struct Module *module, struct Value *fu
 struct Value *InterpreterDoCallFunction(struct Module *module, struct Value *function, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc);
 
 static inline struct Value *DispatchBinaryOperationMethod(struct Module *module, struct Ast *ast, char *methodName) {
-    struct Value *lhs, *rhs, *method;
+    struct Value *lhs, *rhs, *method, *result;
     struct Value *argv[2];
     /* TODO: maybe these values need preservation */
     lhs = InterpreterRunAst(module, ast->Children[0]);
@@ -98,13 +98,19 @@ static inline struct Value *DispatchBinaryOperationMethod(struct Module *module,
     argv[0] = lhs;
     argv[1] = rhs;
     if (method->IsBuiltInFn) {
-        return InterpreterDoCallBuiltinFn(module, method, 2, argv, ast->SrcLoc);
+        result = InterpreterDoCallBuiltinFn(module, method, 2, argv, ast->SrcLoc);
     }
-    return InterpreterDoCallFunction(module, method, 2, argv, ast->SrcLoc);
+    else if (&g_TheFunctionTypeInfo == method->TypeInfo) {
+        result = InterpreterDoCallFunction(module, method, 2, argv, ast->SrcLoc);
+    }
+    else {
+        result = &g_TheNilValue;
+    }
+    return result;
 }
 
 static inline struct Value *DispatchPrefixUnaryOperationMethod(struct Module *module, struct Ast *ast, char *methodName) {
-    struct Value *rhs, *method;
+    struct Value *rhs, *method, *result;
     struct Value *argv[1];
     rhs = InterpreterRunAst(module, ast->Children[0]);
     DEREF_IF_SYMBOL(rhs);
@@ -118,9 +124,15 @@ static inline struct Value *DispatchPrefixUnaryOperationMethod(struct Module *mo
     }
     argv[0] = rhs;
     if (method->IsBuiltInFn) {
-        return InterpreterDoCallBuiltinFn(module, method, 1, argv, ast->SrcLoc);
+        result = InterpreterDoCallBuiltinFn(module, method, 1, argv, ast->SrcLoc);
     }
-    return InterpreterDoCallFunction(module, method, 1, argv, ast->SrcLoc);
+    else if (&g_TheFunctionTypeInfo == method->TypeInfo) {
+        result = InterpreterDoCallFunction(module, method, 1, argv, ast->SrcLoc);
+    }
+    else {
+        result = &g_TheNilValue;
+    }
+    return result;
 }
 
 struct Value *InterpreterDispatchMethod(struct Module *module, struct Value *object, char *methodName, unsigned int argc, struct Value **argv, struct SrcLoc srcLoc) {
@@ -146,8 +158,11 @@ struct Value *InterpreterDispatchMethod(struct Module *module, struct Value *obj
     if (method->IsBuiltInFn) {
         result = InterpreterDoCallBuiltinFn(module, method, newArgc, newArgv, srcLoc);
     }
-    else {
+    else if (&g_TheFunctionTypeInfo == method->TypeInfo) {
         result = InterpreterDoCallFunction(module, method, newArgc, newArgv, srcLoc);
+    }
+    else {
+        result = &g_TheNilValue;
     }
     free(newArgv);
     return result;
@@ -502,8 +517,11 @@ struct Value *InterpreterDoCall(struct Module *module, struct Ast *ast) {
     if (func->IsBuiltInFn) {
         ret = InterpreterDoCallBuiltinFn(module, func, argc, argv, ast->SrcLoc);
     }
-    else {
+    else if (&g_TheFunctionTypeInfo == func->TypeInfo) {
         ret = InterpreterDoCallFunction(func->v.Function->OwnerModule, func, argc, argv, ast->SrcLoc);
+    }
+    else {
+        ret = &g_TheNilValue;
     }
     SymbolTableAssign(module->CurrentScope, ret, "#_return_#", 1, ast->SrcLoc);
     GC_Collect();
