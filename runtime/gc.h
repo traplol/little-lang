@@ -6,8 +6,11 @@
 
 int GC_Collect(void);
 int GC_AllocValue(struct Value **out_value);
+unsigned int GC_isDisabled(void);
 void GC_Disable(void);
 void GC_Enable(void);
+void GC_Dump(void);
+void GC_DumpReachable(void);
 int GC_RegisterSymbolTable(struct SymbolTable *st);
 
 #endif

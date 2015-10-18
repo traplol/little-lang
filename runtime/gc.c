@@ -80,85 +80,101 @@ int GC_Free(struct GC_Object *object) {
     return result;
 }
 
-void GC_PrintObject(struct GC_Object *object) {
+static void GC_PrintValue(struct Value *v) {
     char *s;
-    struct Value *v = object->Value;
+    struct Value *symbol = v;
     printf("<%08zx>", (size_t)v);
     if (v->IsSymbol) {
         printf("%s -> <%08zx>", v->v.Symbol->Key, (size_t)v->v.Symbol->Value);
         v = v->v.Symbol->Value;
     }
     s = ValueToString(v);
-    printf("%s(%s) : Visited=%d\n", v->TypeInfo->TypeName, s, object->Value->Visited);
+    printf("%s(%s) : Visited=%d\n", v->TypeInfo->TypeName, s, symbol->Visited);
     free(s);
 }
 
-void GC_Dump(void) {
-    struct GC_Object *object = GC_Head;
-    while (object) {
-        GC_PrintObject(object);
-        object = object->Next;
-    }
+static void GC_PrintObject(struct GC_Object *object) {
+    GC_PrintValue(object->Value);
 }
 
-void GC_MarkObject(struct Value *v);
-void GC_MarkSymbolTable(struct SymbolTable *st);
-void GC_MarkObjectMembers(struct Value *o) {
-    GC_MarkSymbolTable(o->Members);
+static void GC_VisitValue(struct Value *v) {
+    v->Visited = 1;
 }
 
-void GC_MarkVector(struct LLVector *v) {
+typedef void (*GC_ApplyProcToValue_t)(struct Value *v);
+
+static void GC_VisitObject(struct Value *v, GC_ApplyProcToValue_t fn);
+static void GC_VisitSymbolTable(struct SymbolTable *st, GC_ApplyProcToValue_t fn);
+
+static void GC_VisitObjectMembers(struct Value *o, GC_ApplyProcToValue_t fn) {
+    GC_VisitSymbolTable(o->Members, fn);
+}
+
+static void GC_VisitVector(struct LLVector *v, GC_ApplyProcToValue_t fn) {
     unsigned int i;
     for (i = 0; i < v->Length; ++i) {
-        GC_MarkObject(v->Values[i]);
+        GC_VisitObject(v->Values[i], fn);
     }
 }
 
-void GC_MarkObject(struct Value *v) {
-    v->Visited = 1;
-    if (TypeUserObject == v->TypeInfo->Type) {
-        GC_MarkObjectMembers(v);
+static void GC_VisitObject(struct Value *v, GC_ApplyProcToValue_t fn) {
+    fn(v);
+    if (v->TypeInfo && TypeUserObject == v->TypeInfo->Type) {
+        GC_VisitObjectMembers(v, fn);
     }
     else if (&g_TheVectorTypeInfo == v->TypeInfo) {
-        GC_MarkVector(v->v.Vector);
+        GC_VisitVector(v->v.Vector, fn);
     }
 }
 
-void GC_MarkSymbols(struct Symbol *s) {
+static void GC_VisitSymbols(struct Symbol *s, GC_ApplyProcToValue_t fn) {
     while (s) {
         s->Value->Visited = 1;
-        GC_MarkObject(s->Value);
+        GC_VisitObject(s->Value, fn);
         s = s->Next;
     }
 }
-void GC_MarkSymbolTable(struct SymbolTable *st) {
+static void GC_VisitSymbolTable(struct SymbolTable *st, GC_ApplyProcToValue_t fn) {
     unsigned int i;
     while (st) {
         for (i = 0; i < st->TableLength; ++i) {
             if (st->Symbols[i]) {
-                GC_MarkSymbols(st->Symbols[i]);
+                GC_VisitSymbols(st->Symbols[i], fn);
             }
         }
         st = st->Child;
     }
 }
-void GC_MarkScopeHolders(struct ScopeHolder *sh) {
+static void GC_VisitScopeHolders(struct ScopeHolder *sh, GC_ApplyProcToValue_t fn) {
     while (sh) {
-        GC_MarkSymbolTable(sh->ST);
+        GC_VisitSymbolTable(sh->ST, fn);
         sh = sh->Next;
     }
 }
-void GC_Mark(void) {
+
+static void GC_VisitReachableScopes(GC_ApplyProcToValue_t fn) {
     unsigned int i;
-    GC_MarkSymbolTable(&g_TheUberScope);
     for (i = 0; i < ScopesSize; ++i) {
         if (Scopes[i]) {
-            GC_MarkScopeHolders(Scopes[i]);
+            GC_VisitScopeHolders(Scopes[i], fn);
         }
     }
 }
 
-void GC_Sweep(void) {
+static void GC_VisitTheUberScope(GC_ApplyProcToValue_t fn) {
+    GC_VisitSymbolTable(&g_TheUberScope, fn);
+}
+
+static void GC_VisitEverything(GC_ApplyProcToValue_t fn) {
+    GC_VisitTheUberScope(fn);
+    GC_VisitReachableScopes(fn);
+}
+
+static void GC_Mark(void) {
+    GC_VisitEverything(GC_VisitValue);
+}
+
+static void GC_Sweep(void) {
     struct GC_Object *object = GC_Head;
     struct GC_Object *next;
     while (object) {
@@ -177,7 +193,7 @@ void GC_Sweep(void) {
     }
 }
 
-struct ScopeHolder *ScopeHolderMake(struct SymbolTable *st) {
+static struct ScopeHolder *ScopeHolderAlloc(struct SymbolTable *st) {
     struct ScopeHolder *sh = calloc(sizeof *sh, 1);
     sh->ST = st;
     return sh;
@@ -185,18 +201,33 @@ struct ScopeHolder *ScopeHolderMake(struct SymbolTable *st) {
 
 /************************ Public Functions *************************/
 
+void GC_Dump(void) {
+    struct GC_Object *object = GC_Head;
+    while (object) {
+        GC_PrintObject(object);
+        object = object->Next;
+    }
+}
+
+void GC_DumpReachable(void) {
+    GC_VisitEverything(GC_PrintValue);
+}
+
 void GC_Disable(void) {
     GC_Disabled = 1;
 }
 void GC_Enable(void) {
     GC_Disabled = 0;
 }
+unsigned int GC_isDisabled(void) {
+    return GC_Disabled;
+}
 
 int GC_RegisterSymbolTable(struct SymbolTable *st) {
     unsigned int idx = (size_t)st % ScopesSize;
     struct ScopeHolder *sh = Scopes[idx];
     if (!sh) {
-        sh = ScopeHolderMake(st);
+        sh = ScopeHolderAlloc(st);
         Scopes[idx] = sh;
         return R_OK;;
     }
@@ -206,7 +237,7 @@ int GC_RegisterSymbolTable(struct SymbolTable *st) {
         }
         sh = sh->Next;
     }
-    sh->Next = ScopeHolderMake(st);
+    sh->Next = ScopeHolderAlloc(st);
     return R_OK;
 }
 
@@ -216,13 +247,11 @@ int GC_AllocValue(struct Value **out_value) {
     struct Value *value;
 
     /* TODO: Need to fix marking: cycles and symbol lifetime. */
-    /*
     result = GC_Collect();
     if (R_OK != result) {
         *out_value = NULL;
         return result;
     }
-    */
 
     object = calloc(sizeof *object, 1);
     value = calloc(sizeof *value, 1);
