@@ -273,8 +273,8 @@ int ValueMakeBuiltinFn(struct Value *value, struct BuiltinFn *builtinFn) {
     return R_OK;
 }
 
+/* This needs to be deperecated. */
 char *ValueToString(struct Value *value) {
-    /* TODO: Find better way to do ToString. */
     char buf[80];
     if (value->IsSymbol) {
         return ValueToString(value->v.Symbol->Value);
@@ -291,6 +291,14 @@ char *ValueToString(struct Value *value) {
                 return strdup("nil");
             }
             return strdup(value->TypeInfo->TypeName);
+        case TypeFunction: {
+            if (value->IsBuiltInFn) {
+                return strdup(value->v.BuiltinFn->Name);
+            }
+            return strdup(value->v.Function->Name);
+        }
+        case TypeType:
+            return strdup(value->v.MetaTypeInfo->TypeName);
         case TypeString:
             return strdup(value->v.String->CString);
         case TypeBoolean:
