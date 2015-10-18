@@ -11,6 +11,12 @@ extern BuiltinFnProc_t RT_type;
 extern BuiltinFnProc_t RT_hash;
 extern BuiltinFnProc_t RT_dbg;
 
+extern BuiltinFnProc_t RT___gc_dump;
+extern BuiltinFnProc_t RT___gc_reachable;
+extern BuiltinFnProc_t RT___gc_disable;
+extern BuiltinFnProc_t RT___gc_enable;
+extern BuiltinFnProc_t RT___gc_is_disabled;
+
 int RegisterRuntime_core(void);
 
 #endif

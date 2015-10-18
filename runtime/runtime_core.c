@@ -3,6 +3,8 @@
 #include "result.h"
 #include "symbol_table.h"
 
+#include "runtime/gc.h"
+
 #include "helpers/strings.h"
 #include "interpreter.h"
 #include "helpers/macro_helpers.h"
@@ -15,6 +17,12 @@ BuiltinFnProc_t RT_println;
 BuiltinFnProc_t RT_type;
 BuiltinFnProc_t RT_hash;
 BuiltinFnProc_t RT_dbg;
+
+BuiltinFnProc_t RT___gc_dump;
+BuiltinFnProc_t RT___gc_reachable;
+BuiltinFnProc_t RT___gc_disable;
+BuiltinFnProc_t RT___gc_enable;
+BuiltinFnProc_t RT___gc_is_disabled;
 
 static struct SrcLoc srcLoc = {"<runtime_core.c>", -1, -1};
 
@@ -64,6 +72,43 @@ static struct Value *_rt_dbg(struct Module *module, unsigned int argc, struct Va
     return dbg;
 }
 
+static struct Value *_rt___gc_dump(struct Module *module, unsigned int argc, struct Value **argv) {
+    GC_Dump();
+    return &g_TheNilValue;
+}
+
+static struct Value *_rt___gc_reachable(struct Module *module, unsigned int argc, struct Value **argv) {
+    GC_DumpReachable();
+    return &g_TheNilValue;
+}
+
+static inline void no_gc_msg(void) {
+    printf("GC was disabled at compile time, this does nothing.\n");
+}
+static struct Value *_rt___gc_disable(struct Module *module, unsigned int argc, struct Value **argv) {
+#ifdef NO_GC
+    no_gc_msg();
+#else
+    GC_Disable();
+#endif
+    return &g_TheNilValue;
+}
+static struct Value *_rt___gc_enable(struct Module *module, unsigned int argc, struct Value **argv) {
+#ifdef NO_GC
+    no_gc_msg();
+#else
+    GC_Enable();
+#endif
+    return &g_TheNilValue;
+}
+
+static struct Value *_rt___gc_is_disabled(struct Module *module, unsigned int argc, struct Value **argv) {
+    if (GC_isDisabled()) {
+        return &g_TheTrueValue;
+    }
+    return &g_TheFalseValue;
+}
+
 
 #define GLOBAL_FUNCTION_INSERT(name, numArgs, isVarArgs)                \
     do {                                                                \
@@ -83,5 +128,11 @@ int RegisterRuntime_core(void) {
     GLOBAL_FUNCTION_INSERT(type, 1, 0);
     GLOBAL_FUNCTION_INSERT(hash, 1, 0);
     GLOBAL_FUNCTION_INSERT(dbg, 1, 0);
+
+    GLOBAL_FUNCTION_INSERT(__gc_dump, 0, 0);
+    GLOBAL_FUNCTION_INSERT(__gc_reachable, 0, 0);
+    GLOBAL_FUNCTION_INSERT(__gc_enable, 0, 0);
+    GLOBAL_FUNCTION_INSERT(__gc_disable, 0, 0);
+    GLOBAL_FUNCTION_INSERT(__gc_is_disabled, 0, 0);
     return R_OK;
 }
