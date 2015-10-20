@@ -2,6 +2,11 @@
 #define _LITTLE_LANG_INSTRUCTION_H
 
 #include "llstring.h"
+#include "ast.h"
+
+enum Register {
+    REG_FramePointer,
+};
 
 enum OperandType {
     OP_Label = 0,
@@ -22,8 +27,11 @@ struct Operand {
     enum OperandType Type;
     union {
         char *LabelName;
-        unsigned int Register;
-        unsigned int ValueOfReisterWithOffset;
+        enum Register Register;
+        struct {
+            enum Register Register;
+            int Offset;
+        } ValueOfRegisterWithOffset;
         char *SymbolName;
         int Integer;
         double Real;
@@ -82,9 +90,26 @@ struct Instruction {
     struct Operand **Operands;
 };
 
+struct FlattenedAstNode {
+    unsigned int IsInstruction;
+    union {
+        struct Instruction *Instruction;
+        char *LabelName;
+    } u;
+};
+
+struct FlattenedAst {
+    unsigned int Length;
+    unsigned int Capacity;
+    struct FlattenedAstNode **Nodes;
+};
+
 int InstructionTypeNumOperands(enum InstructionType ins);
 const char *InstructionTypeToString(enum InstructionType ins);
+char *InstructionToString(struct Instruction *ins);
 
-char *InstructionToColorizedString(struct Instruction *ins);
+//char *InstructionToColorizedString(struct Instruction *ins);
+
+int FlattenedAstFlattenAst(struct Ast *ast, struct FlattenedAst **flattenedAst);
 
 #endif
