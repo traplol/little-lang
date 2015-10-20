@@ -70,10 +70,14 @@ are ```# until end of line``` comments.
 
 So far, testing has only been done with clang version 3.6.0 on Ubuntu 15.04 x86_64.
 
+## Attention
+At the moment a lot of stuff has been broken in an effort to fix garbage collection, please compile with ```no-gc```
+and be aware that nothing will be garbage collected.
+
 ```
 $ git clone git@github.com:traplol/little-lang.git
 $ cd little-lang
-$ make
+$ make no-gc
 $ ./bin/little-lang examples/fizzbuzz.ll
 ```
 
