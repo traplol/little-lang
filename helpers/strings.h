@@ -9,6 +9,9 @@ unsigned int string_hash(const char *s);
 /* Concatenates two strings. */
 char *str_cat(char *l, char *r);
 
+/* Concatenates two strings with a separator. */
+char *str_cat_sep(char *l, char sep, char *r);
+
 #ifndef _GNU_SOURCE
 /* Duplicates a string */
 char *strdup(const char *s);

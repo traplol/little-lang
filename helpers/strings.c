@@ -27,6 +27,22 @@ char *str_cat(char *l, char *r) {
     return s-len;
 }
 
+char *str_cat_sep(char *l, char sep, char *r) {
+    int len = strlen(l) + strlen(r) + 1; /* +1 for sep */
+    char *s = malloc(len + 1);
+    while(*l) {
+        *s++ = *l++;
+    }
+    *s++ = sep;
+    while(*r) {
+        *s++ = *r++;
+    }
+
+    *s = 0;
+    return s-len;
+    
+}
+
 #ifndef _GNU_SOURCE
 char *strdup(const char *s) {
     unsigned int len = strlen(s);
