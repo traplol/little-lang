@@ -273,6 +273,9 @@ int AstMakeReturn(struct Ast **out_ast, struct Ast *expr, struct SrcLoc srcLoc) 
     }
     ast = AstAlloc(1);
     ast->Type = ReturnExpr;
+    if (!expr) {
+        AstMakeNil(&expr, srcLoc);
+    }
     ast->Children[0] = expr;
     ast->SrcLoc = srcLoc;
     *out_ast = ast;
