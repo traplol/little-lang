@@ -2,8 +2,10 @@
 #include "parser.h"
 #include "globals.h"
 #include "interpreter.h"
+#include "instruction.h"
 #include "helpers/strings.h"
 #include "helpers/ast_pretty_printer.h"
+#include "helpers/flattened_ast_printer.h"
 #include "runtime/gc.h"
 #include "value.h"
 #include "path_resolver.h"
@@ -54,6 +56,7 @@ void ShowHelpMsg(void) {
             "\n"
             "\n-h --help                     Show this message."
             "\n-P --pretty-print-ast         Pretty print the program's AST."
+            "\n-c --compile                  Compile to stack machine instructions."
             "\n-T --time-execution           Times the execution of the program."
             "\n-i                            Enters REPL mode after program execution."
             "\nfile                          The program source to run."
@@ -82,6 +85,9 @@ int LittleLangMachineDoOpts(struct LittleLangMachine *llm, int argc, char **argv
         else if (STR_EQ("-args", arg)) {
             --argc, ++argv;
             break;
+        }
+        else if(STR_EQ("-c", arg) || STR_EQ("--compile", arg)) {
+            llm->CmdOpts.Compile = 1;
         }
         else if (STR_EQ("-i", arg)) {
             llm->CmdOpts.ReplMode = 1;
@@ -179,6 +185,7 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
     if (!llm->ThisModule) {
         LittleLangMachineMakeThisModule(llm);
     }
+    GC_RegisterSymbolTable(llm->ThisModule->ModuleScope); /* TODO: Handle return */
     while (1) {
         LexerThrowAwayCode(llm->Lexer);
         TokenStreamFree(tokenStream);
@@ -302,6 +309,21 @@ int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, s
         return R_FileNotFound;
     }
     result = ParseProgramTrees(absPath, &programTrees);
+    if (llm->CmdOpts.Compile) {
+        printf("Stack Machine Instructions:\n");
+        struct FlattenedAst *fast;
+        /* MEMORY LEAK HERE: */
+        FlattenedAstFlattenAst(programTrees->Imports, &fast);
+        PrettyPrintFlattenedAst(fast);
+        FlattenedAstFlattenAst(programTrees->Classes, &fast);
+        PrettyPrintFlattenedAst(fast);
+        FlattenedAstFlattenAst(programTrees->TopLevelFunctions, &fast);
+        PrettyPrintFlattenedAst(fast);
+        FlattenedAstFlattenAst(programTrees->Program, &fast);
+        PrettyPrintFlattenedAst(fast);
+        exit(0);
+        printf("Done compiling...");
+    }
     if (llm->CmdOpts.PrettyPrintAst) {
         printf("Imports:\n");
         AstPrettyPrint(programTrees->Imports);

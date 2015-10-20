@@ -13,6 +13,7 @@ struct LittleLangMachine {
         char **argv;
         char *code;
         char *filename;
+        int Compile;
         int PrettyPrintAst;
         int TimeExecution;
         int ReplMode;
