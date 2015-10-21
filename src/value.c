@@ -4,6 +4,7 @@
 #include "symbol_table.h"
 
 #include "runtime/gc.h"
+#include "runtime/literal_table.h"
 
 #include "helpers/strings.h"
 
@@ -63,6 +64,7 @@ struct Value *ValueAlloc(void) {
 }
 struct Value *ValueAllocNoGC(void) {
     struct Value *v = calloc(sizeof *v, 1);
+    LiteralLookupTableInsert(v);
     return v;
 }
 int ValueFree(struct Value *value) {
