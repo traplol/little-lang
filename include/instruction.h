@@ -104,12 +104,15 @@ struct FlattenedAst {
     struct FlattenedAstNode **Nodes;
 };
 
+
 int InstructionTypeNumOperands(enum InstructionType ins);
 const char *InstructionTypeToString(enum InstructionType ins);
 char *InstructionToString(struct Instruction *ins);
 
 //char *InstructionToColorizedString(struct Instruction *ins);
 
-int FlattenedAstFlattenAst(struct Ast *ast, struct FlattenedAst **flattenedAst);
+int InstructionAssemble(struct Instruction *ins, unsigned int *out_assembledIns);
+int InstructionDisassemble(unsigned int assembledIns, struct Instruction **out_ins);
+int FlattenedAstFlattenAst(struct Ast *ast, struct FlattenedAst **out_flattenedAst);
 
 #endif

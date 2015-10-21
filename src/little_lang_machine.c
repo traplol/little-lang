@@ -1,7 +1,7 @@
 #include "little_lang_machine.h"
 #include "parser.h"
 #include "globals.h"
-#include "interpreter.h"
+//#include "interpreter.h"
 #include "instruction.h"
 #include "helpers/strings.h"
 #include "helpers/ast_pretty_printer.h"
@@ -131,7 +131,7 @@ int DefineTopLevelFunctions(struct Module *module, struct Ast *functionDefs) {
 }
 
 int DefineClass(struct Module *module, struct Ast *class) {
-    InterpreterRunAst(module, class);
+    //InterpreterRunAst(module, class);
     return R_OK;
 }
 int DefineClasses(struct Module *module, struct Ast *classDefs) {
@@ -201,6 +201,12 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
             AstPrettyPrintNode(stmt);
             printf("\n\n");
         }
+        if (llm->CmdOpts.Compile) {
+            struct FlattenedAst *fast;
+            /* MEMORY LEAK HERE: */
+            FlattenedAstFlattenAst(stmt, &fast);
+            PrettyPrintFlattenedAst(fast);
+        }
         if (ImportExpr == stmt->Type) {
             filename = stmt->Children[0]->u.Value->v.String->CString;
             as = stmt->Children[1]->u.SymbolName;
@@ -211,9 +217,10 @@ int LittleLangMachineREPLMode(struct LittleLangMachine *llm) {
             DefineFunction(llm->ThisModule, stmt);
         }
         else {
-            value = InterpreterRunAst(llm->ThisModule, stmt);
-            value = InterpreterDispatchMethod(llm->ThisModule, value, "__dbg__", 0, NULL, srcLoc);
-            printf(" => %s\n", value->v.String->CString);
+            //value = InterpreterRunAst(llm->ThisModule, stmt);
+            //value = InterpreterDispatchMethod(llm->ThisModule, value, "__dbg__", 0, NULL, srcLoc);
+            //printf(" => %s\n", value->v.String->CString);
+            puts(" => The AST interpreter is currently disabled.");
         }
     }
     return result;
@@ -350,7 +357,7 @@ int LittleLangMachineLoadModule(struct LittleLangMachine *llm, char *filename, s
     }
     DefineTopLevelFunctions(module, programTrees->TopLevelFunctions);
     DefineClasses(module, programTrees->Classes);
-    InterpreterRunProgram(module);
+    //   InterpreterRunProgram(module);
 
     *out_module = module;
     result = R_OK;
@@ -423,7 +430,7 @@ int LittleLangMachineRun(struct LittleLangMachine *llm) {
     if (R_OK != result) {
         return result;
     }
-    InterpreterInit();
+//    InterpreterInit();
     start = clock();
     LittleLangMachineLoadModule(llm, llm->CmdOpts.filename, &llm->ThisModule);
     end = clock();

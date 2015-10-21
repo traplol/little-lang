@@ -276,7 +276,7 @@ static struct Operand *OperandMakeInteger(struct Ast *node) {
 static struct Operand *OperandMakeReal(struct Ast *node) {
     struct Operand *o = OperandAlloc();
     o->Type = OP_Real;
-    o->u.Integer = node->u.Value->v.Real;
+    o->u.Real = node->u.Value->v.Real;
     return o;
 }
 static struct Operand *OperandMakeString(struct Ast *node) {
@@ -754,9 +754,14 @@ static int FlattenAst(struct Ast *ast, struct FlattenedAst **out_flattenedAst) {
     unsigned int i;
     struct Ast *child;
     struct FlattenedAst *list = FlattenedAstAlloc(4);
-    for (i = 0; i < ast->NumChildren; ++i) {
-        child = ast->Children[i];
-        InstructionDispatchGen(list, child);
+    if (UNASSIGNED == ast->Type) {
+        for (i = 0; i < ast->NumChildren; ++i) {
+            child = ast->Children[i];
+            InstructionDispatchGen(list, child);
+        }
+    }
+    else {
+        InstructionDispatchGen(list, ast);
     }
     *out_flattenedAst = list;
     return R_OK;
@@ -818,3 +823,15 @@ int FlattenedAstFlattenAst(struct Ast *ast, struct FlattenedAst **out_flattenedA
     return R_OK;
 }
 
+int InstructionAssemble(struct Instruction *ins, unsigned int *out_assembledIns) {
+    if (!ins || !out_assembledIns) {
+        return R_InvalidArgument;
+    }
+    return R_NotYetImplemented;
+}
+int InstructionDisassemble(unsigned int assembledIns, struct Instruction **out_ins) {
+    if (!assembledIns || !out_ins) {
+        return R_InvalidArgument;
+    }
+    return R_NotYetImplemented;
+}
