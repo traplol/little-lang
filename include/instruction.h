@@ -10,16 +10,10 @@ enum Register {
 
 enum OperandType {
     OP_Label = 0,
-    OP_Register,
-    OP_ValueOfRegisterWithOffset,
-    OP_nil,
-    OP_true,
-    OP_false,
-    OP_Symbol,
+    OP_Global,
+    OP_Local,
+    OP_Literal,
     OP_Integer,
-    OP_Real,
-    OP_String,
-
     
     OP_NUM_OPERAND_TYPES
 };
@@ -27,15 +21,8 @@ struct Operand {
     enum OperandType Type;
     union {
         char *LabelName;
-        enum Register Register;
-        struct {
-            enum Register Register;
-            int Offset;
-        } ValueOfRegisterWithOffset;
-        char *SymbolName;
+        int Offset;
         int Integer;
-        double Real;
-        struct LLString *String;
     } u;
 };
 
@@ -61,13 +48,19 @@ enum InstructionType {
     INS_unary_negative,/* pop a -> push a.__neg__() */
     INS_unary_not,     /* pop a -> push a.__not__() */
 
+    INS_push_global,   /* push global object at operand to top of stack */
+    INS_push_local,    /* push a local object relative (operand + $fp) */
+    INS_push_literal,  /* push a literal object at operand */
     INS_push,          /* push operand to top of stack */
-    INS_pop,           /* pop from stack */ // UNUSED?
+    INS_pop,// UNUSED? /* pop from stack */
 
     INS_jmp_if_false,  /* pop top of stack and jump to operand if it's `false' */
     INS_jmp,           /* jump to operand */
     INS_return,        /* restore $fp and jump to 1($fp) */
-    INS_call,          /* pop top of stack and call that function. */
+
+    /* pop stack, push address of next ins, push $fp, jump to address popped.
+       the operand tells the function how many args were pushed for varargs */
+    INS_call,
 
     INS_get_member,    /* Lookup member symbol. */
 

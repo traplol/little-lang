@@ -3,6 +3,8 @@
 #include "value.h"
 #include "llstring.h"
 
+#include "runtime/literal_table.h"
+
 #include "helpers/macro_helpers.h"
 #include "helpers/strings.h"
 #include "result.h"
@@ -70,7 +72,12 @@ static struct Sym *symStackPush(char *key) {
     }
     s = malloc(sizeof *s);
     s->Key = strdup(key);
-    s->Idx = -(symStack.Length - FPOffset + 1);
+    if (isInFunctionDef) {
+        s->Idx = -(symStack.Length - FPOffset + 1);
+    }
+    else {
+        s->Idx = symStack.Length;
+    }
     symStack.Stack[symStack.Length] = s;
     symStack.Length++;
     return s;
@@ -85,7 +92,6 @@ static void symStackPop(void) {
 }
 
 /**************************** Symbol stack end ******************************/
-
 
 #define IT_TO_S(it) (STR(it)+STRLEN_LIT("INS_"))
 #define INS_STRUCT(it, numOps) [it] = {.AsString = IT_TO_S(it), .NumOperands = numOps}
@@ -115,6 +121,9 @@ static const struct {
     INS_STRUCT(INS_unary_negative, 0),
     INS_STRUCT(INS_unary_not, 0),
 
+    INS_STRUCT(INS_push_global, 1),
+    INS_STRUCT(INS_push_local, 1),
+    INS_STRUCT(INS_push_literal, 1),
     INS_STRUCT(INS_push, 1),
     INS_STRUCT(INS_pop, 1),
 
@@ -159,64 +168,46 @@ static const enum InstructionType AstNodeToInstructionType[] = {
     [ULogicNotExpr] = INS_unary_not,
 };
 
+static int isLiteral(struct Ast *node) {
+    enum AstNodeType t = node->Type;
+
+    return NilNode == t ||
+        BooleanNode == t ||
+        RealNode == t ||
+        IntegerNode == t ||
+        StringNode == t;
+}
+
 static int isOperation(struct Ast *node) {
     enum AstNodeType t = node->Type;
 
-    return NilNode != t &&
-        BooleanNode != t &&
-        RealNode != t &&
-        IntegerNode != t &&
-        StringNode != t &&
+    return !isLiteral(node) &&
         SymbolNode != t;
 }
+
 
 static int isTerm(struct Ast *node) {
     return !isOperation(node);
 }
 
-static struct Operand *OperandAlloc(void) {
+static struct Operand *OperandAlloc(enum OperandType type) {
     struct Operand *operand = calloc(sizeof *operand, 1);
+    operand->Type = type;
     return operand;
 }
-
-static const char *RegisterToString(enum Register reg) {
-    switch (reg) {
-        case REG_FramePointer:
-            return "$fp";
-    }
-}
-
 static inline char *OperandLabelToString(struct Operand *operand) {
     return strdup(operand->u.LabelName);
 }
-static inline char *OperandRegisterToString(struct Operand *operand) {
-    return strdup(RegisterToString(operand->u.Register));
-}
-static inline char *OperandValueOfRegisterWithOffsetToString(struct Operand *operand) {
+static inline char *OperandOffsetToString(struct Operand *operand) {
     char buf[80];
-    const char *reg = RegisterToString(operand->u.ValueOfRegisterWithOffset.Register);
-    snprintf(buf, 79, "%d(%s)",
-             operand->u.ValueOfRegisterWithOffset.Offset,
-             reg);
+    snprintf(buf, 79, "%d", operand->u.Offset);
     return strdup(buf);
-}
-static inline char *OperandSymbolToString(struct Operand *operand) {
-    return strdup(operand->u.SymbolName);
 }
 static inline char *OperandIntegerToString(struct Operand *operand) {
     char buf[80];
     snprintf(buf, 79, "%d", operand->u.Integer);
     return strdup(buf);
 }
-static inline char *OperandRealToString(struct Operand *operand) {
-    char buf[80];
-    snprintf(buf, 79, "%f", operand->u.Real);
-    return strdup(buf);
-}
-static inline char *OperandStringToString(struct Operand *operand) {
-    return strdup(operand->u.String->CString);
-}
-
 static char *OperandToString(struct Operand *operand) {
     if (!operand) {
         return NULL;
@@ -224,124 +215,62 @@ static char *OperandToString(struct Operand *operand) {
     switch (operand->Type) {
         case OP_Label:
             return OperandLabelToString(operand);
-        case OP_Register:
-            return OperandRegisterToString(operand);
-        case OP_ValueOfRegisterWithOffset:
-            return OperandValueOfRegisterWithOffsetToString(operand);
-        case OP_nil:
-            return strdup("nil");
-        case OP_true:
-            return strdup("true");
-        case OP_false:
-            return strdup("false");
-        case OP_Symbol:
-            return OperandSymbolToString(operand);
+        case OP_Global:
+        case OP_Local:
+        case OP_Literal:
+            return OperandOffsetToString(operand);
         case OP_Integer:
             return OperandIntegerToString(operand);
-        case OP_Real:
-            return OperandRealToString(operand);
-        case OP_String:
-            return OperandStringToString(operand);
     }
     return NULL;
 }
 
-static struct Operand *OperandMakeNil(void) {
-    struct Operand *o = OperandAlloc();
-    o->Type = OP_nil;
-    return o;
-}
-static struct Operand *OperandMakeBoolean(struct Ast *node) {
-    struct Operand *o = OperandAlloc();
-    if (&g_TheFalseValue == node->u.Value) {
-        o->Type = OP_false;
-    }
-    else {
-        o->Type = OP_true;
-    }
-    return o;
-}
-static struct Operand *OperandMakeIntegerC(int i) {
-    struct Operand *o = OperandAlloc();
-    o->Type = OP_Integer;
+static struct Operand *OperandMakeInteger(int i) {
+    struct Operand *o = OperandAlloc(OP_Integer);
     o->u.Integer = i;
     return o;
 }
-static struct Operand *OperandMakeInteger(struct Ast *node) {
-    struct Operand *o = OperandAlloc();
-    o->Type = OP_Integer;
-    o->u.Integer = node->u.Value->v.Integer;
-    return o;
-}
-static struct Operand *OperandMakeReal(struct Ast *node) {
-    struct Operand *o = OperandAlloc();
-    o->Type = OP_Real;
-    o->u.Real = node->u.Value->v.Real;
-    return o;
-}
-static struct Operand *OperandMakeString(struct Ast *node) {
-    struct Operand *o = OperandAlloc();
-    char *tmp;
-    o->Type = OP_String;
-    tmp = strdup(node->u.Value->v.String->CString);
-    o->u.String = calloc(sizeof *o->u.String, 1);
-    LLStringMake(o->u.String, tmp);
-    free(tmp);
-    return o;
-}
-static struct Operand *OperandMakeValueOfRegiserWithOffset(enum Register reg, int offset);
 static struct Operand *OperandMakeSymbol(struct Ast *node) {
     struct Operand *o;
-    struct Sym *sym = symStackGetIdx(node->u.SymbolName);
-    if (!sym || !isInFunctionDef) {
-        o = OperandAlloc();
-        o->Type = OP_Symbol;
-        o->u.SymbolName = strdup(node->u.SymbolName);
-        return o;
+    struct Sym *sym;
+    int result, idx;
+    if (isLiteral(node)) {
+        result = LiteralLookupTableGetIndex(node->u.Value, &idx);
+        if (R_OK == result) {
+            o = OperandAlloc(OP_Literal);
+            o->u.Offset = idx;
+            return o;
+        }
+        else {
+            /* Literal not regestered somehow? */
+            printf("Literal not found in lookup table.\n"
+                   "%s L%d:%d\n",
+                   node->SrcLoc.Filename,
+                   node->SrcLoc.LineNumber,
+                   node->SrcLoc.ColumnNumber);
+            abort();
+        }
+    }
+
+    sym = symStackGetIdx(node->u.SymbolName);
+    if (!sym) {
+        // ERROR
+        printf("Symbol not found: '%s'\n", node->u.SymbolName);
+        abort();
+    }
+    else if (isInFunctionDef) {
+        o = OperandAlloc(OP_Local);
     }
     else {
-        return OperandMakeValueOfRegiserWithOffset(REG_FramePointer, sym->Idx);
+        o = OperandAlloc(OP_Global);
     }
+    o->u.Offset = sym->Idx;
+    return o;
 }
 static struct Operand *OperandMakeLabel(char *labelName) {
-    struct Operand *o = OperandAlloc();
-    o->Type = OP_Symbol;
+    struct Operand *o = OperandAlloc(OP_Label);
     o->u.LabelName = strdup(labelName);
     return o;
-}
-static struct Operand *OperandMakeRegiser(enum Register reg) {
-    struct Operand *o = OperandAlloc();
-    o->Type = OP_Register;
-    o->u.Register = reg;
-    return o;
-}
-static struct Operand *OperandMakeValueOfRegiserWithOffset(enum Register reg, int offset) {
-    struct Operand *o = OperandAlloc();
-    o->Type = OP_ValueOfRegisterWithOffset;
-    o->u.ValueOfRegisterWithOffset.Register = reg;
-    o->u.ValueOfRegisterWithOffset.Offset = offset;
-    return o;
-}
-
-static struct Operand *OperandMakeConstant(struct Ast *node) {
-    if (!node) {
-        return NULL;
-    }
-    switch (node->Type) {
-        default: return NULL;
-        case NilNode:
-            return OperandMakeNil();
-        case BooleanNode:
-            return OperandMakeBoolean(node);
-        case RealNode:
-            return OperandMakeReal(node);
-        case IntegerNode:
-            return OperandMakeInteger(node);
-        case StringNode:
-            return OperandMakeString(node);
-        case SymbolNode:
-            return OperandMakeSymbol(node);
-    }
 }
 
 static struct Instruction *InstructionAlloc(enum InstructionType ins) {
@@ -418,7 +347,7 @@ static void FlattenedAstGenInstructionWithLabelOperand(struct FlattenedAst *fast
 static inline void FlattenedAstGenSingleOperandInstruction(struct FlattenedAst *fast, enum InstructionType insType, struct Ast *node) {
     struct Instruction *ins = InstructionAlloc(insType);
     /* TODO: Validate operand */
-    struct Operand *operand = OperandMakeConstant(node);
+    struct Operand *operand = OperandMakeSymbol(node); // xxx?
     ins->Operands[0] = operand;
     FAN_APPEND_INST(fast, ins);
 }
@@ -426,17 +355,28 @@ static inline void FlattenedAstGenNoOperandInstruction(struct FlattenedAst *fast
     struct FlattenedAstNode *instruction = FAN_ALLOC_NO_OPS(insType);
     FlattenedAstAppend(fast, instruction);
 }
-static void InstructionGenPushFP(struct FlattenedAst *fast) {
-    struct Instruction *ins;
-    ins = InstructionAlloc(INS_push);
-    ins->Operands[0] = OperandMakeRegiser(REG_FramePointer);
-    FAN_APPEND_INST(fast, ins);
+static inline enum InstructionType InstructionWhichPush(struct Operand *operand) {
+    switch (operand->Type) {
+        default:
+            printf("invalid `push_*' operand\n");
+            abort();
+        case OP_Global:
+            return INS_push_global;
+        case OP_Local:
+            return INS_push_local;
+        case OP_Literal:
+            return INS_push_literal;
+    }
 }
 static void InstructionTryGenPush(struct FlattenedAst *fast, struct Ast *node) {
+    enum InstructionType whichPush;
     struct Instruction *ins;
+    struct Operand *operand;
     if (isTerm(node)) {
-        ins = InstructionAlloc(INS_push);
-        ins->Operands[0] = OperandMakeConstant(node);
+        operand = OperandMakeSymbol(node);
+        whichPush = InstructionWhichPush(operand);
+        ins = InstructionAlloc(whichPush);
+        ins->Operands[0] = operand;
         FAN_APPEND_INST(fast, ins);
     }
     else {
@@ -496,7 +436,6 @@ static void InstructionGenFunction(struct FlattenedAst *fast, struct Ast *node) 
     FPOffset-=2; 
     
     FlattenedAstAppendLabel(fast, "PROC_%s", node->u.Value->v.Function->Name);
-    InstructionGenPushFP(fast);
 
     body = node->u.Value->v.Function->Body;
     InstructionDispatchGen(fast, body);
@@ -521,7 +460,7 @@ static void InstructionGenCall(struct FlattenedAst *fast, struct Ast *node) {
     struct Instruction *instruction;
     InstructionGenArgs(fast, args);
     InstructionTryGenPush(fast, primary);
-    operand = OperandMakeIntegerC(args->NumChildren);
+    operand = OperandMakeInteger(args->NumChildren);
     instruction = InstructionAllocWithSingleOperand(INS_call, operand);
     FAN_APPEND_INST(fast, instruction);
 }
