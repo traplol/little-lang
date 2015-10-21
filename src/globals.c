@@ -64,6 +64,10 @@ static int GlobalsInitTypeInfos(void) {
 
 static int GlobalsInitSingletonValues(void) {
     int result;
+    result = ValueMakeSingleton(&g_TheNilValue, &g_TheBaseObjectTypeInfo);
+    RETURN_ON_FAIL(result);
+    LiteralLookupTableInsert(&g_TheNilValue);
+
     result = ValueMakeSingleton(&g_TheTrueValue, &g_TheBooleanTypeInfo);
     RETURN_ON_FAIL(result);
     LiteralLookupTableInsert(&g_TheTrueValue);
@@ -71,11 +75,6 @@ static int GlobalsInitSingletonValues(void) {
     result = ValueMakeSingleton(&g_TheFalseValue, &g_TheBooleanTypeInfo);
     RETURN_ON_FAIL(result);
     LiteralLookupTableInsert(&g_TheFalseValue);
-
-    result = ValueMakeSingleton(&g_TheNilValue, &g_TheBaseObjectTypeInfo);
-    RETURN_ON_FAIL(result);
-    LiteralLookupTableInsert(&g_TheNilValue);
-
     return R_OK;
 }
 
@@ -119,10 +118,10 @@ int GlobalsInit(void) {
     result = GlobalsInitGlobalScope();
     RETURN_ON_FAIL(result);
 
-    result = GlobalsInitTypeInfos();
+    result = GlobalsInitSingletonValues();
     RETURN_ON_FAIL(result);
 
-    result = GlobalsInitSingletonValues();
+    result = GlobalsInitTypeInfos();
     RETURN_ON_FAIL(result);
 
     result = GlobalsInitGlobalTypeInfo();
