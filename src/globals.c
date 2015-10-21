@@ -4,6 +4,8 @@
 #include "symbol_table.h"
 #include "result.h"
 
+#include "runtime/literal_table.h"
+
 #include "helpers/macro_helpers.h"
 
 #include <stdlib.h>
@@ -64,12 +66,15 @@ static int GlobalsInitSingletonValues(void) {
     int result;
     result = ValueMakeSingleton(&g_TheTrueValue, &g_TheBooleanTypeInfo);
     RETURN_ON_FAIL(result);
+    LiteralLookupTableInsert(&g_TheTrueValue);
 
     result = ValueMakeSingleton(&g_TheFalseValue, &g_TheBooleanTypeInfo);
     RETURN_ON_FAIL(result);
+    LiteralLookupTableInsert(&g_TheFalseValue);
 
     result = ValueMakeSingleton(&g_TheNilValue, &g_TheBaseObjectTypeInfo);
     RETURN_ON_FAIL(result);
+    LiteralLookupTableInsert(&g_TheNilValue);
 
     return R_OK;
 }
